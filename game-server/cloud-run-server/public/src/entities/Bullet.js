@@ -18,7 +18,8 @@ export class Bullet extends GameObject {
   }
 
   setState(state) {
-    this.id = state.id;
+    this.id = state.i; // i: id
+
     if (!this.isInitialized) {
       this.x = state.x;
       this.y = state.y;
@@ -26,7 +27,8 @@ export class Bullet extends GameObject {
     }
     this.targetX = state.x;
     this.targetY = state.y;
-    this.angle = state.angle;
+    this.angle = state.a; // a: angle
+    this.type = state.t;  // t: type
   }
 
   draw(ctx) {

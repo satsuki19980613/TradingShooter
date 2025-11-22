@@ -12,6 +12,7 @@ import { SpatialGrid } from "./SpatialGrid.js";
 import { WebSocket } from "ws";
 import { ServerConfig, GameConstants } from "./ServerConfig.js";
 import { ServerAccountManager } from "./ServerAccountManager.js";
+import { ServerNetworkSystem } from "./ServerNetworkSystem.js";
 
 const IDLE_WARNING_TIME = 180000;
 const IDLE_TIMEOUT_TIME = 300000;
@@ -46,6 +47,7 @@ export class ServerGame {
       this.WORLD_HEIGHT,
       GRID_CELL_SIZE
     );
+    this.networkSystem = new ServerNetworkSystem(this);
     this.gameLoopInterval = null;
     this.chartLoopInterval = null;
     this.broadcastLoopInterval = null;
@@ -163,79 +165,9 @@ export class ServerGame {
   }
 
   broadcastGameState() {
-    const eventsToSend = this.frameEvents.length > 0 ? this.frameEvents : null;
+    this.networkSystem.broadcastGameState(this.players, this.frameEvents);
 
-    this.players.forEach((player) => {
-      if (!player.ws || player.ws.readyState !== WebSocket.OPEN) {
-        return;
-      }
-
-      const relevantEntityMaps = this.getRelevantEntityMapsFor(player);
-
-      const delta = this.createDeltaPayload_Dirty(
-        player.lastBroadcastState,
-        relevantEntityMaps
-      );
-      if (eventsToSend) {
-        delta.events = eventsToSend;
-      }
-      if (
-        (delta.events && delta.events.length > 0) ||
-        delta.updated.players.length > 0 ||
-        delta.updated.enemies.length > 0 ||
-        delta.updated.bullets.length > 0 ||
-        delta.removed.players.length > 0 ||
-        delta.removed.enemies.length > 0 ||
-        delta.removed.bullets.length > 0
-      ) {
-        try {
-          player.ws.send(
-            JSON.stringify({
-              type: "game_state_delta",
-              payload: delta,
-            })
-          );
-        } catch (err) {
-          console.warn(
-            `[Broadcast] プレイヤー ${player.id} への送信に失敗:`,
-            err.message
-          );
-        }
-      }
-
-      relevantEntityMaps.players.forEach((p) => (p.isDirty = false));
-      relevantEntityMaps.enemies.forEach((e) => (e.isDirty = false));
-      relevantEntityMaps.bullets.forEach((b) => (b.isDirty = false));
-
-      player.lastBroadcastState = relevantEntityMaps;
-    });
     this.frameEvents = [];
-  }
-
-  createDeltaPayload_Dirty(oldEntityMaps, newEntityMaps) {
-    const delta = {
-      updated: { players: [], enemies: [], bullets: [] },
-      removed: { players: [], enemies: [], bullets: [] },
-    };
-
-    const categories = ["players", "enemies", "bullets"];
-
-    for (const category of categories) {
-      const oldMap = oldEntityMaps[category];
-      const newMap = newEntityMaps[category];
-
-      for (const [id, entity] of newMap.entries()) {
-        delta.updated[category].push(entity.getState());
-      }
-
-      for (const id of oldMap.keys()) {
-        if (!newMap.has(id)) {
-          delta.removed[category].push(id);
-        }
-      }
-    }
-
-    return delta;
   }
 
   stopLoops() {
@@ -260,40 +192,6 @@ export class ServerGame {
     }
   }
 
-  getRelevantEntityMapsFor(player) {
-    const viewport = {
-      x: player.x,
-      y: player.y,
-      radius: 700,
-    };
-
-    const nearbyEntities = this.grid.getNearbyEntities(viewport);
-
-    const playersMap = new Map();
-    const enemiesMap = new Map();
-    const bulletsMap = new Map();
-
-    nearbyEntities.forEach((entity) => {
-      if (entity instanceof ServerPlayer) {
-        if (entity.id !== player.id) {
-          playersMap.set(entity.id, entity);
-        }
-      } else if (entity instanceof ServerEnemy) {
-        enemiesMap.set(entity.id, entity);
-      } else if (entity instanceof ServerBullet) {
-        bulletsMap.set(entity.id, entity);
-      }
-    });
-
-    playersMap.set(player.id, player);
-
-    return {
-      players: playersMap,
-      enemies: enemiesMap,
-      bullets: bulletsMap,
-    };
-  }
-
   pausePlayer(userId) {
     const player = this.players.get(userId);
     if (player) {
@@ -313,29 +211,7 @@ export class ServerGame {
     );
     player.isPaused = false;
 
-    const entityMaps = this.getRelevantEntityMapsFor(player);
-
-    const snapshotPayload = {
-      players: Array.from(entityMaps.players.values()).map((p) => p.getState()),
-      enemies: Array.from(entityMaps.enemies.values()).map((e) => e.getState()),
-      bullets: Array.from(entityMaps.bullets.values()).map((b) => b.getState()),
-    };
-
-    try {
-      player.ws.send(
-        JSON.stringify({
-          type: "game_state_snapshot",
-          payload: snapshotPayload,
-        })
-      );
-
-      player.lastBroadcastState = entityMaps;
-    } catch (err) {
-      console.warn(
-        `[Resume] プレイヤー ${userId} へのスナップショット送信に失敗:`,
-        err.message
-      );
-    }
+    this.networkSystem.sendSnapshot(player);
   }
 
   checkIdlePlayers() {
@@ -497,24 +373,7 @@ export class ServerGame {
 
   updateChart() {
     const chartDeltaState = this.trading.updateChartData();
-
-    const chartStateString = JSON.stringify({
-      type: "chart_update",
-      payload: chartDeltaState,
-    });
-
-    this.players.forEach((player) => {
-      if (player.ws && player.ws.readyState === WebSocket.OPEN) {
-        try {
-          player.ws.send(chartStateString);
-        } catch (err) {
-          console.warn(
-            `[BroadcastChart] プレイヤー ${player.id} への送信に失敗:`,
-            err.message
-          );
-        }
-      }
-    });
+    this.networkSystem.broadcastChartUpdate(this.players, chartDeltaState);
   }
 
   /**
@@ -618,35 +477,17 @@ export class ServerGame {
       payload: fullChartState,
     });
 
-    const entityMaps = this.getRelevantEntityMapsFor(newPlayer);
-
-    const snapshotPayload = {
-      players: Array.from(entityMaps.players.values()).map((p) => p.getState()),
-      enemies: Array.from(entityMaps.enemies.values()).map((e) => e.getState()),
-      bullets: Array.from(entityMaps.bullets.values()).map((b) => b.getState()),
-    };
-
-    const snapshotString = JSON.stringify({
-      type: "game_state_snapshot",
-      payload: snapshotPayload,
-    });
-
     try {
       ws.send(staticStateString);
       ws.send(fullChartStateString);
-      ws.send(snapshotString);
 
-      newPlayer.lastBroadcastState = entityMaps;
+      this.networkSystem.sendSnapshot(newPlayer);
     } catch (err) {
-      console.warn(
-        `[Static/Chart/Snap Send] プレイヤー ${userId} への送信に失敗:`,
-        err.message
-      );
+      console.warn(`[Send Error] ${err.message}`);
     }
 
     return newPlayer.getState();
   }
-
   removePlayer(userId) {
     const player = this.players.get(userId);
     if (!player) return;
@@ -917,7 +758,6 @@ export class ServerGame {
         this.avgTickTime = sum / this.tickTimes.length / 1000000;
         this.tickTimes = [];
       }
-
       serverStatsPayload = {
         avgTickTime: this.avgTickTime,
         targetTickTime: GAME_LOOP_INTERVAL,
@@ -932,23 +772,11 @@ export class ServerGame {
       .slice(0, 5)
       .map((p) => ({ id: p.id, name: p.name, score: p.score }));
 
-    const payload = {
-      leaderboardData: leaderboard,
-      serverStats: serverStatsPayload,
-    };
-
-    const leaderboardString = JSON.stringify({
-      type: "leaderboard_update",
-      payload: payload,
-    });
-
-    this.players.forEach((player) => {
-      if (player.ws && player.ws.readyState === WebSocket.OPEN) {
-        try {
-          player.ws.send(leaderboardString);
-        } catch (err) {}
-      }
-    });
+    this.networkSystem.broadcastLeaderboard(
+      this.players,
+      leaderboard,
+      serverStatsPayload
+    );
   }
 
   applyZoneEffects() {
