@@ -68,7 +68,7 @@ export class Player extends GameObject {
       if (dx !== 0 || dy !== 0) {
         const moveAngle = Math.atan2(dy, dx);
 
-        this.rotationAngle = this.lerpAngleFunc(
+        this.rotationAngle = lerpAngle(
           this.rotationAngle,
           moveAngle,
           0.2
@@ -81,7 +81,8 @@ export class Player extends GameObject {
       const dy = this.targetY - this.y;
       if (dx * dx + dy * dy > 1) {
         const moveAngle = Math.atan2(dy, dx);
-        this.rotationAngle = this.lerpAngleFunc(
+        // ▼▼▼ 【修正】ここも変更 ▼▼▼
+        this.rotationAngle = lerpAngle(
           this.rotationAngle,
           moveAngle,
           0.1
@@ -89,7 +90,7 @@ export class Player extends GameObject {
       }
     }
 
-    this.aimAngle = this.lerpAngleFunc(this.aimAngle, this.targetAimAngle, 0.3);
+    this.aimAngle = lerpAngle(this.aimAngle, this.targetAimAngle, 0.3);
     this.hoverOffset = Math.sin(Date.now() / 200) * 3;
   }
 

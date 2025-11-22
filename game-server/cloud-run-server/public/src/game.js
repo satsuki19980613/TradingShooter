@@ -263,6 +263,9 @@ export class Game {
     if (snapshot.players) {
       snapshot.players.forEach((pState) => {
         const player = new Player(pState.x, pState.y);
+        if (pState.id === this.userId) {
+            player.isMe = true;
+        }
         player.setState(pState);
         this.playerEntities.set(pState.id, player);
       });
