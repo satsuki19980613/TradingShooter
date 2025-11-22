@@ -389,7 +389,24 @@ export class ServerGame {
     }
     return true;
   }
+  findRandomValidPosition(radius) {
+    const maxAttempts = 30;
+    const margin = 50;
 
+    for (let i = 0; i < maxAttempts; i++) {
+      const x = Math.random() * (this.WORLD_WIDTH - margin * 2) + margin;
+      const y = Math.random() * (this.WORLD_HEIGHT - margin * 2) + margin;
+
+      if (this.isValidSpawnPosition(x, y, radius)) {
+        return { x, y };
+      }
+    }
+
+    console.warn(
+      "[ServerGame] 安全なスポーン位置が見つかりませんでした。中央に出現させます。"
+    );
+    return { x: this.WORLD_WIDTH / 2, y: this.WORLD_HEIGHT / 2 };
+  }
   addPlayer(userId, playerName, ws, isDebug = false) {
     if (!this.isRunning) {
       console.log(
@@ -400,24 +417,19 @@ export class ServerGame {
     if (isDebug) {
       this.debugPlayerCount++;
       console.log(
-        `[ServerGame ${this.roomId}] デバッグプレイヤー ${playerName} が参加。 (現在 ${this.debugPlayerCount} 人)`
+        `[ServerGame ${this.roomId}] デバッグプレイヤー ${playerName} が参加。`
       );
     }
-    const existingPlayer = this.players.get(userId);
 
+    const existingPlayer = this.players.get(userId);
     if (existingPlayer) {
       console.log(
-        `[ServerGame] ${playerName} (ID: ${userId}) が再接続しました。古い接続を切断します。`
+        `[ServerGame] ${playerName} (ID: ${userId}) が再接続しました。`
       );
-
       if (existingPlayer.deathCleanupTimer) {
-        console.log(
-          `[ServerGame ${this.roomId}] プレイヤー ${playerName} の古い死亡タイマーをキャンセルします。`
-        );
         clearTimeout(existingPlayer.deathCleanupTimer);
         existingPlayer.deathCleanupTimer = null;
       }
-
       if (
         existingPlayer.ws &&
         existingPlayer.ws.readyState === WebSocket.OPEN
@@ -426,33 +438,10 @@ export class ServerGame {
       }
     }
 
-    const spawnPoint = this.playerSpawns[this.nextSpawnIndex];
-    this.nextSpawnIndex = (this.nextSpawnIndex + 1) % this.playerSpawns.length;
-
     const playerRadius = 45;
-    let x = spawnPoint.x;
-    let y = spawnPoint.y;
-    let attempts = 0;
-    const maxAttempts = 10;
-
-    while (attempts < maxAttempts) {
-      const offsetRange = 50 + attempts * 50;
-      const testX = spawnPoint.x + (Math.random() - 0.5) * offsetRange;
-      const testY = spawnPoint.y + (Math.random() - 0.5) * offsetRange;
-
-      if (this.isValidSpawnPosition(testX, testY, playerRadius)) {
-        x = testX;
-        y = testY;
-        break;
-      }
-      attempts++;
-    }
-
-    if (attempts >= maxAttempts) {
-      console.warn(
-        `[ServerGame] プレイヤー ${playerName} の安全なスポーン位置確保に失敗しました。デフォルト位置を使用します。`
-      );
-    }
+    const pos = this.findRandomValidPosition(playerRadius);
+    const x = pos.x;
+    const y = pos.y;
 
     const newPlayer = new ServerPlayer(userId, playerName, x, y, ws, isDebug);
     this.players.set(userId, newPlayer);
@@ -480,7 +469,6 @@ export class ServerGame {
     try {
       ws.send(staticStateString);
       ws.send(fullChartStateString);
-
       this.networkSystem.sendSnapshot(newPlayer);
     } catch (err) {
       console.warn(`[Send Error] ${err.message}`);
@@ -723,11 +711,15 @@ export class ServerGame {
   }
 
   spawnEnemy() {
-    const spawnPoint =
-      this.enemySpawns[Math.floor(Math.random() * this.enemySpawns.length)];
-    const x = spawnPoint.x + (Math.random() - 0.5) * 20;
-    const y = spawnPoint.y + (Math.random() - 0.5) * 20;
-    const newEnemy = new ServerEnemy(x, y, this.WORLD_WIDTH, this.WORLD_HEIGHT);
+    const enemyRadius = 45;
+    const pos = this.findRandomValidPosition(enemyRadius);
+
+    const newEnemy = new ServerEnemy(
+      pos.x,
+      pos.y,
+      this.WORLD_WIDTH,
+      this.WORLD_HEIGHT
+    );
     newEnemy.id = `e_${this.enemyIdCounter++}`;
     this.enemies.push(newEnemy);
   }
