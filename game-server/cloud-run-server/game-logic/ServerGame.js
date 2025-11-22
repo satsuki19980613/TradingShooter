@@ -11,6 +11,7 @@ import { SpatialGrid } from "./SpatialGrid.js";
 import { WebSocket } from "ws";
 import { ServerConfig, GameConstants } from "./ServerConfig.js";
 import { ServerAccountManager } from "./ServerAccountManager.js";
+import { ServerNetworkSystem } from "./ServerNetworkSystem.js";
 
 const IDLE_WARNING_TIME = 180000;
 const IDLE_TIMEOUT_TIME = 300000;
@@ -439,66 +440,61 @@ export class ServerGame {
     return true;
   }
   findRandomValidPosition(radius) {
-    const maxAttempts = 30;
-    const margin = 50;
+    const maxAttempts = 30; // 試行回数
+    const margin = 50;      // 壁際ギリギリにならないためのマージン
 
     for (let i = 0; i < maxAttempts; i++) {
+      // ワールド範囲内でランダムな座標を生成
       const x = Math.random() * (this.WORLD_WIDTH - margin * 2) + margin;
       const y = Math.random() * (this.WORLD_HEIGHT - margin * 2) + margin;
 
+      // 障害物と重なっていなければ採用
       if (this.isValidSpawnPosition(x, y, radius)) {
         return { x, y };
       }
     }
 
-    console.warn(
-      "[ServerGame] 安全なスポーン位置が見つかりませんでした。中央に出現させます。"
-    );
+    // 見つからなかった場合のフォールバック（マップ中央）
+    console.warn("[ServerGame] 安全なスポーン位置が見つかりませんでした。中央に出現させます。");
     return { x: this.WORLD_WIDTH / 2, y: this.WORLD_HEIGHT / 2 };
   }
   addPlayer(userId, playerName, ws, isDebug = false) {
     if (!this.isRunning) {
-      console.log(
-        `[ServerGame ${this.roomId}] 最初のプレイヤーが入室。ループを起動します。`
-      );
+      console.log(`[ServerGame ${this.roomId}] 最初のプレイヤーが入室。ループを起動します。`);
       this.startLoop();
     }
     if (isDebug) {
       this.debugPlayerCount++;
-      console.log(
-        `[ServerGame ${this.roomId}] デバッグプレイヤー ${playerName} が参加。`
-      );
+      console.log(`[ServerGame ${this.roomId}] デバッグプレイヤー ${playerName} が参加。`);
     }
 
+    // 重複ログインチェック (既存コードのまま)
     const existingPlayer = this.players.get(userId);
     if (existingPlayer) {
-      console.log(
-        `[ServerGame] ${playerName} (ID: ${userId}) が再接続しました。`
-      );
+      console.log(`[ServerGame] ${playerName} (ID: ${userId}) が再接続しました。`);
       if (existingPlayer.deathCleanupTimer) {
         clearTimeout(existingPlayer.deathCleanupTimer);
         existingPlayer.deathCleanupTimer = null;
       }
-      if (
-        existingPlayer.ws &&
-        existingPlayer.ws.readyState === WebSocket.OPEN
-      ) {
+      if (existingPlayer.ws && existingPlayer.ws.readyState === WebSocket.OPEN) {
         existingPlayer.ws.close(4001, "Duplicate Login");
       }
     }
 
+    // ▼ 変更箇所: 固定スポーンではなく、ランダムな位置を検索する ▼
     const playerRadius = 45;
     const pos = this.findRandomValidPosition(playerRadius);
     const x = pos.x;
     const y = pos.y;
+    // ▲ 変更ここまで ▲
 
     const newPlayer = new ServerPlayer(userId, playerName, x, y, ws, isDebug);
     this.players.set(userId, newPlayer);
 
-    console.log(
-      `[ServerGame ${this.roomId}] プレイヤー参加: ${playerName} (現在 ${this.players.size} 人)`
-    );
+    console.log(`[ServerGame ${this.roomId}] プレイヤー参加: ${playerName} (現在 ${this.players.size} 人)`);
 
+    // ... (以下、送信処理などは前回の修正のまま) ...
+    
     const staticState = {
       obstacles: this.obstacles.map((o) => o.getState()),
       playerSpawns: this.playerSpawns,
@@ -758,17 +754,14 @@ export class ServerGame {
   }
 
   spawnEnemy() {
+    // ▼ 変更箇所: 敵もランダムな位置に出現させる ▼
     const enemyRadius = 45;
     const pos = this.findRandomValidPosition(enemyRadius);
-
-    const newEnemy = new ServerEnemy(
-      pos.x,
-      pos.y,
-      this.WORLD_WIDTH,
-      this.WORLD_HEIGHT
-    );
+    
+    const newEnemy = new ServerEnemy(pos.x, pos.y, this.WORLD_WIDTH, this.WORLD_HEIGHT);
     newEnemy.id = `e_${this.enemyIdCounter++}`;
     this.enemies.push(newEnemy);
+    // ▲ 変更ここまで ▲
   }
 
   addBullet(bullet) {

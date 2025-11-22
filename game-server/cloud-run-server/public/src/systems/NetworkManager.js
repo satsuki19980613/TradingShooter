@@ -158,7 +158,7 @@ export class NetworkManager {
       };
     });
   }
-  // ... (前略)
+
 
   handleBinaryMessage(arrayBuffer) {
     const view = new DataView(arrayBuffer);
@@ -276,6 +276,7 @@ export class NetworkManager {
         this.game.applyDelta(delta);
     }
   }
+
 
 
   // 文字列読み込みヘルパー
