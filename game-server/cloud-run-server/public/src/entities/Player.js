@@ -44,7 +44,9 @@ export class Player extends GameObject {
   update(inputManager) {
     if (this.isDead) return;
 
+    // ▼▼▼ 修正箇所: 自分の機体の場合、マウス位置へ即座に砲塔を向ける ▼▼▼
     if (this.isMe && inputManager) {
+      // 1. 移動処理 (既存コード)
       const speed = 6.5;
       let dx = 0;
       let dy = 0;
@@ -62,9 +64,8 @@ export class Player extends GameObject {
         this.y += dy * speed;
       }
 
-      const distSq =
-        (this.x - this.targetX) ** 2 + (this.y - this.targetY) ** 2;
-
+      // 2. サーバー位置への補正 (既存コード)
+      const distSq = (this.x - this.targetX) ** 2 + (this.y - this.targetY) ** 2;
       if (distSq > 100 * 100) {
         this.x = this.targetX;
         this.y = this.targetY;
@@ -73,32 +74,38 @@ export class Player extends GameObject {
         this.y += (this.targetY - this.y) * 0.1;
       }
 
+      // 3. 車体の回転 (移動方向に向ける)
       if (dx !== 0 || dy !== 0) {
         const moveAngle = Math.atan2(dy, dx);
-
-        this.rotationAngle = lerpAngle(
-          this.rotationAngle,
-          moveAngle,
-          0.2
-        );
+        this.rotationAngle = lerpAngle(this.rotationAngle, moveAngle, 0.2);
       }
-    } else {
-      super.update();
 
-    // 【修正】勝手な回転を削除し、移動方向に車体を向ける
-    const dx = this.targetX - this.x;
-    const dy = this.targetY - this.y;
-    
-    // ある程度移動している場合のみ向きを変える (静止時は維持)
-    if (dx * dx + dy * dy > 1) {
-        const moveAngle = Math.atan2(dy, dx);
-        this.rotationAngle = lerpAngle(this.rotationAngle, moveAngle, 0.1);
+      // 4. 【重要】砲塔の回転 (マウス座標へ直接向ける)
+      // サーバーからの aimAngle を待つと遅れるため、クライアントの inputManager を使う
+      if (inputManager.mouseWorldPos) {
+         const targetAngle = Math.atan2(
+            inputManager.mouseWorldPos.y - this.y,
+            inputManager.mouseWorldPos.x - this.x
+         );
+         // スムーズに回転
+         this.aimAngle = lerpAngle(this.aimAngle, targetAngle, 0.3);
+      }
+
+    } else {
+      // 他人の機体はサーバーの値を信じる (既存コード)
+      super.update();
+      
+      // 車体の回転
+      const dx = this.targetX - this.x;
+      const dy = this.targetY - this.y;
+      if (dx * dx + dy * dy > 1) {
+          const moveAngle = Math.atan2(dy, dx);
+          this.rotationAngle = lerpAngle(this.rotationAngle, moveAngle, 0.1);
+      }
+      // 砲塔の回転
+      this.aimAngle = lerpAngle(this.aimAngle, this.targetAimAngle, 0.3);
     }
-  }
-    // 砲塔はマウスに追従
-    this.aimAngle = lerpAngle(this.aimAngle, this.targetAimAngle, 0.3);
-    
-    // ホバリングの浮遊感
+
     this.hoverOffset = Math.sin(Date.now() / 200) * 3;
   }
 

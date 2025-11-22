@@ -12,6 +12,7 @@ import { WebSocket } from "ws";
 import { ServerConfig, GameConstants } from "./ServerConfig.js";
 import { ServerAccountManager } from "./ServerAccountManager.js";
 import { ServerNetworkSystem } from "./ServerNetworkSystem.js";
+import { getDistance, getDistanceSq } from "./ServerUtils.js";
 
 const IDLE_WARNING_TIME = 180000;
 const IDLE_TIMEOUT_TIME = 300000;

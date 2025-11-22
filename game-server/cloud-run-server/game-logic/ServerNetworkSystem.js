@@ -147,7 +147,7 @@ export class ServerNetworkSystem {
       offset = this.buffer.writeFloatLE(R(s.x), offset);
       offset = this.buffer.writeFloatLE(R(s.y), offset);
       offset = this.buffer.writeUInt8(Math.min(Math.max(0, Math.ceil(s.hp)), 255), offset);
-      offset = this.buffer.writeFloatLE(R1(s.aimAngle), offset);
+      offset = this.buffer.writeFloatLE(R(s.aimAngle), offset);
       offset = this.buffer.writeUInt8(s.isDead ? 1 : 0, offset);
 
       // ▼▼▼ トレード・弾薬情報の追加 ▼▼▼
