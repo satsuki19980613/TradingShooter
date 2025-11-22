@@ -62,18 +62,18 @@ export class Game {
   }
 
   sendPause() {
-  if (this.networkManager) {
-    this.networkManager.sendPause();
+    if (this.networkManager) {
+      this.networkManager.sendPause();
+    }
   }
-}
   setServerPerformanceStats(stats) {
     this.serverPerformanceStats = stats;
   }
   sendResume() {
-  if (this.networkManager) {
-    this.networkManager.sendResume();
+    if (this.networkManager) {
+      this.networkManager.sendResume();
+    }
   }
-}
 
   setUIManager(uiManager) {
     this.uiManager = uiManager;
@@ -196,7 +196,7 @@ export class Game {
       return p.alpha > 0;
     });
 
-    this.playerEntities.forEach((p) => p.update());
+    this.playerEntities.forEach((p) => p.update(this.inputManager));
     this.enemyEntities.forEach((e) => e.update());
     this.bulletEntities.forEach((b) => b.update());
 
@@ -305,6 +305,11 @@ export class Game {
           let player = this.playerEntities.get(pState.id);
           if (!player) {
             player = new Player(pState.x, pState.y);
+
+            if (pState.id === this.userId) {
+              player.isMe = true;
+            }
+
             this.playerEntities.set(pState.id, player);
           }
 

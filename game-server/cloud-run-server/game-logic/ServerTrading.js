@@ -36,41 +36,38 @@ export class ServerTrading {
   /**
    * チャートデータを更新 (ServerGame の chartLoop から呼ばれる)
    */
-  updateChartData() {
-        this.updatePrice();
-        this.chartData.push(this.currentPrice);
-        if (this.chartData.length > this.MAX_CHART_POINTS) {
-            this.chartData.shift();
-        }
-        
-        this.calculateMetrics();
-        
-        return {
-            currentPrice: this.currentPrice,
-            minPrice: this.minPrice,
-            maxPrice: this.maxPrice,
-            newChartPoint: this.chartData[this.chartData.length - 1],
-            newMaPoint: this.maData[this.maData.length - 1]
-        };
+  updatePrice() {
+    let change;
+
+    if (Math.random() < 0.01) {
+      change = (Math.random() - 0.5) * 15;
+    } else {
+      change = (Math.random() - 0.5) * 2.5;
     }
 
+    const basePrice = 1000;
+    const reversionForce = (basePrice - this.currentPrice) * 0.005;
+    change += reversionForce;
+
+    this.currentPrice += change;
+
+    if (this.currentPrice < 200) this.currentPrice = 200;
+    if (this.currentPrice > 3000) this.currentPrice = 3000;
+  }
   /**
    * 価格をランダムに更新
    */
   updatePrice() {
     let change;
-    // 確率を 0.05 (5%) -> 0.01 (1%) に下げて、急変動をレアにする
+
     if (Math.random() < 0.01) {
-      // スパイク時の変動幅: 40 -> 15 に抑制
       change = (Math.random() - 0.5) * 15;
     } else {
-      // 通常時の変動幅: 10 -> 2.5 に抑制して滑らかに
-      // 重要: 0.49 を 0.5 に変更して、上昇バイアス(張り付きの原因)を削除
       change = (Math.random() - 0.5) * 2.5;
     }
-    
+
     this.currentPrice += change;
-    
+
     if (this.currentPrice < 200) this.currentPrice = 200;
     if (this.currentPrice > 3000) this.currentPrice = 3000;
   }

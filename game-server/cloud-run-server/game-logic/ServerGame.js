@@ -53,6 +53,11 @@ export class ServerGame {
     this.bulletIdCounter = 0;
     this.isRunning = false;
     this.tickTimes = [];
+    this.reusableDelta = {
+      updated: { players: [], enemies: [], bullets: [] },
+      removed: { players: [], enemies: [], bullets: [] },
+      events: []
+    };
     this.avgTickTime = 0;
     this.debugPlayerCount = 0;
     this.initWorld();
@@ -213,10 +218,14 @@ export class ServerGame {
   }
 
   createDeltaPayload_Dirty(oldEntityMaps, newEntityMaps) {
-    const delta = {
-      updated: { players: [], enemies: [], bullets: [] },
-      removed: { players: [], enemies: [], bullets: [] },
-    };
+    const delta = this.reusableDelta;
+    delta.updated.players.length = 0;
+    delta.updated.enemies.length = 0;
+    delta.updated.bullets.length = 0;
+    delta.removed.players.length = 0;
+    delta.removed.enemies.length = 0;
+    delta.removed.bullets.length = 0;
+    delta.events = null;
 
     const categories = ["players", "enemies", "bullets"];
 
