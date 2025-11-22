@@ -196,7 +196,7 @@ export class Game {
       return p.alpha > 0;
     });
 
-    this.playerEntities.forEach((p) => p.update(this.inputManager));
+    this.playerEntities.forEach((p) => p.update());
     this.enemyEntities.forEach((e) => e.update());
     this.bulletEntities.forEach((b) => b.update());
 
@@ -263,9 +263,6 @@ export class Game {
     if (snapshot.players) {
       snapshot.players.forEach((pState) => {
         const player = new Player(pState.x, pState.y);
-        if (pState.id === this.userId) {
-            player.isMe = true;
-        }
         player.setState(pState);
 
         if (pState.i === this.userId) {
@@ -311,7 +308,12 @@ export class Game {
           let player = this.playerEntities.get(pState.i);
           if (!player) {
             player = new Player(pState.x, pState.y);
-            this.playerEntities.set(pState.id, player);
+
+            if (pState.i === this.userId) {
+              player.isMe = true;
+            }
+
+            this.playerEntities.set(pState.i, player);
           }
 
           if (!player.isDead && pState.d) {

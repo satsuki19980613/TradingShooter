@@ -158,7 +158,7 @@ export class NetworkManager {
       };
     });
   }
-
+  // ... (前略)
 
   handleBinaryMessage(arrayBuffer) {
     const view = new DataView(arrayBuffer);
@@ -227,11 +227,14 @@ export class NetworkManager {
             for(let j=0; j<stockCount; j++) {
                 stockedBullets.push(view.getUint16(offset, true)); offset += 2;
             }
+            // ▲ 追加ここまで ▲
 
             delta.updated.players.push({
-                id: id,  
                 i: id, x: x, y: y, h: hp, a: angle, d: isDeadVal,
-                ba: betAmount, cp: chargePos, sb: stockedBullets
+                // 復元したトレード情報をセット (短縮キー形式)
+                ba: betAmount,
+                cp: chargePos,
+                sb: stockedBullets
             });
         }
 
@@ -246,7 +249,6 @@ export class NetworkManager {
             const angle = view.getFloat32(offset, true); offset += 4;
 
             delta.updated.enemies.push({
-                id: id, // これを追加
                 i: id, x: x, y: y, h: hp, ta: angle
             });
         }
@@ -267,7 +269,6 @@ export class NetworkManager {
             else if (typeId === 2) type = 'player_special';
 
             delta.updated.bullets.push({
-                id: id, // これを追加
                 i: id, x: x, y: y, a: angle, t: type
             });
         }
@@ -275,7 +276,6 @@ export class NetworkManager {
         this.game.applyDelta(delta);
     }
   }
-
 
 
   // 文字列読み込みヘルパー

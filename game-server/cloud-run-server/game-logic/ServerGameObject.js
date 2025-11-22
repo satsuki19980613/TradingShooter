@@ -12,10 +12,12 @@ export class ServerGameObject {
     this.type = type;
     this.isDirty = true;
     this.createdAt = Date.now();
-    this.borderRadius = 0;
-    this.borderBottomLeftRadius = 0; 
+    // ▼▼▼ 新しく追加 ▼▼▼
+    this.borderRadius = 0; // デフォルトは0 (角ばった四角)
+    this.borderBottomLeftRadius = 0; // 個別の角設定
     this.borderBottomRightRadius = 0;
     this.borderTopLeftRadius = 0;
     this.borderTopRightRadius = 0;
+    // ▲▲▲ ここまで ▲▲▲
   }
 }

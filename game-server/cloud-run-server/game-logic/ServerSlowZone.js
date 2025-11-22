@@ -8,7 +8,7 @@ export class ServerSlowZone {
     this.x = x;
     this.y = y;
     this.radius = radius;
-    this.type = "SLOW_ZONE";
+    this.type = "SLOW_ZONE"; // クライアントに送るためのタイプ
   }
 
   /**
@@ -16,7 +16,7 @@ export class ServerSlowZone {
    */
   checkCollisionWithCircle(circle) {
     const distance = getDistance(circle.x, circle.y, this.x, this.y);
-
+    // 2つの円の半径の合計より距離が短ければ衝突
     return distance < circle.radius + this.radius;
   }
   /**
@@ -34,15 +34,17 @@ export class ServerSlowZone {
       let pushX = 0;
       let pushY = 0;
       if (dist === 0) {
-        pushX = 0.1;
+        // 完全に重なっている場合は、仮にX方向へ押す
+        pushX = 0.1; 
       } else {
         pushX = dx / dist;
         pushY = dy / dist;
       }
-
+      
+      // 反発
       circle.x += pushX * overlap;
       circle.y += pushY * overlap;
-
+      
       circle.isDirty = true;
     }
   }

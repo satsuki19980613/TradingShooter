@@ -2,7 +2,7 @@ import { GameObject } from "./GameObject.js";
 import { skinManager } from "../systems/SkinManager.js";
 import { PlayerSkins } from "../skins/PlayerSkins.js";
 /**
- * よふかしのうた
+ * 角度を滑らかに補間 (Lerp) する
  */
 function lerpAngle(current, target, rate) {
   let delta = target - current;
@@ -22,100 +22,35 @@ export class Player extends GameObject {
     this.aimAngle = 0;
     this.targetAimAngle = 0;
     this.isInitialized = false;
-    
-    // --- ステータス ---
+
     this.hp = 100;
     this.ep = 100;
     this.name = "";
-    
-    // --- トレード・弾薬データ (重要: これらを同期させる) ---
+
     this.chargeBetAmount = 10;
     this.chargePosition = null;
     this.stockedBullets = [];
     this.maxStock = 10;
-    
-    // --- フラグ ---
+
     this.isDead = false;
-    
-    // アニメーション用
+
     this.hoverOffset = 0;
   }
 
-  update(inputManager) {
-    if (this.isDead) return;
+  update() {
+    super.update();
 
-    // ▼▼▼ 修正箇所: 自分の機体の場合、マウス位置へ即座に砲塔を向ける ▼▼▼
-    if (this.isMe && inputManager) {
-      // 1. 移動処理 (既存コード)
-      const speed = 6.5;
-      let dx = 0;
-      let dy = 0;
+    const dx = this.targetX - this.x;
+    const dy = this.targetY - this.y;
 
-      if (inputManager.actionStates["move_up"]) dy -= 1;
-      if (inputManager.actionStates["move_down"]) dy += 1;
-      if (inputManager.actionStates["move_left"]) dx -= 1;
-      if (inputManager.actionStates["move_right"]) dx += 1;
-
-      if (dx !== 0 || dy !== 0) {
-        const length = Math.sqrt(dx * dx + dy * dy);
-        dx /= length;
-        dy /= length;
-        this.x += dx * speed;
-        this.y += dy * speed;
-      }
-
-      // 2. サーバー位置への補正 (既存コード)
-      const distSq = (this.x - this.targetX) ** 2 + (this.y - this.targetY) ** 2;
-      if (distSq > 100 * 100) {
-        this.x = this.targetX;
-        this.y = this.targetY;
-      } else {
-        this.x += (this.targetX - this.x) * 0.1;
-        this.y += (this.targetY - this.y) * 0.1;
-      }
-
-      // 3. 車体の回転 (移動方向に向ける)
-      if (dx !== 0 || dy !== 0) {
-        const moveAngle = Math.atan2(dy, dx);
-        this.rotationAngle = lerpAngle(this.rotationAngle, moveAngle, 0.2);
-      }
-
-      // 4. 【重要】砲塔の回転 (マウス座標へ直接向ける)
-      // サーバーからの aimAngle を待つと遅れるため、クライアントの inputManager を使う
-      if (inputManager.mouseWorldPos) {
-         const targetAngle = Math.atan2(
-            inputManager.mouseWorldPos.y - this.y,
-            inputManager.mouseWorldPos.x - this.x
-         );
-         // スムーズに回転
-         this.aimAngle = lerpAngle(this.aimAngle, targetAngle, 0.3);
-      }
-
-    } else {
-      // 他人の機体はサーバーの値を信じる (既存コード)
-      super.update();
-      
-      // 車体の回転
-      const dx = this.targetX - this.x;
-      const dy = this.targetY - this.y;
-      if (dx * dx + dy * dy > 1) {
-          const moveAngle = Math.atan2(dy, dx);
-          this.rotationAngle = lerpAngle(this.rotationAngle, moveAngle, 0.1);
-      }
-      // 砲塔の回転
-      this.aimAngle = lerpAngle(this.aimAngle, this.targetAimAngle, 0.3);
+    if (dx * dx + dy * dy > 1) {
+      const moveAngle = Math.atan2(dy, dx);
+      this.rotationAngle = lerpAngle(this.rotationAngle, moveAngle, 0.1);
     }
 
-    this.hoverOffset = Math.sin(Date.now() / 200) * 3;
-  }
+    this.aimAngle = lerpAngle(this.aimAngle, this.targetAimAngle, 0.3);
 
-  get lerpAngleFunc() {
-    return (current, target, rate) => {
-      let delta = target - current;
-      if (delta > Math.PI) delta -= Math.PI * 2;
-      if (delta < -Math.PI) delta += Math.PI * 2;
-      return current + delta * rate;
-    };
+    this.hoverOffset = Math.sin(Date.now() / 200) * 3;
   }
 
   /**
@@ -128,25 +63,32 @@ export class Player extends GameObject {
     if (!this.isInitialized) {
       this.x = state.x;
       this.y = state.y;
-      this.aimAngle = state.aimAngle;
-      this.rotationAngle = state.aimAngle; // 初期向き
+      this.aimAngle = state.a;
+      this.rotationAngle = state.a;
       this.isInitialized = true;
     }
-    
-    this.name = state.name;
+
+    this.name = state.n;
     this.targetX = state.x;
     this.targetY = state.y;
-    this.targetAimAngle = state.aimAngle;
-    
-    this.hp = state.hp;
-    this.ep = state.ep;
-    this.isDead = state.isDead;
+    this.targetAimAngle = state.a;
 
-    // ▼▼▼ 復活させた同期処理 ▼▼▼
-    this.chargeBetAmount = state.chargeBetAmount;
-    this.chargePosition = state.chargePosition;
-    this.stockedBullets = state.stockedBullets;
-    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+    this.hp = state.h;
+    this.ep = state.e;
+    this.isDead = !!state.d;
+
+    this.chargeBetAmount = state.ba;
+
+    if (state.cp) {
+      this.chargePosition = {
+        entryPrice: state.cp.ep,
+        amount: state.cp.a,
+      };
+    } else {
+      this.chargePosition = null;
+    }
+
+    this.stockedBullets = state.sb;
   }
   draw(ctx) {
     if (this.isDead) return;

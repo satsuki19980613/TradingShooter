@@ -7,12 +7,12 @@ import { ServerEnemy } from "./ServerEnemy.js";
 import { ServerBullet } from "./ServerBullet.js";
 import { ServerTrading } from "./ServerTrading.js";
 import { ServerObstacle } from "./ServerObstacle.js";
+import { getDistance } from "./ServerUtils.js";
 import { SpatialGrid } from "./SpatialGrid.js";
 import { WebSocket } from "ws";
 import { ServerConfig, GameConstants } from "./ServerConfig.js";
 import { ServerAccountManager } from "./ServerAccountManager.js";
 import { ServerNetworkSystem } from "./ServerNetworkSystem.js";
-import { getDistance, getDistanceSq } from "./ServerUtils.js";
 
 const IDLE_WARNING_TIME = 180000;
 const IDLE_TIMEOUT_TIME = 300000;
@@ -170,32 +170,6 @@ export class ServerGame {
     this.frameEvents = [];
   }
 
-  createDeltaPayload_Dirty(oldEntityMaps, newEntityMaps) {
-    const delta = {
-      updated: { players: [], enemies: [], bullets: [] },
-      removed: { players: [], enemies: [], bullets: [] },
-    };
-
-    const categories = ["players", "enemies", "bullets"];
-
-    for (const category of categories) {
-      const oldMap = oldEntityMaps[category];
-      const newMap = newEntityMaps[category];
-
-      for (const [id, entity] of newMap.entries()) {
-        delta.updated[category].push(entity.getState());
-      }
-
-      for (const id of oldMap.keys()) {
-        if (!newMap.has(id)) {
-          delta.removed[category].push(id);
-        }
-      }
-    }
-
-    return delta;
-  }
-
   stopLoops() {
     if (!this.isRunning) return;
 
@@ -239,15 +213,7 @@ export class ServerGame {
 
     this.networkSystem.sendSnapshot(player);
   }
-  safeSend(ws, messageString) {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      try {
-        ws.send(messageString);
-      } catch (err) {
-        console.warn(`[SafeSend] 送信失敗: ${err.message}`);
-      }
-    }
-  }
+
   checkIdlePlayers() {
     const now = Date.now();
     this.players.forEach((player) => {
@@ -407,24 +373,7 @@ export class ServerGame {
 
   updateChart() {
     const chartDeltaState = this.trading.updateChartData();
-
-    const chartStateString = JSON.stringify({
-      type: "chart_update",
-      payload: chartDeltaState,
-    });
-
-    this.players.forEach((player) => {
-      if (player.ws && player.ws.readyState === WebSocket.OPEN) {
-        try {
-          player.ws.send(chartStateString);
-        } catch (err) {
-          console.warn(
-            `[BroadcastChart] プレイヤー ${player.id} への送信に失敗:`,
-            err.message
-          );
-        }
-      }
-    });
+    this.networkSystem.broadcastChartUpdate(this.players, chartDeltaState);
   }
 
   /**
@@ -441,61 +390,66 @@ export class ServerGame {
     return true;
   }
   findRandomValidPosition(radius) {
-    const maxAttempts = 30; // 試行回数
-    const margin = 50;      // 壁際ギリギリにならないためのマージン
+    const maxAttempts = 30;
+    const margin = 50;
 
     for (let i = 0; i < maxAttempts; i++) {
-      // ワールド範囲内でランダムな座標を生成
       const x = Math.random() * (this.WORLD_WIDTH - margin * 2) + margin;
       const y = Math.random() * (this.WORLD_HEIGHT - margin * 2) + margin;
 
-      // 障害物と重なっていなければ採用
       if (this.isValidSpawnPosition(x, y, radius)) {
         return { x, y };
       }
     }
 
-    // 見つからなかった場合のフォールバック（マップ中央）
-    console.warn("[ServerGame] 安全なスポーン位置が見つかりませんでした。中央に出現させます。");
+    console.warn(
+      "[ServerGame] 安全なスポーン位置が見つかりませんでした。中央に出現させます。"
+    );
     return { x: this.WORLD_WIDTH / 2, y: this.WORLD_HEIGHT / 2 };
   }
   addPlayer(userId, playerName, ws, isDebug = false) {
     if (!this.isRunning) {
-      console.log(`[ServerGame ${this.roomId}] 最初のプレイヤーが入室。ループを起動します。`);
+      console.log(
+        `[ServerGame ${this.roomId}] 最初のプレイヤーが入室。ループを起動します。`
+      );
       this.startLoop();
     }
     if (isDebug) {
       this.debugPlayerCount++;
-      console.log(`[ServerGame ${this.roomId}] デバッグプレイヤー ${playerName} が参加。`);
+      console.log(
+        `[ServerGame ${this.roomId}] デバッグプレイヤー ${playerName} が参加。`
+      );
     }
 
-    // 重複ログインチェック (既存コードのまま)
     const existingPlayer = this.players.get(userId);
     if (existingPlayer) {
-      console.log(`[ServerGame] ${playerName} (ID: ${userId}) が再接続しました。`);
+      console.log(
+        `[ServerGame] ${playerName} (ID: ${userId}) が再接続しました。`
+      );
       if (existingPlayer.deathCleanupTimer) {
         clearTimeout(existingPlayer.deathCleanupTimer);
         existingPlayer.deathCleanupTimer = null;
       }
-      if (existingPlayer.ws && existingPlayer.ws.readyState === WebSocket.OPEN) {
+      if (
+        existingPlayer.ws &&
+        existingPlayer.ws.readyState === WebSocket.OPEN
+      ) {
         existingPlayer.ws.close(4001, "Duplicate Login");
       }
     }
 
-    // ▼ 変更箇所: 固定スポーンではなく、ランダムな位置を検索する ▼
     const playerRadius = 45;
     const pos = this.findRandomValidPosition(playerRadius);
     const x = pos.x;
     const y = pos.y;
-    // ▲ 変更ここまで ▲
 
     const newPlayer = new ServerPlayer(userId, playerName, x, y, ws, isDebug);
     this.players.set(userId, newPlayer);
 
-    console.log(`[ServerGame ${this.roomId}] プレイヤー参加: ${playerName} (現在 ${this.players.size} 人)`);
+    console.log(
+      `[ServerGame ${this.roomId}] プレイヤー参加: ${playerName} (現在 ${this.players.size} 人)`
+    );
 
-    // ... (以下、送信処理などは前回の修正のまま) ...
-    
     const staticState = {
       obstacles: this.obstacles.map((o) => o.getState()),
       playerSpawns: this.playerSpawns,
@@ -689,9 +643,11 @@ export class ServerGame {
         ) {
           continue;
         }
-        const distSq = getDistanceSq(bullet.x, bullet.y, entity.x, entity.y);
-        const totalRadius = bullet.radius + entity.radius;
-        if (distSq < totalRadius * totalRadius) {
+
+        if (
+          getDistance(bullet.x, bullet.y, entity.x, entity.y) <
+          bullet.radius + entity.radius
+        ) {
           if (
             (bullet.type === "player" || bullet.type === "player_special") &&
             entity instanceof ServerEnemy
@@ -755,14 +711,17 @@ export class ServerGame {
   }
 
   spawnEnemy() {
-    // ▼ 変更箇所: 敵もランダムな位置に出現させる ▼
     const enemyRadius = 45;
     const pos = this.findRandomValidPosition(enemyRadius);
-    
-    const newEnemy = new ServerEnemy(pos.x, pos.y, this.WORLD_WIDTH, this.WORLD_HEIGHT);
+
+    const newEnemy = new ServerEnemy(
+      pos.x,
+      pos.y,
+      this.WORLD_WIDTH,
+      this.WORLD_HEIGHT
+    );
     newEnemy.id = `e_${this.enemyIdCounter++}`;
     this.enemies.push(newEnemy);
-    // ▲ 変更ここまで ▲
   }
 
   addBullet(bullet) {
@@ -847,23 +806,6 @@ export class ServerGame {
 
     if (type === "register_name") {
       const requestedName = actionPayload.name;
-      if (
-        !requestedName ||
-        requestedName.length < 3 ||
-        requestedName.length > 12 ||
-        requestedName.toLowerCase() === "guest" ||
-        !/^[a-zA-Z0-9]+$/.test(requestedName)
-      ) {
-        ws.send(
-          JSON.stringify({
-            type: "account_response",
-            subtype: "register_name",
-            success: false,
-            message: "Invalid name format (Server rejected).",
-          })
-        );
-        return;
-      }
       const result = await this.accountManager.registerName(
         userId,
         requestedName

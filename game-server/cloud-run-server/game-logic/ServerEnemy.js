@@ -64,7 +64,7 @@ export class ServerEnemy extends ServerGameObject {
     this.shootCooldown--;
     if (this.shootCooldown <= 0) {
       const distToPlayer = getDistance(this.x, this.y, player.x, player.y);
-      if (distToPlayer < 700) {
+      if (distToPlayer < 500000) {
         const angle = Math.atan2(player.y - this.y, player.x - this.x);
         game.addBullet(
           new ServerBullet(this.x, this.y, 6, angle, 5, "enemy", 10, this.id)
