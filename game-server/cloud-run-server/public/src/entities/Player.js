@@ -94,7 +94,7 @@ export class Player extends GameObject {
         const moveAngle = Math.atan2(dy, dx);
         this.rotationAngle = lerpAngle(this.rotationAngle, moveAngle, 0.1);
     }
-
+  }
     // 砲塔はマウスに追従
     this.aimAngle = lerpAngle(this.aimAngle, this.targetAimAngle, 0.3);
     
