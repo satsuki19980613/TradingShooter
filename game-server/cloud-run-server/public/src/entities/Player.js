@@ -2,7 +2,7 @@ import { GameObject } from "./GameObject.js";
 import { skinManager } from "../systems/SkinManager.js";
 import { PlayerSkins } from "../skins/PlayerSkins.js";
 /**
- * 角度を滑らかに補間 (Lerp) する
+ * 更新
  */
 function lerpAngle(current, target, rate) {
   let delta = target - current;
