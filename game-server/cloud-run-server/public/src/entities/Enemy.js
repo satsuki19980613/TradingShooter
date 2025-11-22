@@ -18,7 +18,8 @@ export class Enemy extends GameObject {
   }
 
   setState(state) {
-    this.id = state.id;
+    this.id = state.i;
+
     if (!this.isInitialized) {
       this.x = state.x;
       this.y = state.y;
@@ -28,25 +29,24 @@ export class Enemy extends GameObject {
     this.targetX = state.x;
     this.targetY = state.y;
 
-    this.targetAngle = state.targetAngle;
+    this.targetAngle = state.ta;
+    this.hp = state.h;
   }
-
   draw(ctx) {
     const skinSize = 120;
 
-    // キャッシュを取得
     const enemySkin = skinManager.getSkin(
-        "enemy_heavy_tank",
-        skinSize, skinSize,
-        EnemySkins.heavyTank()
+      "enemy_heavy_tank",
+      skinSize,
+      skinSize,
+      EnemySkins.heavyTank()
     );
 
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.targetAngle);
 
-    // 画像を描画
-    ctx.drawImage(enemySkin, -skinSize/2, -skinSize/2);
+    ctx.drawImage(enemySkin, -skinSize / 2, -skinSize / 2);
 
     ctx.restore();
   }

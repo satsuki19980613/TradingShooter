@@ -267,30 +267,33 @@ export class Game {
             player.isMe = true;
         }
         player.setState(pState);
-        this.playerEntities.set(pState.id, player);
+
+        if (pState.i === this.userId) {
+          player.isMe = true;
+        }
+
+        this.playerEntities.set(pState.i, player);
       });
     }
+
     if (snapshot.enemies) {
       snapshot.enemies.forEach((eState) => {
         const enemy = new Enemy(eState.x, eState.y);
         enemy.setState(eState);
-        this.enemyEntities.set(eState.id, enemy);
+
+        this.enemyEntities.set(eState.i, enemy);
       });
     }
+
     if (snapshot.bullets) {
       snapshot.bullets.forEach((bState) => {
-        const bullet = new Bullet(
-          bState.x,
-          bState.y,
-          bState.angle,
-          bState.type
-        );
+        const bullet = new Bullet(bState.x, bState.y, bState.a, bState.t);
         bullet.setState(bState);
-        this.bulletEntities.set(bState.id, bullet);
+
+        this.bulletEntities.set(bState.i, bullet);
       });
     }
   }
-
   applyDelta(delta) {
     if (!delta) return;
     if (delta.events && delta.events.length > 0) {
@@ -305,18 +308,13 @@ export class Game {
     if (delta.updated) {
       if (delta.updated.players) {
         delta.updated.players.forEach((pState) => {
-          let player = this.playerEntities.get(pState.id);
+          let player = this.playerEntities.get(pState.i);
           if (!player) {
             player = new Player(pState.x, pState.y);
-
-            if (pState.id === this.userId) {
-              player.isMe = true;
-            }
-
             this.playerEntities.set(pState.id, player);
           }
 
-          if (!player.isDead && pState.isDead) {
+          if (!player.isDead && pState.d) {
             this.createHitEffect(
               player.x,
               player.y,
@@ -324,7 +322,7 @@ export class Game {
               20,
               "explosion"
             );
-          } else if (pState.hp < player.hp) {
+          } else if (pState.h < player.hp) {
             this.createHitEffect(player.x, player.y, "#00e5ff", 5, "hit");
           }
 
@@ -334,13 +332,13 @@ export class Game {
 
       if (delta.updated.enemies) {
         delta.updated.enemies.forEach((eState) => {
-          let enemy = this.enemyEntities.get(eState.id);
+          let enemy = this.enemyEntities.get(eState.i);
           if (!enemy) {
             enemy = new Enemy(eState.x, eState.y);
-            this.enemyEntities.set(eState.id, enemy);
+            this.enemyEntities.set(eState.i, enemy);
           }
 
-          if (eState.hp < enemy.hp) {
+          if (eState.h < enemy.hp) {
             const offsetX = (Math.random() - 0.5) * 30;
             const offsetY = (Math.random() - 0.5) * 30;
             this.createHitEffect(
@@ -358,11 +356,11 @@ export class Game {
 
       if (delta.updated.bullets) {
         delta.updated.bullets.forEach((bState) => {
-          const bulletId = bState.id;
+          const bulletId = bState.i;
           if (!bulletId) return;
           let bullet = this.bulletEntities.get(bulletId);
           if (!bullet) {
-            bullet = new Bullet(bState.x, bState.y, bState.angle, bState.type);
+            bullet = new Bullet(bState.x, bState.y, bState.a, bState.t);
             this.bulletEntities.set(bulletId, bullet);
           }
           bullet.setState(bState);
@@ -405,8 +403,6 @@ export class Game {
 
       if (delta.removed.bullets) {
         delta.removed.bullets.forEach((id) => {
-          const bullet = this.bulletEntities.get(id);
-
           this.bulletEntities.delete(id);
         });
       }

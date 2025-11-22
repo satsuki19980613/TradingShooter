@@ -11,7 +11,6 @@ import { SpatialGrid } from "./SpatialGrid.js";
 import { WebSocket } from "ws";
 import { ServerConfig, GameConstants } from "./ServerConfig.js";
 import { ServerAccountManager } from "./ServerAccountManager.js";
-import { getDistance, getDistanceSq } from "./ServerUtils.js";
 
 const IDLE_WARNING_TIME = 180000;
 const IDLE_TIMEOUT_TIME = 300000;
@@ -46,6 +45,7 @@ export class ServerGame {
       this.WORLD_HEIGHT,
       GRID_CELL_SIZE
     );
+    this.networkSystem = new ServerNetworkSystem(this);
     this.gameLoopInterval = null;
     this.chartLoopInterval = null;
     this.broadcastLoopInterval = null;
@@ -163,52 +163,8 @@ export class ServerGame {
   }
 
   broadcastGameState() {
-    const eventsToSend = this.frameEvents.length > 0 ? this.frameEvents : null;
+    this.networkSystem.broadcastGameState(this.players, this.frameEvents);
 
-    this.players.forEach((player) => {
-      if (!player.ws || player.ws.readyState !== WebSocket.OPEN) {
-        return;
-      }
-
-      const relevantEntityMaps = this.getRelevantEntityMapsFor(player);
-
-      const delta = this.createDeltaPayload_Dirty(
-        player.lastBroadcastState,
-        relevantEntityMaps
-      );
-      if (eventsToSend) {
-        delta.events = eventsToSend;
-      }
-      if (
-        (delta.events && delta.events.length > 0) ||
-        delta.updated.players.length > 0 ||
-        delta.updated.enemies.length > 0 ||
-        delta.updated.bullets.length > 0 ||
-        delta.removed.players.length > 0 ||
-        delta.removed.enemies.length > 0 ||
-        delta.removed.bullets.length > 0
-      ) {
-        try {
-          player.ws.send(
-            JSON.stringify({
-              type: "game_state_delta",
-              payload: delta,
-            })
-          );
-        } catch (err) {
-          console.warn(
-            `[Broadcast] プレイヤー ${player.id} への送信に失敗:`,
-            err.message
-          );
-        }
-      }
-
-      relevantEntityMaps.players.forEach((p) => (p.isDirty = false));
-      relevantEntityMaps.enemies.forEach((e) => (e.isDirty = false));
-      relevantEntityMaps.bullets.forEach((b) => (b.isDirty = false));
-
-      player.lastBroadcastState = relevantEntityMaps;
-    });
     this.frameEvents = [];
   }
 
@@ -217,7 +173,9 @@ export class ServerGame {
       updated: { players: [], enemies: [], bullets: [] },
       removed: { players: [], enemies: [], bullets: [] },
     };
+
     const categories = ["players", "enemies", "bullets"];
+
     for (const category of categories) {
       const oldMap = oldEntityMaps[category];
       const newMap = newEntityMaps[category];
@@ -258,40 +216,6 @@ export class ServerGame {
     }
   }
 
-  getRelevantEntityMapsFor(player) {
-    const viewport = {
-      x: player.x,
-      y: player.y,
-      radius: 700,
-    };
-
-    const nearbyEntities = this.grid.getNearbyEntities(viewport);
-
-    const playersMap = new Map();
-    const enemiesMap = new Map();
-    const bulletsMap = new Map();
-
-    nearbyEntities.forEach((entity) => {
-      if (entity instanceof ServerPlayer) {
-        if (entity.id !== player.id) {
-          playersMap.set(entity.id, entity);
-        }
-      } else if (entity instanceof ServerEnemy) {
-        enemiesMap.set(entity.id, entity);
-      } else if (entity instanceof ServerBullet) {
-        bulletsMap.set(entity.id, entity);
-      }
-    });
-
-    playersMap.set(player.id, player);
-
-    return {
-      players: playersMap,
-      enemies: enemiesMap,
-      bullets: bulletsMap,
-    };
-  }
-
   pausePlayer(userId) {
     const player = this.players.get(userId);
     if (player) {
@@ -311,29 +235,7 @@ export class ServerGame {
     );
     player.isPaused = false;
 
-    const entityMaps = this.getRelevantEntityMapsFor(player);
-
-    const snapshotPayload = {
-      players: Array.from(entityMaps.players.values()).map((p) => p.getState()),
-      enemies: Array.from(entityMaps.enemies.values()).map((e) => e.getState()),
-      bullets: Array.from(entityMaps.bullets.values()).map((b) => b.getState()),
-    };
-
-    try {
-      player.ws.send(
-        JSON.stringify({
-          type: "game_state_snapshot",
-          payload: snapshotPayload,
-        })
-      );
-
-      player.lastBroadcastState = entityMaps;
-    } catch (err) {
-      console.warn(
-        `[Resume] プレイヤー ${userId} へのスナップショット送信に失敗:`,
-        err.message
-      );
-    }
+    this.networkSystem.sendSnapshot(player);
   }
   safeSend(ws, messageString) {
     if (ws && ws.readyState === WebSocket.OPEN) {
@@ -510,7 +412,16 @@ export class ServerGame {
     });
 
     this.players.forEach((player) => {
-      this.safeSend(player.ws, chartStateString);
+      if (player.ws && player.ws.readyState === WebSocket.OPEN) {
+        try {
+          player.ws.send(chartStateString);
+        } catch (err) {
+          console.warn(
+            `[BroadcastChart] プレイヤー ${player.id} への送信に失敗:`,
+            err.message
+          );
+        }
+      }
     });
   }
 
@@ -527,7 +438,24 @@ export class ServerGame {
     }
     return true;
   }
+  findRandomValidPosition(radius) {
+    const maxAttempts = 30;
+    const margin = 50;
 
+    for (let i = 0; i < maxAttempts; i++) {
+      const x = Math.random() * (this.WORLD_WIDTH - margin * 2) + margin;
+      const y = Math.random() * (this.WORLD_HEIGHT - margin * 2) + margin;
+
+      if (this.isValidSpawnPosition(x, y, radius)) {
+        return { x, y };
+      }
+    }
+
+    console.warn(
+      "[ServerGame] 安全なスポーン位置が見つかりませんでした。中央に出現させます。"
+    );
+    return { x: this.WORLD_WIDTH / 2, y: this.WORLD_HEIGHT / 2 };
+  }
   addPlayer(userId, playerName, ws, isDebug = false) {
     if (!this.isRunning) {
       console.log(
@@ -538,24 +466,19 @@ export class ServerGame {
     if (isDebug) {
       this.debugPlayerCount++;
       console.log(
-        `[ServerGame ${this.roomId}] デバッグプレイヤー ${playerName} が参加。 (現在 ${this.debugPlayerCount} 人)`
+        `[ServerGame ${this.roomId}] デバッグプレイヤー ${playerName} が参加。`
       );
     }
-    const existingPlayer = this.players.get(userId);
 
+    const existingPlayer = this.players.get(userId);
     if (existingPlayer) {
       console.log(
-        `[ServerGame] ${playerName} (ID: ${userId}) が再接続しました。古い接続を切断します。`
+        `[ServerGame] ${playerName} (ID: ${userId}) が再接続しました。`
       );
-
       if (existingPlayer.deathCleanupTimer) {
-        console.log(
-          `[ServerGame ${this.roomId}] プレイヤー ${playerName} の古い死亡タイマーをキャンセルします。`
-        );
         clearTimeout(existingPlayer.deathCleanupTimer);
         existingPlayer.deathCleanupTimer = null;
       }
-
       if (
         existingPlayer.ws &&
         existingPlayer.ws.readyState === WebSocket.OPEN
@@ -564,33 +487,10 @@ export class ServerGame {
       }
     }
 
-    const spawnPoint = this.playerSpawns[this.nextSpawnIndex];
-    this.nextSpawnIndex = (this.nextSpawnIndex + 1) % this.playerSpawns.length;
-
     const playerRadius = 45;
-    let x = spawnPoint.x;
-    let y = spawnPoint.y;
-    let attempts = 0;
-    const maxAttempts = 10;
-
-    while (attempts < maxAttempts) {
-      const offsetRange = 50 + attempts * 50;
-      const testX = spawnPoint.x + (Math.random() - 0.5) * offsetRange;
-      const testY = spawnPoint.y + (Math.random() - 0.5) * offsetRange;
-
-      if (this.isValidSpawnPosition(testX, testY, playerRadius)) {
-        x = testX;
-        y = testY;
-        break;
-      }
-      attempts++;
-    }
-
-    if (attempts >= maxAttempts) {
-      console.warn(
-        `[ServerGame] プレイヤー ${playerName} の安全なスポーン位置確保に失敗しました。デフォルト位置を使用します。`
-      );
-    }
+    const pos = this.findRandomValidPosition(playerRadius);
+    const x = pos.x;
+    const y = pos.y;
 
     const newPlayer = new ServerPlayer(userId, playerName, x, y, ws, isDebug);
     this.players.set(userId, newPlayer);
@@ -615,35 +515,16 @@ export class ServerGame {
       payload: fullChartState,
     });
 
-    const entityMaps = this.getRelevantEntityMapsFor(newPlayer);
-
-    const snapshotPayload = {
-      players: Array.from(entityMaps.players.values()).map((p) => p.getState()),
-      enemies: Array.from(entityMaps.enemies.values()).map((e) => e.getState()),
-      bullets: Array.from(entityMaps.bullets.values()).map((b) => b.getState()),
-    };
-
-    const snapshotString = JSON.stringify({
-      type: "game_state_snapshot",
-      payload: snapshotPayload,
-    });
-
     try {
       ws.send(staticStateString);
       ws.send(fullChartStateString);
-      ws.send(snapshotString);
-
-      newPlayer.lastBroadcastState = entityMaps;
+      this.networkSystem.sendSnapshot(newPlayer);
     } catch (err) {
-      console.warn(
-        `[Static/Chart/Snap Send] プレイヤー ${userId} への送信に失敗:`,
-        err.message
-      );
+      console.warn(`[Send Error] ${err.message}`);
     }
 
     return newPlayer.getState();
   }
-
   removePlayer(userId) {
     const player = this.players.get(userId);
     if (!player) return;
@@ -877,11 +758,15 @@ export class ServerGame {
   }
 
   spawnEnemy() {
-    const spawnPoint =
-      this.enemySpawns[Math.floor(Math.random() * this.enemySpawns.length)];
-    const x = spawnPoint.x + (Math.random() - 0.5) * 20;
-    const y = spawnPoint.y + (Math.random() - 0.5) * 20;
-    const newEnemy = new ServerEnemy(x, y, this.WORLD_WIDTH, this.WORLD_HEIGHT);
+    const enemyRadius = 45;
+    const pos = this.findRandomValidPosition(enemyRadius);
+
+    const newEnemy = new ServerEnemy(
+      pos.x,
+      pos.y,
+      this.WORLD_WIDTH,
+      this.WORLD_HEIGHT
+    );
     newEnemy.id = `e_${this.enemyIdCounter++}`;
     this.enemies.push(newEnemy);
   }
@@ -912,7 +797,6 @@ export class ServerGame {
         this.avgTickTime = sum / this.tickTimes.length / 1000000;
         this.tickTimes = [];
       }
-
       serverStatsPayload = {
         avgTickTime: this.avgTickTime,
         targetTickTime: GAME_LOOP_INTERVAL,
@@ -927,23 +811,11 @@ export class ServerGame {
       .slice(0, 5)
       .map((p) => ({ id: p.id, name: p.name, score: p.score }));
 
-    const payload = {
-      leaderboardData: leaderboard,
-      serverStats: serverStatsPayload,
-    };
-
-    const leaderboardString = JSON.stringify({
-      type: "leaderboard_update",
-      payload: payload,
-    });
-
-    this.players.forEach((player) => {
-      if (player.ws && player.ws.readyState === WebSocket.OPEN) {
-        try {
-          player.ws.send(leaderboardString);
-        } catch (err) {}
-      }
-    });
+    this.networkSystem.broadcastLeaderboard(
+      this.players,
+      leaderboard,
+      serverStatsPayload
+    );
   }
 
   applyZoneEffects() {

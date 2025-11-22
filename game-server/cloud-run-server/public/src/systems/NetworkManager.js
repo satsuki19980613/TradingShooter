@@ -1,8 +1,3 @@
-// public/src/systems/NetworkManager.js
-
-/**
- * 権威サーバー (Cloud Run) との WebSocket 通信を管理するクラス
- */
 export class NetworkManager {
   constructor() {
     this.serverUrl = location.origin.replace(/^http/, "ws");
@@ -89,6 +84,7 @@ export class NetworkManager {
 
       try {
         this.ws = new WebSocket(url);
+        this.ws.binaryType = 'arraybuffer';
       } catch (error) {
         console.error("[Network] (A) WebSocket 接続(new)に失敗:", error);
         return reject(error);
@@ -102,7 +98,12 @@ export class NetworkManager {
 
       this.ws.onmessage = (event) => {
         this.tempStats.pps_total++;
-        this.tempStats.bps_total += event.data.length;
+        this.tempStats.bps_total += (event.data.byteLength || event.data.length);
+        if (event.data instanceof ArrayBuffer) {
+            // バイナリデータの場合
+            this.handleBinaryMessage(event.data);
+            return;
+        }
         try {
           const message = JSON.parse(event.data);
           if (message.type === "account_response") {
@@ -156,6 +157,131 @@ export class NetworkManager {
         console.error("[Network] (G) WebSocket エラー発生:", errorEvent);
       };
     });
+  }
+  // ... (前略)
+
+  handleBinaryMessage(arrayBuffer) {
+    const view = new DataView(arrayBuffer);
+    let offset = 0;
+
+    // 1. MsgType
+    const msgType = view.getUint8(offset); offset += 1;
+
+    if (msgType === 1) { // MSG_TYPE_DELTA
+        const delta = {
+            updated: { players: [], enemies: [], bullets: [] },
+            removed: { players: [], enemies: [], bullets: [] }
+        };
+
+        // --- 1. Removed Lists (ここが重要: 弾が消えない問題の修正) ---
+        // Removed Players
+        const remPlayerCount = view.getUint8(offset); offset += 1;
+        for(let i=0; i<remPlayerCount; i++) {
+            const idLen = view.getUint8(offset); offset += 1;
+            delta.removed.players.push(this.readString(view, offset, idLen));
+            offset += idLen;
+        }
+        // Removed Enemies
+        const remEnemyCount = view.getUint8(offset); offset += 1;
+        for(let i=0; i<remEnemyCount; i++) {
+            const idLen = view.getUint8(offset); offset += 1;
+            delta.removed.enemies.push(this.readString(view, offset, idLen));
+            offset += idLen;
+        }
+        // Removed Bullets
+        const remBulletCount = view.getUint16(offset, true); offset += 2;
+        for(let i=0; i<remBulletCount; i++) {
+            const idLen = view.getUint8(offset); offset += 1;
+            delta.removed.bullets.push(this.readString(view, offset, idLen));
+            offset += idLen;
+        }
+
+
+        // --- 2. Updated Lists ---
+        
+        // Players
+        const playerCount = view.getUint8(offset); offset += 1;
+        for(let i=0; i<playerCount; i++) {
+            const idLen = view.getUint8(offset); offset += 1;
+            const id = this.readString(view, offset, idLen); offset += idLen;
+            
+            const x = view.getFloat32(offset, true); offset += 4;
+            const y = view.getFloat32(offset, true); offset += 4;
+            const hp = view.getUint8(offset); offset += 1;
+            const angle = view.getFloat32(offset, true); offset += 4;
+            const isDeadVal = view.getUint8(offset); offset += 1;
+
+            // ▼ トレード・弾情報の復元 (ここが重要: トレード/弾数問題の修正) ▼
+            const betAmount = view.getUint16(offset, true); offset += 2;
+            
+            let chargePos = null;
+            const hasCharge = view.getUint8(offset); offset += 1;
+            if (hasCharge === 1) {
+                const ep = view.getFloat32(offset, true); offset += 4;
+                const amt = view.getFloat32(offset, true); offset += 4;
+                chargePos = { ep: ep, a: amt };
+            }
+
+            const stockCount = view.getUint8(offset); offset += 1;
+            const stockedBullets = [];
+            for(let j=0; j<stockCount; j++) {
+                stockedBullets.push(view.getUint16(offset, true)); offset += 2;
+            }
+            // ▲ 追加ここまで ▲
+
+            delta.updated.players.push({
+                i: id, x: x, y: y, h: hp, a: angle, d: isDeadVal,
+                // 復元したトレード情報をセット (短縮キー形式)
+                ba: betAmount,
+                cp: chargePos,
+                sb: stockedBullets
+            });
+        }
+
+        // Enemies
+        const enemyCount = view.getUint8(offset); offset += 1;
+        for(let i=0; i<enemyCount; i++) {
+            const idLen = view.getUint8(offset); offset += 1;
+            const id = this.readString(view, offset, idLen); offset += idLen;
+            const x = view.getFloat32(offset, true); offset += 4;
+            const y = view.getFloat32(offset, true); offset += 4;
+            const hp = view.getUint8(offset); offset += 1;
+            const angle = view.getFloat32(offset, true); offset += 4;
+
+            delta.updated.enemies.push({
+                i: id, x: x, y: y, h: hp, ta: angle
+            });
+        }
+
+        // Bullets
+        const bulletCount = view.getUint16(offset, true); offset += 2;
+        for(let i=0; i<bulletCount; i++) {
+            const idLen = view.getUint8(offset); offset += 1;
+            const id = this.readString(view, offset, idLen); offset += idLen;
+            const x = view.getFloat32(offset, true); offset += 4;
+            const y = view.getFloat32(offset, true); offset += 4;
+            const angle = view.getFloat32(offset, true); offset += 4;
+            const typeId = view.getUint8(offset); offset += 1;
+            
+            // タイプ復元 (0: player, 1: enemy, 2: player_special)
+            let type = 'player';
+            if (typeId === 1) type = 'enemy';
+            else if (typeId === 2) type = 'player_special';
+
+            delta.updated.bullets.push({
+                i: id, x: x, y: y, a: angle, t: type
+            });
+        }
+
+        this.game.applyDelta(delta);
+    }
+  }
+
+
+  // 文字列読み込みヘルパー
+  readString(view, offset, length) {
+    const bytes = new Uint8Array(view.buffer, offset, length);
+    return new TextDecoder().decode(bytes);
   }
   disconnect() {
     this.isIntentionalClose = true; // フラグを立てる

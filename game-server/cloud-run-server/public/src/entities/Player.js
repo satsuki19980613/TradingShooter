@@ -22,14 +22,22 @@ export class Player extends GameObject {
     this.aimAngle = 0;
     this.targetAimAngle = 0;
     this.isInitialized = false;
+    
+    // --- ステータス ---
     this.hp = 100;
     this.ep = 100;
     this.name = "";
+    
+    // --- トレード・弾薬データ (重要: これらを同期させる) ---
     this.chargeBetAmount = 10;
     this.chargePosition = null;
     this.stockedBullets = [];
     this.maxStock = 10;
+    
+    // --- フラグ ---
     this.isDead = false;
+    
+    // アニメーション用
     this.hoverOffset = 0;
   }
 
@@ -77,20 +85,20 @@ export class Player extends GameObject {
     } else {
       super.update();
 
-      const dx = this.targetX - this.x;
-      const dy = this.targetY - this.y;
-      if (dx * dx + dy * dy > 1) {
+    // 【修正】勝手な回転を削除し、移動方向に車体を向ける
+    const dx = this.targetX - this.x;
+    const dy = this.targetY - this.y;
+    
+    // ある程度移動している場合のみ向きを変える (静止時は維持)
+    if (dx * dx + dy * dy > 1) {
         const moveAngle = Math.atan2(dy, dx);
-        // ▼▼▼ 【修正】ここも変更 ▼▼▼
-        this.rotationAngle = lerpAngle(
-          this.rotationAngle,
-          moveAngle,
-          0.1
-        );
-      }
+        this.rotationAngle = lerpAngle(this.rotationAngle, moveAngle, 0.1);
     }
 
+    // 砲塔はマウスに追従
     this.aimAngle = lerpAngle(this.aimAngle, this.targetAimAngle, 0.3);
+    
+    // ホバリングの浮遊感
     this.hoverOffset = Math.sin(Date.now() / 200) * 3;
   }
 
@@ -108,29 +116,31 @@ export class Player extends GameObject {
    * 【修正】消えてしまっていたチャージ情報等の同期を復活
    */
   setState(state) {
-    this.id = state.id;
+    this.id = state.i;
+
     if (!this.isInitialized) {
       this.x = state.x;
       this.y = state.y;
       this.aimAngle = state.aimAngle;
-      this.rotationAngle = state.aimAngle;
+      this.rotationAngle = state.aimAngle; // 初期向き
       this.isInitialized = true;
     }
-
+    
     this.name = state.name;
     this.targetX = state.x;
     this.targetY = state.y;
     this.targetAimAngle = state.aimAngle;
-
+    
     this.hp = state.hp;
     this.ep = state.ep;
     this.isDead = state.isDead;
 
+    // ▼▼▼ 復活させた同期処理 ▼▼▼
     this.chargeBetAmount = state.chargeBetAmount;
     this.chargePosition = state.chargePosition;
     this.stockedBullets = state.stockedBullets;
+    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
   }
-
   draw(ctx) {
     if (this.isDead) return;
 

@@ -36,24 +36,24 @@ export class ServerTrading {
   /**
    * チャートデータを更新 (ServerGame の chartLoop から呼ばれる)
    */
-  updatePrice() {
-    let change;
-
-    if (Math.random() < 0.01) {
-      change = (Math.random() - 0.5) * 15;
-    } else {
-      change = (Math.random() - 0.5) * 2.5;
+  updateChartData() {
+        this.updatePrice();
+        this.chartData.push(this.currentPrice);
+        if (this.chartData.length > this.MAX_CHART_POINTS) {
+            this.chartData.shift();
+        }
+        
+        this.calculateMetrics();
+        
+        return {
+            currentPrice: this.currentPrice,
+            minPrice: this.minPrice,
+            maxPrice: this.maxPrice,
+            newChartPoint: this.chartData[this.chartData.length - 1],
+            newMaPoint: this.maData[this.maData.length - 1]
+        };
     }
 
-    const basePrice = 1000;
-    const reversionForce = (basePrice - this.currentPrice) * 0.005;
-    change += reversionForce;
-
-    this.currentPrice += change;
-
-    if (this.currentPrice < 200) this.currentPrice = 200;
-    if (this.currentPrice > 3000) this.currentPrice = 3000;
-  }
   /**
    * 価格をランダムに更新
    */
