@@ -1,25 +1,14 @@
-# --- 依存関係 (巨大なので除外) ---
+# --- システム・巨大ファイル ---
 node_modules/
-package-lock.json
-
-# --- 秘密鍵・セキュリティ (絶対除外！) ---
-*.json
-!package.json
-!firebase.json
-!presets.json
-!map_default.json
-!map_design.json
-# ※ ↑の設定で「JSONは全無視、でも設定/データファイルだけは許可」になります
-
-# 具体的に指定して除外 (念には念を)
-firebase-admin-service-account.json
-.env
-
-# --- システム・ログ ---
 .DS_Store
 thumbs.db
 *.log
-npm-debug.log*
+
+# --- セキュリティ（念のため） ---
+.env
+firebase-admin-service-account.json
+*.key
+*.pem
 
 # --- Firebase キャッシュ ---
 .firebase/

@@ -7,11 +7,11 @@ import { ServerEnemy } from "./ServerEnemy.js";
 import { ServerBullet } from "./ServerBullet.js";
 import { ServerTrading } from "./ServerTrading.js";
 import { ServerObstacle } from "./ServerObstacle.js";
-import { getDistance } from "./ServerUtils.js";
 import { SpatialGrid } from "./SpatialGrid.js";
 import { WebSocket } from "ws";
 import { ServerConfig, GameConstants } from "./ServerConfig.js";
 import { ServerAccountManager } from "./ServerAccountManager.js";
+import { getDistance, getDistanceSq } from "./ServerUtils.js";
 
 const IDLE_WARNING_TIME = 180000;
 const IDLE_TIMEOUT_TIME = 300000;
@@ -337,7 +337,15 @@ export class ServerGame {
       );
     }
   }
-
+  safeSend(ws, messageString) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      try {
+        ws.send(messageString);
+      } catch (err) {
+        console.warn(`[SafeSend] 送信失敗: ${err.message}`);
+      }
+    }
+  }
   checkIdlePlayers() {
     const now = Date.now();
     this.players.forEach((player) => {
@@ -504,16 +512,7 @@ export class ServerGame {
     });
 
     this.players.forEach((player) => {
-      if (player.ws && player.ws.readyState === WebSocket.OPEN) {
-        try {
-          player.ws.send(chartStateString);
-        } catch (err) {
-          console.warn(
-            `[BroadcastChart] プレイヤー ${player.id} への送信に失敗:`,
-            err.message
-          );
-        }
-      }
+      this.safeSend(player.ws, chartStateString);
     });
   }
 
@@ -814,11 +813,9 @@ export class ServerGame {
         ) {
           continue;
         }
-
-        if (
-          getDistance(bullet.x, bullet.y, entity.x, entity.y) <
-          bullet.radius + entity.radius
-        ) {
+        const distSq = getDistanceSq(bullet.x, bullet.y, entity.x, entity.y);
+        const totalRadius = bullet.radius + entity.radius;
+        if (distSq < totalRadius * totalRadius) {
           if (
             (bullet.type === "player" || bullet.type === "player_special") &&
             entity instanceof ServerEnemy
@@ -986,6 +983,23 @@ export class ServerGame {
 
     if (type === "register_name") {
       const requestedName = actionPayload.name;
+      if (
+        !requestedName ||
+        requestedName.length < 3 ||
+        requestedName.length > 12 ||
+        requestedName.toLowerCase() === "guest" ||
+        !/^[a-zA-Z0-9]+$/.test(requestedName)
+      ) {
+        ws.send(
+          JSON.stringify({
+            type: "account_response",
+            subtype: "register_name",
+            success: false,
+            message: "Invalid name format (Server rejected).",
+          })
+        );
+        return;
+      }
       const result = await this.accountManager.registerName(
         userId,
         requestedName
