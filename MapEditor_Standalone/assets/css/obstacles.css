@@ -1,0 +1,391 @@
+/* assets/css/obstacles.css */
+
+/* 共通の基底スタイル */
+.obs-base {
+    position: absolute;
+    box-sizing: border-box;
+    /* サーバーの当たり判定と一致させるため、変形(transform)は使用せず、
+       内部の装飾で表現します */
+}
+
+/* --- Type 1: Neon Crate (ネオンクレート) --- */
+.obs-neon-crate {
+    background: linear-gradient(135deg, #0a1525 0%, #1c2e4a 100%);
+    border: 2px solid #00e5ff;
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.4), inset 0 0 20px rgba(0, 229, 255, 0.1);
+    border-radius: 4px;
+}
+.obs-neon-crate::after {
+    content: '';
+    position: absolute;
+    top: 10px; left: 10px; right: 10px; bottom: 10px;
+    border: 1px dashed rgba(0, 229, 255, 0.3);
+}
+
+/* --- Type 2: Magma Wall (マグマウォール) --- */
+.obs-magma-wall {
+    background-color: #2a0a0a;
+    border: 2px solid #ff5722;
+    box-shadow: 0 0 15px rgba(255, 87, 34, 0.5);
+    background-image: repeating-linear-gradient(
+        45deg,
+        #2a0a0a,
+        #2a0a0a 10px,
+        #3e1010 10px,
+        #3e1010 20px
+    );
+}
+
+/* --- Type 3: Data Server (データサーバー) --- */
+.obs-data-server {
+    background-color: #000;
+    border: 1px solid #0f0;
+    box-shadow: 0 0 10px #0f0;
+    overflow: hidden;
+}
+/* サーバーのラックのような横縞 */
+.obs-data-server::before {
+    content: '';
+    position: absolute;
+    width: 100%; height: 100%;
+    background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 8px,
+        rgba(0, 255, 0, 0.2) 9px,
+        rgba(0, 255, 0, 0.5) 10px
+    );
+}
+
+/* --- Type 4: Holo Barrier (ホロバリア) --- */
+.obs-holo-barrier {
+    background-color: rgba(255, 0, 255, 0.1);
+    border: 2px solid #d500f9;
+    box-shadow: 0 0 20px #d500f9, inset 0 0 20px #d500f9;
+    backdrop-filter: blur(3px);
+}
+.obs-holo-barrier::after {
+    content: 'LOCKED';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: rgba(213, 0, 249, 0.5);
+    font-family: sans-serif;
+    font-weight: bold;
+    font-size: 12px;
+    letter-spacing: 2px;
+}
+
+/* --- Type 5: Reactor Core (円形リアクター) --- */
+.obs-reactor-core {
+    border-radius: 50%;
+    background: radial-gradient(circle, #ffeb3b 10%, #f57f17 60%, #3e2723 100%);
+    border: 4px solid #ff6f00;
+    box-shadow: 0 0 30px rgba(255, 193, 7, 0.6);
+}
+
+/* --- Type 6: Bio Stasis Tank (バイオ培養槽) --- */
+.obs-bio-tank {
+    background-color: rgba(0, 20, 0, 0.9);
+    border: 2px solid #00ff41;
+    box-shadow: 0 0 15px #00ff41, inset 0 0 20px rgba(0, 255, 65, 0.2);
+    border-radius: 12px;
+    overflow: hidden;
+}
+/* 液体表現 */
+.obs-bio-tank::before {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; width: 100%; height: 85%;
+    background: linear-gradient(to top, rgba(0, 255, 65, 0.6), rgba(0, 255, 65, 0.1));
+    border-top: 2px solid rgba(0, 255, 65, 0.8);
+}
+/* 気泡のような装飾 */
+.obs-bio-tank::after {
+    content: '⚠ BIOHAZARD';
+    position: absolute;
+    top: 10px; left: 50%;
+    transform: translateX(-50%);
+    color: #00ff41;
+    font-size: 10px;
+    white-space: nowrap;
+    text-shadow: 0 0 5px #00ff41;
+    background: rgba(0,0,0,0.5);
+    padding: 2px 5px;
+    border: 1px solid #00ff41;
+}
+
+/* --- Type 7: Glitch Block (グリッチ・ノード) --- */
+.obs-glitch-node {
+    background-color: #111;
+    border: 2px solid transparent;
+    /* RGBノイズ風の枠線 */
+    background-image: linear-gradient(#111, #111), 
+                      linear-gradient(90deg, #ff0000, #00ff00, #0000ff);
+    background-origin: border-box;
+    background-clip: content-box, border-box;
+    box-shadow: 5px 0 0 rgba(255, 0, 0, 0.5), -5px 0 0 rgba(0, 255, 255, 0.5);
+}
+/* スキャンライン */
+.obs-glitch-node::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(255, 255, 255, 0.1) 3px
+    );
+}
+/* エラーテキスト */
+.obs-glitch-node::after {
+    content: 'ERR_::404';
+    position: absolute;
+    bottom: 5px; right: 5px;
+    color: red;
+    font-family: monospace;
+    font-size: 14px;
+    font-weight: bold;
+    letter-spacing: -1px;
+    background: #000;
+}
+
+/* --- Type 8: Void Monolith (ヴォイド・モノリス) --- */
+.obs-void-monolith {
+    background: linear-gradient(45deg, #000000, #1a0b2e);
+    border: 1px solid #7c4dff;
+    box-shadow: 0 0 20px rgba(124, 77, 255, 0.4);
+}
+/* 中央の怪しい光 */
+.obs-void-monolith::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 40%; height: 40%;
+    transform: translate(-50%, -50%) rotate(45deg);
+    background: #000;
+    border: 2px solid #d500f9;
+    box-shadow: 0 0 15px #d500f9;
+}
+/* 外側の装飾枠 */
+.obs-void-monolith::after {
+    content: '';
+    position: absolute;
+    top: 5px; left: 5px; right: 5px; bottom: 5px;
+    border: 1px solid rgba(124, 77, 255, 0.3);
+}
+
+
+/* =========================================
+   アニメーション定義 (ファイルの末尾などに追加)
+   ========================================= */
+@keyframes pulse-glow {
+    0% { box-shadow: 0 0 15px #00ff41, inset 0 0 20px rgba(0, 255, 65, 0.2); border-color: #00ff41; }
+    50% { box-shadow: 0 0 25px #00ff41, inset 0 0 40px rgba(0, 255, 65, 0.4); border-color: #5aff80; }
+    100% { box-shadow: 0 0 15px #00ff41, inset 0 0 20px rgba(0, 255, 65, 0.2); border-color: #00ff41; }
+}
+
+@keyframes bubbles-rise {
+    0% { background-position: 0% 100%; }
+    100% { background-position: 0% 0%; }
+}
+
+/* =========================================
+   既存アセットのアップグレード & 新規追加
+   ========================================= */
+
+/* --- Type 6: Bio Stasis Tank v2 (繊細なバイオ培養槽) --- */
+.obs-bio-tank {
+    background-color: #001a05;
+    border: 2px solid #00ff41;
+    border-radius: 16px;
+    position: absolute;
+    overflow: hidden;
+    animation: pulse-glow 3s infinite ease-in-out; /* 脈動アニメーション */
+}
+
+/* レイヤー1: 気泡（上昇アニメーション） */
+.obs-bio-tank::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 200%; /* 高さを2倍にしてスクロールさせる */
+    background-image: 
+        radial-gradient(rgba(0, 255, 65, 0.3) 1px, transparent 2px),
+        radial-gradient(rgba(0, 255, 65, 0.2) 2px, transparent 3px);
+    background-size: 20px 20px, 40px 40px;
+    background-position: 0 0, 10px 10px;
+    opacity: 0.6;
+    animation: bubbles-rise 10s linear infinite;
+    pointer-events: none;
+}
+
+/* レイヤー2: ガラスの光沢とハイライト */
+.obs-bio-tank::after {
+    content: 'SPECIMEN-09'; /* 実験体番号 */
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    
+    /* ガラスの反射 + 上部の濃い液体グラデーション */
+    background: 
+        linear-gradient(105deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 30%, transparent 30.5%),
+        linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.6) 100%);
+    
+    /* テキスト配置 */
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    padding-bottom: 10px;
+    
+    color: #00ff41;
+    font-size: 10px;
+    font-family: monospace;
+    letter-spacing: 1px;
+    text-shadow: 0 0 5px #00ff41;
+    pointer-events: none;
+}
+
+
+/* --- Type 9: Cyber Cargo (2077風イエローコンテナ) --- */
+.obs-cp-cargo {
+    /* 象徴的なイエローとカーボンブラック */
+    background-color: #111; 
+    border: none;
+    /* 擬似的なカーボンファイバーテクスチャ */
+    background-image: 
+        linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a),
+        linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a);
+    background-size: 10px 10px;
+    background-position: 0 0, 5px 5px;
+    
+    /* 外枠をイエローのborderではなくbox-shadowで表現（発光感） */
+    box-shadow: 
+        inset 0 0 0 4px #fcee0a, /* 内側の黄色い枠 */
+        0 0 10px rgba(0,0,0,0.8);
+}
+
+/* 左上の装飾タグ */
+.obs-cp-cargo::before {
+    content: 'ARASAKA'; /* または MILITECH, NC-CITY */
+    position: absolute;
+    top: 15px; left: -5px;
+    background: #fcee0a;
+    color: #000;
+    font-weight: 900;
+    font-size: 10px;
+    padding: 2px 8px;
+    font-family: sans-serif;
+    letter-spacing: 1px;
+    transform: skewX(-10deg); /* スピード感を出す斜体変形 */
+    box-shadow: 2px 2px 0px rgba(0,240,255,0.6); /* サイバーブルーの影 */
+}
+
+/* 右下のバーコード風装飾 */
+.obs-cp-cargo::after {
+    content: '';
+    position: absolute;
+    bottom: 10px; right: 10px;
+    width: 40px; height: 20px;
+    background: repeating-linear-gradient(
+        90deg,
+        #fcee0a,
+        #fcee0a 2px,
+        transparent 2px,
+        transparent 4px
+    );
+    border-top: 2px solid #00f0ff; /* サイバーブルーのライン */
+}
+
+/* =========================================
+   Anime / Toon Style Assets
+   ========================================= */
+
+/* --- Type 10: Anime Pop Crate (ポップなアニメ箱) --- */
+.obs-anime-pop {
+    background-color: #ff69b4; /* ホットピンク */
+    border: 3px solid #000;    /* アニメ風の太い主線 */
+    box-shadow: 5px 5px 0px #000; /* 影もベタ塗りの黒 */
+    border-radius: 8px;
+    overflow: hidden;
+}
+/* トゥーンハイライト（ぼかし無しの白い光沢） */
+.obs-anime-pop::before {
+    content: '';
+    position: absolute;
+    top: 5px; left: 5px; width: 30%; height: 15px;
+    background: #fff;
+    border-radius: 4px;
+    opacity: 0.9;
+}
+/* 装飾パターン（水玉） */
+.obs-anime-pop::after {
+    content: '★';
+    position: absolute;
+    bottom: -5px; right: 5px;
+    font-size: 40px;
+    color: rgba(255, 255, 255, 0.5);
+    transform: rotate(-15deg);
+}
+
+/* --- Type 11: Mecha Armor Plate (メカ装甲板) --- */
+.obs-mecha-plate {
+    background-color: #f0f0f0;
+    border: 3px solid #222;
+    /* パネルライン（継ぎ目）の表現 */
+    background-image: 
+        linear-gradient(90deg, transparent 49%, #222 50%, transparent 51%),
+        linear-gradient(180deg, transparent 20%, #222 21%, transparent 22%);
+    background-size: 100% 100%, 100% 100%;
+    box-shadow: inset 0 0 0 4px #fff; /* 内側のハイライト */
+}
+/* 警告マーキング */
+.obs-mecha-plate::before {
+    content: 'UNIT-01';
+    position: absolute;
+    bottom: 5px; left: 5px;
+    background: #ff3300;
+    color: #fff;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 6px;
+    border: 1px solid #000;
+    font-family: sans-serif;
+}
+/* ディテールアップ用のボルト */
+.obs-mecha-plate::after {
+    content: '';
+    position: absolute;
+    top: 5px; right: 5px;
+    width: 10px; height: 10px;
+    background: #ddd;
+    border: 2px solid #222;
+    border-radius: 50%;
+}
+
+/* --- Type 12: Speed Line Barrier (集中線バリア) --- */
+.obs-speed-barrier {
+    background-color: #00aaff;
+    border: 3px solid #000;
+    /* 漫画の集中線のようなストライプ */
+    background-image: repeating-linear-gradient(
+        -45deg,
+        #00aaff,
+        #00aaff 10px,
+        #0088cc 10px,
+        #0088cc 20px
+    );
+}
+/* コミック風の「BARRIER!」文字 */
+.obs-speed-barrier::after {
+    content: 'BLOCK!';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) rotate(-5deg);
+    font-family: sans-serif;
+    font-weight: 900;
+    font-size: 24px;
+    color: #fff;
+    -webkit-text-stroke: 1px #000; /* 文字の縁取り */
+    text-shadow: 3px 3px 0 #000; /* 文字の影 */
+    white-space: nowrap;
+}

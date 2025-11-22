@@ -1,0 +1,71 @@
+{
+  "mapName": "New Map",
+  "worldSize": {
+    "width": 3000,
+    "height": 3000
+  },
+  "obstacles": [
+    {
+      "type": "obstacle_wall",
+      "x": 1200,
+      "y": 990,
+      "width": 380,
+      "height": 380,
+      "borderRadius": 0,
+      "rotation": 0,
+      "individualRadii": {}
+    },
+    {
+      "type": "obstacle_wall",
+      "x": 1020,
+      "y": 610,
+      "width": 1590,
+      "height": 110,
+      "borderRadius": 0,
+      "rotation": 0,
+      "individualRadii": {}
+    },
+    {
+      "type": "obstacle_wall",
+      "x": 1860,
+      "y": 880,
+      "width": 100,
+      "height": 1800,
+      "borderRadius": 0,
+      "rotation": 0,
+      "individualRadii": {}
+    },
+    {
+      "type": "obstacle_wall",
+      "x": 270,
+      "y": 1620,
+      "width": 1350,
+      "height": 90,
+      "borderRadius": 0,
+      "rotation": 0,
+      "individualRadii": {}
+    },
+    {
+      "type": "obstacle_wall",
+      "x": 420,
+      "y": 280,
+      "width": 270,
+      "height": 1000,
+      "borderRadius": 0,
+      "rotation": 0,
+      "individualRadii": {}
+    },
+    {
+      "type": "obstacle_wall",
+      "x": 690,
+      "y": 2010,
+      "width": 460,
+      "height": 470,
+      "borderRadius": 0,
+      "rotation": 0,
+      "individualRadii": {}
+    }
+  ],
+  "playerSpawns": [],
+  "enemySpawns": []
+}

@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
+    <title>TradingShooter</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="https://trading-charge-shooter.web.app">
+  </head>
+  <body>
+    <video autoplay muted loop playsinline id="bg-video">
+        <source src="https://trading-charge-shooter.web.app/bg_video.mp4" type="video/mp4" />
+    </video>
+
+    <div id="screen-home" class="screen active">
+      <div class="screen-content">
+        <h1>TradingShooter</h1>
+
+        <div class="player-info-display">
+          <p>
+            Player:
+            <span
+              id="display-player-name"
+              style="color: #00ffff; font-weight: bold"
+              >Guest</span
+            >
+          </p>
+        </div>
+
+        <button id="btn-start-game" class="ui-button primary">Join Game</button>
+
+        <button id="btn-goto-ranking" class="ui-button">Leaderboard</button>
+
+        <button
+          id="btn-menu-transfer"
+          class="ui-button"
+          style="border-color: #aaa; color: #ccc"
+        >
+          データ引継ぎ / 発行
+        </button>
+
+        <button
+          id="btn-menu-register"
+          class="ui-button"
+          style="border-color: #ff9800; color: #ff9800"
+        >
+          プレイヤー登録
+        </button>
+      </div>
+    </div>
+
+    <div
+      id="modal-initial"
+      class="ui-modal hidden"
+      style="background-color: rgba(0, 0, 0, 0.95)"
+    >
+      <div class="modal-content" style="width: 400px; border-color: #00bcd4">
+        <h2 style="color: #00bcd4; margin-top: 0">Welcome</h2>
+
+        <div style="margin: 20px 0">
+          <input
+            type="text"
+            id="initial-name-input"
+            placeholder="プレイヤー名 (変更不可)"
+            maxlength="12"
+            style="
+              width: 100%;
+              padding: 10px;
+              font-size: 16px;
+              box-sizing: border-box;
+            "
+          />
+          <p style="color: #ff5252; font-size: 11px; margin-top: 5px">
+            ※一度設定した名前は変更できません。
+          </p>
+          <button
+            id="btn-initial-start"
+            class="ui-button"
+            style="width: 100%; margin-top: 10px"
+          >
+            決定
+          </button>
+        </div>
+        <button
+          id="btn-initial-guest"
+          class="ui-button"
+          style="width: 100%; margin-top: 15px"
+        >
+          ゲストプレイ
+        </button>
+
+        <div style="margin-top: 15px">
+          <button
+            id="btn-initial-goto-transfer"
+            class="ui-button small"
+            style="width: auto; font-size: 12px"
+          >
+            引継ぎコードをお持ちの方はこちら
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="modal-transfer" class="ui-modal hidden">
+      <div class="modal-content">
+        <h3>データ引継ぎ</h3>
+
+        <div class="account-section">
+          <h4>データを復旧する</h4>
+          <p style="font-size: 12px; color: #aaa">
+            以前発行したコードを入力してください。
+          </p>
+          <input
+            type="text"
+            id="recover-code-input"
+            placeholder="引継ぎコード"
+            style="margin-bottom: 10px"
+          />
+          <button id="btn-do-recover" class="ui-button small primary">
+            データを復旧
+          </button>
+        </div>
+
+        <div
+          class="account-section"
+          style="
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px dashed #555;
+          "
+        >
+          <h4>現在のデータを引き継ぐ</h4>
+          <p style="font-size: 11px; color: #aaa">
+            この端末のデータを他に移すためのコードを発行します。
+          </p>
+          <div id="transfer-code-display">------</div>
+          <button id="btn-issue-code" class="ui-button small">
+            コード発行
+          </button>
+        </div>
+
+        <button
+          id="btn-close-transfer"
+          class="ui-button"
+          style="margin-top: 20px"
+        >
+          戻る
+        </button>
+      </div>
+    </div>
+
+    <div id="modal-register" class="ui-modal hidden">
+      <div class="modal-content">
+        <h3 style="color: #ff9800">プレイヤー名登録</h3>
+        <p style="font-size: 12px">
+          ランキングに載る正式な名前を設定します。<br />設定後は変更できません。
+        </p>
+
+        <div style="margin: 20px 0">
+          <input
+            type="text"
+            id="reg-name-input"
+            placeholder="希望する名前 (英数字)"
+            maxlength="12"
+            style="width: 100%; padding: 10px"
+          />
+        </div>
+
+        <button id="btn-do-register" class="ui-button primary">決定</button>
+        <button
+          id="btn-close-register"
+          class="ui-button"
+          style="margin-top: 10px"
+        >
+          戻る
+        </button>
+      </div>
+    </div>
+
+    <div id="screen-loading" class="screen">
+      <div class="screen-content"><h2 id="loading-text">Loading...</h2></div>
+    </div>
+    <div id="screen-ranking" class="screen">
+      <div class="screen-content">
+        <div id="ranking-list" class="ranking-container"><p>Loading...</p></div>
+        <button id="btn-ranking-back" class="ui-button">戻る</button>
+      </div>
+    </div>
+    <div id="screen-game" class="screen">
+      <div id="game-container">
+        <div id="game-field-container">
+          <canvas id="game-field" tabindex="0"></canvas>
+
+          <canvas
+            id="ui-field"
+            style="position: absolute; top: 0; left: 0; pointer-events: none"
+          ></canvas>
+
+          <div id="obstacle-layer"></div>
+        </div>
+      </div>
+
+      <div id="hud-top-left" class="ui-panel">
+        <div class="stat-row">
+          <span class="stat-label">HP</span>
+          <div class="stat-bar-outer">
+            <div id="hp-bar-inner" class="stat-bar hp"></div>
+          </div>
+          <span id="hp-value" class="stat-value">100</span>
+        </div>
+
+        <div class="stat-row">
+          <span class="stat-label">EP</span>
+          <div class="stat-bar-outer" style="visibility: hidden"></div>
+          <span id="ep-value" class="stat-value ep-value">100</span>
+        </div>
+
+        <div class="stat-row">
+          <span class="stat-label">Size</span>
+          <div
+            class="stat-bar-outer"
+            style="background: transparent; border: none; padding: 0"
+          ></div>
+          <span id="size-value" class="stat-value">10</span>
+        </div>
+
+        <div class="stat-row">
+          <span class="stat-label" id="power-label">Power</span>
+          <div
+            class="stat-bar-outer"
+            style="background: transparent; border: none; padding: 0"
+          ></div>
+          <span id="power-value" class="stat-value">0</span>
+        </div>
+      </div>
+      <div id="debug-panel" class="ui-panel">
+        <h4>Stats</h4>
+        <div id="debug-stats-container"></div>
+        <hr />
+        <div id="debug-simulation-container"></div>
+      </div>
+      <div id="hud-leaderboard" class="ui-panel">
+        <ol id="leaderboard-list"></ol>
+      </div>
+      <button
+        id="btn-retire"
+        class="ui-button small"
+        style="
+          position: absolute;
+          top: 190px;
+          right: 20px;
+          background-color: rgba(244, 67, 54, 0.8);
+          color: white;
+          border: 1px solid #f44336;
+        "
+      >
+        Retire
+      </button>
+    </div>
+    <div id="screen-gameover" class="screen">
+      <div class="screen-content">
+        <h2>GAME OVER</h2>
+        <p>Score: <span id="gameover-score">0</span></p>
+        <p id="gameover-message">Saving...</p>
+        <button id="btn-gameover-retry" class="ui-button primary">Retry</button>
+        <button id="btn-gameover-home" class="ui-button">Home</button>
+      </div>
+    </div>
+    <div id="screen-error" class="screen">
+      <div class="screen-content">
+        <h2>Error</h2>
+        <p id="error-message"></p>
+        <button id="btn-error-home" class="ui-button">Home</button>
+      </div>
+    </div>
+    <div id="screen-idle-warning" class="screen">
+      <div class="screen-content">
+        <h2>Warning</h2>
+        <p>アイドル状態のため切断されます。</p>
+      </div>
+    </div>
+    <div id="screen-mobile-block" class="screen">
+      <div class="screen-content" style="border-color: #f44336">
+        <h2 style="color: #f44336">PC Only</h2>
+        <p>PCブラウザからアクセスしてください。</p>
+      </div>
+    </div>
+
+    <script
+      src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"
+      type="module"
+    ></script>
+    <script
+      src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js"
+      type="module"
+    ></script>
+    <script
+      src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js"
+      type="module"
+    ></script>
+    <script src="src/main.js" type="module"></script>
+  </body>
+</html>

@@ -1,0 +1,123 @@
+[
+  {
+    "id": "neon_crate",
+    "name": "Neon Crate",
+    "type": "obstacle_wall",
+    "width": 100,
+    "height": 100,
+    "borderRadius": 4,
+    "className": "obs-neon-crate",
+    "shape": "rect"
+  },
+  {
+    "id": "magma_wall",
+    "name": "Magma Wall",
+    "type": "obstacle_wall",
+    "width": 200,
+    "height": 50,
+    "borderRadius": 0,
+    "className": "obs-magma-wall",
+    "shape": "rect"
+  },
+  {
+    "id": "data_server",
+    "name": "Data Server",
+    "type": "obstacle_wall",
+    "width": 80,
+    "height": 120,
+    "borderRadius": 2,
+    "className": "obs-data-server",
+    "shape": "rect"
+  },
+  {
+    "id": "holo_barrier",
+    "name": "Holo Barrier",
+    "type": "obstacle_wall",
+    "width": 150,
+    "height": 150,
+    "borderRadius": 8,
+    "className": "obs-holo-barrier",
+    "shape": "rect"
+  },
+  {
+    "id": "reactor_core",
+    "name": "Reactor Core",
+    "type": "obstacle_wall",
+    "width": 120,
+    "height": 120,
+    "borderRadius": 60,
+    "className": "obs-reactor-core",
+    "shape": "circle",
+    "radius": 60
+  },
+  {
+    "id": "bio_tank",
+    "name": "Bio Tank v2",
+    "type": "obstacle_wall",
+    "width": 80,
+    "height": 140,
+    "borderRadius": 16,
+    "className": "obs-bio-tank",
+    "shape": "rect"
+  },
+  {
+    "id": "glitch_node",
+    "name": "Glitch Node",
+    "type": "obstacle_wall",
+    "width": 100,
+    "height": 100,
+    "borderRadius": 0,
+    "className": "obs-glitch-node",
+    "shape": "rect"
+  },
+  {
+    "id": "cp_cargo",
+    "name": "Night City Cargo",
+    "type": "obstacle_wall",
+    "width": 120,
+    "height": 80,
+    "borderRadius": 2,
+    "className": "obs-cp-cargo",
+    "shape": "rect"
+  },
+  {
+    "id": "void_monolith",
+    "name": "Void Monolith",
+    "type": "obstacle_wall",
+    "width": 60,
+    "height": 180,
+    "borderRadius": 0,
+    "className": "obs-void-monolith",
+    "shape": "rect"
+  },
+  {
+    "id": "anime_pop",
+    "name": "Anime Pop",
+    "type": "obstacle_wall",
+    "width": 100,
+    "height": 100,
+    "borderRadius": 8,
+    "className": "obs-anime-pop",
+    "shape": "rect"
+  },
+  {
+    "id": "mecha_plate",
+    "name": "Mecha Armor",
+    "type": "obstacle_wall",
+    "width": 120,
+    "height": 60,
+    "borderRadius": 0,
+    "className": "obs-mecha-plate",
+    "shape": "rect"
+  },
+  {
+    "id": "speed_barrier",
+    "name": "Manga Barrier",
+    "type": "obstacle_wall",
+    "width": 150,
+    "height": 80,
+    "borderRadius": 0,
+    "className": "obs-speed-barrier",
+    "shape": "rect"
+  }
+]

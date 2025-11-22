@@ -1,0 +1,302 @@
+import { EditorCore } from "./EditorCore.js";
+
+const engine = new EditorCore("editor-canvas", "dom-preview-layer");
+const presetList = document.getElementById("preset-list");
+const canvasWrapper = document.getElementById("canvas-wrapper");
+const ASSET_BASE_URL = "https://trading-charge-shooter.web.app";
+const PRESETS_URL = `${ASSET_BASE_URL}/data/presets.json`;
+
+async function initEditor() {
+  try {
+    const res = await fetch(PRESETS_URL);
+    if (!res.ok) throw new Error("プリセットの取得に失敗しました");
+
+    const presets = await res.json();
+    console.log("プリセット読み込み完了:", presets);
+
+    generatePresetButtons(presets);
+
+    setupDropZone();
+  } catch (err) {
+    console.error("初期化エラー:", err);
+    presetList.innerHTML = `<p style="color:red; font-size:12px;">通信エラー<br>${err.message}</p>`;
+  }
+}
+
+function generatePresetButtons(presets) {
+  presetList.innerHTML = "";
+
+  presets.forEach((preset) => {
+    const btn = document.createElement("div");
+    btn.className = "preset-item";
+    btn.draggable = true;
+    btn.innerHTML = `
+            <div class="preview-box ${preset.className}" style="width:40px; height:40px;"></div>
+            <span>${preset.name}</span>
+        `;
+
+    btn.addEventListener("dragstart", (e) => {
+      e.dataTransfer.setData("application/json", JSON.stringify(preset));
+      e.dataTransfer.effectAllowed = "copy";
+    });
+
+    presetList.appendChild(btn);
+  });
+}
+
+function setupDropZone() {
+  canvasWrapper.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  });
+
+  canvasWrapper.addEventListener("drop", (e) => {
+    e.preventDefault();
+    const jsonData = e.dataTransfer.getData("application/json");
+    if (!jsonData) return;
+
+    try {
+      const preset = JSON.parse(jsonData);
+      const rect = engine.canvas.getBoundingClientRect();
+      const worldPos = engine.screenToWorld(
+        e.clientX - rect.left,
+        e.clientY - rect.top
+      );
+      engine.addObjectFromPreset(
+        preset,
+        worldPos.x - preset.width / 2,
+        worldPos.y - preset.height / 2
+      );
+    } catch (err) {
+      console.error("Drop Error:", err);
+    }
+  });
+}
+
+const canvas = engine.canvas;
+
+canvas.addEventListener("mousedown", (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  if (e.button === 1 || e.ctrlKey) {
+    engine.input.isPanning = true;
+    engine.input.startX = e.clientX;
+    engine.input.startY = e.clientY;
+    return;
+  }
+
+  if (e.button === 0) {
+    const handle = engine.hitTestHandle(mx, my, engine.selectedObj);
+    if (handle) {
+      engine.input.isDragging = true;
+      engine.input.dragMode = `resize-${handle}`;
+      engine.input.startX = engine.screenToWorld(mx, my).x;
+      engine.input.startY = engine.screenToWorld(mx, my).y;
+      engine.input.initialObjState = { ...engine.selectedObj };
+      return;
+    }
+
+    const hitObj = engine.hitTestObject(mx, my);
+    if (hitObj) {
+      engine.selectObject(hitObj);
+      engine.input.isDragging = true;
+      engine.input.dragMode = "move";
+      engine.input.startX = engine.screenToWorld(mx, my).x;
+      engine.input.startY = engine.screenToWorld(mx, my).y;
+      engine.input.initialObjState = { ...hitObj };
+    } else {
+      engine.selectObject(null);
+    }
+  }
+});
+
+canvas.addEventListener("mousemove", (e) => {
+  if (engine.input.isPanning) {
+    const dx = (e.clientX - engine.input.startX) / engine.camera.zoom;
+    const dy = (e.clientY - engine.input.startY) / engine.camera.zoom;
+    engine.camera.x -= dx;
+    engine.camera.y -= dy;
+    engine.input.startX = e.clientX;
+    engine.input.startY = e.clientY;
+    return;
+  }
+
+  if (engine.input.isDragging && engine.selectedObj) {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const currentWorldPos = engine.screenToWorld(mx, my);
+
+    const dx = currentWorldPos.x - engine.input.startX;
+    const dy = currentWorldPos.y - engine.input.startY;
+
+    const obj = engine.selectedObj;
+    const init = engine.input.initialObjState;
+    const snap = (v) => Math.round(v / 10) * 10;
+
+    if (engine.input.dragMode === "move") {
+      obj.x = snap(init.x + dx);
+      obj.y = snap(init.y + dy);
+    } else if (engine.input.dragMode.startsWith("resize")) {
+      const mode = engine.input.dragMode.split("-")[1];
+      if (mode === "se") {
+        obj.w = Math.max(20, snap(init.w + dx));
+        obj.h = Math.max(20, snap(init.h + dy));
+      } else if (mode === "sw") {
+        const newW = Math.max(20, snap(init.w - dx));
+        obj.x = init.x + (init.w - newW);
+        obj.w = newW;
+        obj.h = Math.max(20, snap(init.h + dy));
+      } else if (mode === "ne") {
+        obj.w = Math.max(20, snap(init.w + dx));
+        const newH = Math.max(20, snap(init.h - dy));
+        obj.y = init.y + (init.h - newH);
+        obj.h = newH;
+      } else if (mode === "nw") {
+        const newW = Math.max(20, snap(init.w - dx));
+        const newH = Math.max(20, snap(init.h - dy));
+        obj.x = init.x + (init.w - newW);
+        obj.y = init.y + (init.h - newH);
+        obj.w = newW;
+        obj.h = newH;
+      }
+    }
+    updateUI();
+  }
+
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  const hoverHandle = engine.hitTestHandle(mx, my, engine.selectedObj);
+  if (hoverHandle) {
+    canvas.style.cursor = "pointer";
+  } else if (engine.hitTestObject(mx, my)) {
+    canvas.style.cursor = "move";
+  } else {
+    canvas.style.cursor = "default";
+  }
+});
+
+canvas.addEventListener("mouseup", () => {
+  engine.input.isDragging = false;
+  engine.input.isPanning = false;
+  engine.input.dragMode = null;
+});
+
+canvas.addEventListener(
+  "wheel",
+  (e) => {
+    const zoomSpeed = 0.001;
+    engine.camera.zoom = Math.max(
+      0.1,
+      Math.min(5.0, engine.camera.zoom - e.deltaY * zoomSpeed)
+    );
+  },
+  { passive: false }
+);
+
+const ui = {
+  panel: document.getElementById("property-panel"),
+  valType: document.getElementById("val-type"),
+  inpX: document.getElementById("prop-x"),
+  inpY: document.getElementById("prop-y"),
+  inpW: document.getElementById("prop-w"),
+  inpH: document.getElementById("prop-h"),
+  inpRot: document.getElementById("prop-rotation"),
+  btnDel: document.getElementById("btn-delete"),
+  inputs: [],
+};
+ui.inputs = [ui.inpX, ui.inpY, ui.inpW, ui.inpH, ui.inpRot, ui.btnDel];
+
+toggleInputs(false);
+
+window.addEventListener("selectionChanged", (e) => {
+  const obj = e.detail;
+  if (obj) {
+    toggleInputs(true);
+    updateUI();
+  } else {
+    toggleInputs(false);
+    clearUI();
+  }
+});
+
+function toggleInputs(enable) {
+  ui.inputs.forEach((el) => {
+    if (el) {
+      el.disabled = !enable;
+      el.style.opacity = enable ? "1" : "0.5";
+    }
+  });
+}
+
+function clearUI() {
+  if (ui.valType) ui.valType.textContent = "-";
+  if (ui.inpX) ui.inpX.value = "";
+  if (ui.inpY) ui.inpY.value = "";
+  if (ui.inpW) ui.inpW.value = "";
+  if (ui.inpH) ui.inpH.value = "";
+  if (ui.inpRot) ui.inpRot.value = "";
+}
+
+function updateUI() {
+  const obj = engine.selectedObj;
+  if (!obj) return;
+  if (ui.valType) ui.valType.textContent = obj.styleType;
+  if (ui.inpX) ui.inpX.value = obj.x;
+  if (ui.inpY) ui.inpY.value = obj.y;
+  if (ui.inpW) ui.inpW.value = obj.w;
+  if (ui.inpH) ui.inpH.value = obj.h;
+  if (ui.inpRot) ui.inpRot.value = obj.rotation;
+}
+
+["x", "y", "w", "h", "rotation"].forEach((key) => {
+  const el = document.getElementById(`prop-${key}`);
+  if (el) {
+    el.addEventListener("input", (e) => {
+      if (engine.selectedObj) {
+        engine.selectedObj[key] = parseFloat(e.target.value);
+      }
+    });
+  }
+});
+
+if (ui.btnDel)
+  ui.btnDel.addEventListener("click", () => engine.deleteSelected());
+
+document.getElementById("btn-export").addEventListener("click", () => {
+  const exportData = {
+    worldSize: { width: engine.WORLD_SIZE, height: engine.WORLD_SIZE },
+    obstacles: engine.objects.map((o) => ({
+      type: "obstacle_wall",
+      x: o.x,
+      y: o.y,
+      width: o.w,
+      height: o.h,
+      rotation: o.rotation,
+      borderRadius: o.borderRadius,
+      styleType: o.styleType,
+      className: o.className,
+    })),
+    playerSpawns: [{ x: 500, y: 500 }],
+    enemySpawns: [{ x: 1500, y: 1500 }],
+  };
+  const jsonStr = JSON.stringify(exportData, null, 2);
+  const blob = new Blob([jsonStr], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "map_design.json";
+  a.click();
+});
+
+window.addEventListener("keydown", (e) => {
+  if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+  if (e.key === "Delete" || e.key === "Backspace") {
+    engine.deleteSelected();
+  }
+});
+
+initEditor();
