@@ -5,18 +5,25 @@ import { getFirestore } from "firebase-admin/firestore";
 import { createServer } from "http";
 import { WebSocketServer } from "ws";
 import { ServerGame } from "./game-logic/ServerGame.js";
-
-// ▼▼▼ 【修正箇所】ここから追加 ▼▼▼
 import path from "path";
 import { fileURLToPath } from "url";
 
-// ES Modules で __dirname を使うための定型文
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-// ▲▲▲ ここまで追加 ▲▲▲
-
+const INPUT_BIT_MAP = {
+  move_up: 1 << 0,
+  move_down: 1 << 1,
+  move_left: 1 << 2,
+  move_right: 1 << 3,
+  shoot: 1 << 4,
+  trade: 1 << 5,
+  bet_up: 1 << 6,
+  bet_down: 1 << 7,
+  bet_all: 1 << 8,
+  bet_min: 1 << 9,
+};
 initializeApp({
-  projectId: "trading-charge-shooter" 
+  projectId: "trading-charge-shooter",
 });
 
 const firestore = getFirestore();
@@ -26,7 +33,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ▼これで path と __dirname が使えるようになります
 const staticPath = path.join(__dirname, "public");
 console.log("📁 Static files serving from:", staticPath);
 app.use(express.static(staticPath));
@@ -109,14 +115,57 @@ wss.on("connection", (ws, req) => {
 
   ws.on("message", (message) => {
     try {
+      const isBinary =
+        Buffer.isBuffer(message) || message instanceof ArrayBuffer;
+
+      if (isBinary) {
+        const buf = Buffer.isBuffer(message) ? message : Buffer.from(message);
+
+        if (buf.length >= 11) {
+          const msgType = buf.readUInt8(0);
+
+          if (msgType === 2 && game && userId) {
+            const mask = buf.readUInt16LE(1);
+
+            const mouseX = buf.readFloatLE(3);
+            const mouseY = buf.readFloatLE(7);
+
+            const reconstructedInput = {
+              states: {
+                move_up: !!(mask & 1),
+                move_down: !!(mask & 2),
+                move_left: !!(mask & 4),
+                move_right: !!(mask & 8),
+                bet_up: !!(mask & 64),
+                bet_down: !!(mask & 128),
+                bet_all: !!(mask & 256),
+                bet_min: !!(mask & 512),
+              },
+              wasPressed: {
+                shoot: !!(mask & 16),
+                trade: !!(mask & 32),
+              },
+              mouseWorldPos: {
+                x: mouseX,
+                y: mouseY,
+              },
+            };
+
+            game.handlePlayerInput(userId, reconstructedInput);
+            return;
+          }
+        }
+      }
+
       const data = JSON.parse(message.toString());
+
       if (data.type === "input" && game && userId) {
         game.handlePlayerInput(userId, data.payload);
       } else if (data.type === "pause" && game && userId) {
         game.pausePlayer(userId);
       } else if (data.type === "resume" && game && userId) {
         game.resumePlayer(userId);
-      }else if (data.type === "account_action" && game && userId) {
+      } else if (data.type === "account_action" && game && userId) {
         game.handleAccountAction(ws, data.payload, userId);
       }
     } catch (e) {
