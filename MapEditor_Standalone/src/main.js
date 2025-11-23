@@ -1,10 +1,11 @@
 import { EditorCore } from "./EditorCore.js";
-
+import { skinManager } from "./systems/SkinManager.js";
+import { ObstacleSkins } from "./skins/ObstacleSkins.js";
 const engine = new EditorCore("editor-canvas", "dom-preview-layer");
 const presetList = document.getElementById("preset-list");
 const canvasWrapper = document.getElementById("canvas-wrapper");
 const ASSET_BASE_URL = "https://trading-charge-shooter.web.app";
-const PRESETS_URL = `${ASSET_BASE_URL}/data/presets.json`;
+const PRESETS_URL = "/assets/data/presets.json";
 
 async function initEditor() {
   try {
@@ -30,10 +31,45 @@ function generatePresetButtons(presets) {
     const btn = document.createElement("div");
     btn.className = "preset-item";
     btn.draggable = true;
-    btn.innerHTML = `
-            <div class="preview-box ${preset.className}" style="width:40px; height:40px;"></div>
-            <span>${preset.name}</span>
-        `;
+
+    const previewContainer = document.createElement("div");
+    previewContainer.className = "preview-box";
+    previewContainer.style.width = "40px";
+    previewContainer.style.height = "40px";
+
+    let skinFunc = ObstacleSkins["default"];
+    
+    if (ObstacleSkins[preset.className]) {
+        skinFunc = ObstacleSkins[preset.className];
+    } else {
+        // まだスキンが未定義のクラス名の場合は、デフォルトを使う（エラーにしない）
+        console.warn(`Skin not found for class: ${preset.className}. Using default.`);
+        // 簡易的なデフォルト描画（色を変えるなどしても良い）
+        skinFunc = (ctx, w, h) => {
+            ctx.fillStyle = "#444"; 
+            ctx.fillRect(0, 0, w, h);
+            ctx.strokeStyle = "#888";
+            ctx.strokeRect(0, 0, w, h);
+            ctx.fillStyle = "white";
+            ctx.font = "10px Arial";
+            ctx.fillText("NoSkin", 2, 10);
+        };
+    }
+
+    const skinCanvas = skinManager.getSkin(
+      `preview_${preset.id}`,
+      40,
+      40,
+      skinFunc
+    );
+
+    previewContainer.appendChild(skinCanvas);
+
+    btn.appendChild(previewContainer);
+
+    const label = document.createElement("span");
+    label.textContent = preset.name;
+    btn.appendChild(label);
 
     btn.addEventListener("dragstart", (e) => {
       e.dataTransfer.setData("application/json", JSON.stringify(preset));

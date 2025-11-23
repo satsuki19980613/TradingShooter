@@ -1,9 +1,6 @@
-/* assets/css/obstacles.css */
-
-/* 共通の基底スタイル (これだけは必須です) */
+/* 共通の基底スタイル (配置に必須) */
 .obs-base {
     position: absolute;
     box-sizing: border-box;
-    /* サーバーの当たり判定と一致させるため、変形(transform)は使用せず、
-       内部の装飾で表現します */
+    /* 装飾はCanvasで行うため、ここには何も書かない */
 }

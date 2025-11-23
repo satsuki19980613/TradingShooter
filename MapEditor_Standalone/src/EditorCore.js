@@ -1,3 +1,6 @@
+import { skinManager } from "./systems/SkinManager.js";
+import { ObstacleSkins } from "./skins/ObstacleSkins.js";
+
 export class EditorCore {
   constructor(canvasId, domLayerId) {
     this.canvas = document.getElementById(canvasId);
@@ -79,38 +82,45 @@ export class EditorCore {
   }
 
   /**
-   * DOM要素の生成（コンポジット対応）
+   * DOM要素の生成（Canvas埋め込み版）
    */
   createObjectDOM(obj) {
     const container = document.createElement("div");
-
     container.style.position = "absolute";
+
+    const skinFunc = ObstacleSkins[obj.className] || ObstacleSkins["default"];
 
     if (obj.isComposite) {
       obj.colliders.forEach((c) => {
-        const child = document.createElement("div");
-
-        child.className = `obs-base ${obj.className}`;
+        const childContainer = document.createElement("div");
+        childContainer.style.position = "absolute";
 
         const left = obj.w / 2 + c.offsetX;
         const top = obj.h / 2 + c.offsetY;
 
-        child.style.left = `${left}px`;
-        child.style.top = `${top}px`;
-        child.style.width = `${c.w}px`;
-        child.style.height = `${c.h}px`;
+        childContainer.style.left = `${left}px`;
+        childContainer.style.top = `${top}px`;
+        childContainer.style.width = `${c.w}px`;
+        childContainer.style.height = `${c.h}px`;
 
-        if (c.borderRadius) {
-          child.style.borderRadius = `${c.borderRadius}px`;
-        }
+        const skin = skinManager.getSkin(
+          `editor_${obj.className}_${c.w}_${c.h}`,
+          c.w,
+          c.h,
+          skinFunc
+        );
+        childContainer.appendChild(skin);
 
-        container.appendChild(child);
+        container.appendChild(childContainer);
       });
     } else {
-      container.className = `obs-base ${obj.className}`;
-      if (obj.borderRadius) {
-        container.style.borderRadius = `${obj.borderRadius}px`;
-      }
+      const skin = skinManager.getSkin(
+        `editor_${obj.className}_${obj.w}_${obj.h}`,
+        obj.w,
+        obj.h,
+        skinFunc
+      );
+      container.appendChild(skin);
     }
 
     this.domLayer.appendChild(container);

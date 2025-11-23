@@ -105,7 +105,8 @@ export class ServerGame {
             "obstacle_wall",
             obsData.borderRadius || 0,
             obsData.individualRadii || {},
-            obsData.rotation || 0
+            obsData.rotation || 0,
+            obsData.className
           );
         }
         return null;

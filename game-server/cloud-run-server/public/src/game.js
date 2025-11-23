@@ -211,7 +211,16 @@ export class Game {
     this.drawBackground(ctx);
     ctx.save();
     ctx.translate(-this.cameraX, -this.cameraY);
-
+    this.obstacleEntities.forEach((obs) => {
+        if (
+            obs.x + obs.width > this.cameraX &&
+            obs.x < this.cameraX + this.gameCanvas.width &&
+            obs.y + obs.height > this.cameraY &&
+            obs.y < this.cameraY + this.gameCanvas.height
+        ) {
+            obs.draw(ctx);
+        }
+    });
     this.particles.forEach((p) => p.draw(ctx));
     this.bulletEntities.forEach((b) => b.draw(ctx));
     this.playerEntities.forEach((p) => p.draw(ctx));
