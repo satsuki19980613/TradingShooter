@@ -60,12 +60,10 @@ export class Bullet extends GameObject {
 
       ctx.save();
       ctx.translate(this.x, this.y);
-
       const time = Date.now();
       const bobOffset = Math.sin(time / 400) * 4;
       const rotation = time / 800;
       const pulse = 1 + Math.sin(time / 200) * 0.1;
-
       ctx.translate(0, bobOffset);
       ctx.save();
       ctx.scale(pulse, pulse);
@@ -93,12 +91,9 @@ export class Bullet extends GameObject {
       ctx.fillStyle = "#ffffff";
       ctx.shadowColor = "#00ffff";
       ctx.shadowBlur = 15;
-
       ctx.beginPath();
-
       ctx.ellipse(0, 0, 12, 4, 0, 0, Math.PI * 2);
       ctx.fill();
-
       ctx.globalAlpha = 0.6;
       ctx.fillStyle = "#00bcd4";
       ctx.beginPath();
@@ -114,7 +109,6 @@ export class Bullet extends GameObject {
       ctx.beginPath();
       ctx.arc(0, 0, 5, 0, Math.PI * 2);
       ctx.fill();
-
       ctx.strokeStyle = "#ff9800";
       ctx.lineWidth = 2;
       ctx.beginPath();

@@ -7,14 +7,12 @@ export class SkinManager {
    * スキン画像(Canvas)を取得または生成する
    */
   getSkin(key, width, height, drawFunction) {
-    // キャッシュキー作成
     const cacheKey = `${key}_${width}_${height}`;
 
     if (this.skinCache.has(cacheKey)) {
       return this.skinCache.get(cacheKey);
     }
 
-    // 新しいCanvasを作成して描画
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
@@ -23,7 +21,6 @@ export class SkinManager {
     if (drawFunction) {
       drawFunction(ctx, width, height);
     } else {
-      // フォールバック（ピンクの枠）
       ctx.strokeStyle = "#ff00ff";
       ctx.lineWidth = 2;
       ctx.strokeRect(0, 0, width, height);

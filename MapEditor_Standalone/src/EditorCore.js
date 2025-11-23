@@ -88,9 +88,7 @@ export class EditorCore {
     const container = document.createElement("div");
     container.className = `obs-base ${obj.className || ""}`;
     container.style.position = "absolute";
-
     const skinFunc = ObstacleSkins[obj.className] || ObstacleSkins["default"];
-
     const skinCanvas = skinManager.getSkin(
       `editor_${obj.className}_${obj.w}_${obj.h}`,
       obj.w,
@@ -99,10 +97,8 @@ export class EditorCore {
     );
 
     container.appendChild(skinCanvas);
-
     this.domLayer.appendChild(container);
     obj.domElement = container;
-
     this.updateObjectDOM(obj);
   }
 
@@ -113,22 +109,17 @@ export class EditorCore {
     const screenPos = this.worldToScreen(obj.x, obj.y);
     const screenW = obj.w * this.camera.zoom;
     const screenH = obj.h * this.camera.zoom;
-
     const left = screenPos.x - screenW / 2;
     const top = screenPos.y - screenH / 2;
-
     el.style.left = `${left}px`;
     el.style.top = `${top}px`;
-
     el.style.width = `${screenW}px`;
     el.style.height = `${screenH}px`;
-
     if (obj.isComposite) {
       Array.from(el.children).forEach((child, index) => {
         const c = obj.colliders[index];
         child.style.width = `${c.w * this.camera.zoom}px`;
         child.style.height = `${c.h * this.camera.zoom}px`;
-
         child.style.left = `${(obj.w / 2 + c.offsetX) * this.camera.zoom}px`;
         child.style.top = `${(obj.h / 2 + c.offsetY) * this.camera.zoom}px`;
       });
@@ -137,7 +128,6 @@ export class EditorCore {
     el.style.transform = `rotate(${obj.rotation}deg)`;
     el.style.transformOrigin = "50% 50%";
     el.style.outline = "none";
-
     if (this.selectedObj === obj) {
       el.style.outline = "1px dashed #00ffff";
     }
@@ -152,7 +142,6 @@ export class EditorCore {
     }
 
     this.resize();
-
     this.fitCameraToWorld();
     this.startLoop();
   }
@@ -166,17 +155,13 @@ export class EditorCore {
 
     const zoomX = availableW / this.WORLD_SIZE;
     const zoomY = availableH / this.WORLD_SIZE;
-
     let newZoom = Math.min(zoomX, zoomY);
     newZoom = Math.max(newZoom, 0.05);
-
     this.camera.zoom = newZoom;
-
     const worldCx = this.WORLD_SIZE / 2;
     const worldCy = this.WORLD_SIZE / 2;
     const screenCx = this.canvas.width / 2;
     const screenCy = this.canvas.height / 2;
-
     this.camera.x = worldCx - screenCx / newZoom;
     this.camera.y = worldCy - screenCy / newZoom;
 
@@ -234,7 +219,6 @@ export class EditorCore {
 
   deleteSelected() {
     if (!this.selectedObj) return;
-
     if (this.selectedObj.domElement) {
       this.selectedObj.domElement.remove();
     }
@@ -333,19 +317,15 @@ export class EditorCore {
     const screenPos = this.worldToScreen(obj.x, obj.y);
     const sw = obj.w * this.camera.zoom;
     const sh = obj.h * this.camera.zoom;
-
     const cx = screenPos.x + sw / 2;
     const cy = screenPos.y + sh / 2;
     ctx.translate(cx, cy);
     ctx.rotate((obj.rotation * Math.PI) / 180);
-
     const localLeft = -sw / 2;
     const localTop = -sh / 2;
-
     ctx.strokeStyle = "#00ffff";
     ctx.lineWidth = 2;
     ctx.strokeRect(localLeft, localTop, sw, sh);
-
     ctx.fillStyle = "#00ff00";
     const handleSize = 8;
 
@@ -383,20 +363,15 @@ export class EditorCore {
     const sw = obj.w * this.camera.zoom;
     const sh = obj.h * this.camera.zoom;
     const hitSize = 16;
-
     const cx = screenPos.x + sw / 2;
     const cy = screenPos.y + sh / 2;
     const rad = -(obj.rotation * Math.PI) / 180;
-
     const dx = sx - cx;
     const dy = sy - cy;
-
     const lx = dx * Math.cos(rad) - dy * Math.sin(rad);
     const ly = dx * Math.sin(rad) + dy * Math.cos(rad);
-
     const halfW = sw / 2;
     const halfH = sh / 2;
-
     const corners = {
       nw: { x: -halfW, y: -halfH },
       ne: { x: halfW, y: -halfH },

@@ -1,16 +1,13 @@
-// public/src/systems/FirebaseManager.js
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-// ▼▼▼ 修正箇所: インポートを1つにまとめました ▼▼▼
 import {
   getAuth,
   signInAnonymously,
   updateProfile,
   onAuthStateChanged,
   signInWithCustomToken,
-  signOut, // ここに signOut を含めます
+  signOut, 
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-// ▲▲▲ 修正箇所終わり ▲▲▲
 
 import {
   getFirestore,

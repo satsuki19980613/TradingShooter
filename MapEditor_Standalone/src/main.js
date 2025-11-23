@@ -42,9 +42,7 @@ function generatePresetButtons(presets) {
     if (ObstacleSkins[preset.className]) {
         skinFunc = ObstacleSkins[preset.className];
     } else {
-        // まだスキンが未定義のクラス名の場合は、デフォルトを使う（エラーにしない）
         console.warn(`Skin not found for class: ${preset.className}. Using default.`);
-        // 簡易的なデフォルト描画（色を変えるなどしても良い）
         skinFunc = (ctx, w, h) => {
             ctx.fillStyle = "#444"; 
             ctx.fillRect(0, 0, w, h);

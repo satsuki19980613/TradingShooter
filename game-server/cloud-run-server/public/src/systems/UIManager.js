@@ -55,11 +55,6 @@ export class UIManager {
   }
 
   initShell(game, inputManager, firebaseManager, networkManager) {
-    // if (this.isMobileDevice()) {
-    //   this.showScreen("mobileBlock");
-    //   return;
-    // }
-
     const urlParams = new URLSearchParams(window.location.search);
     this.isDebugMode = urlParams.get("debug") === "true";
     if (this.isDebugMode) this.debugPanelEl.classList.add("active");
