@@ -5,7 +5,7 @@ const engine = new EditorCore("editor-canvas", "dom-preview-layer");
 const presetList = document.getElementById("preset-list");
 const canvasWrapper = document.getElementById("canvas-wrapper");
 const ASSET_BASE_URL = "https://trading-charge-shooter.web.app";
-const PRESETS_URL = "/assets/data/presets.json";
+const PRESETS_URL = "https://trading-charge-shooter.web.app/data/presets.json";
 
 async function initEditor() {
   try {

@@ -86,45 +86,23 @@ export class EditorCore {
    */
   createObjectDOM(obj) {
     const container = document.createElement("div");
+    container.className = `obs-base ${obj.className || ""}`;
     container.style.position = "absolute";
 
     const skinFunc = ObstacleSkins[obj.className] || ObstacleSkins["default"];
 
-    if (obj.isComposite) {
-      obj.colliders.forEach((c) => {
-        const childContainer = document.createElement("div");
-        childContainer.style.position = "absolute";
+    const skinCanvas = skinManager.getSkin(
+      `editor_${obj.className}_${obj.w}_${obj.h}`,
+      obj.w,
+      obj.h,
+      skinFunc
+    );
 
-        const left = obj.w / 2 + c.offsetX;
-        const top = obj.h / 2 + c.offsetY;
-
-        childContainer.style.left = `${left}px`;
-        childContainer.style.top = `${top}px`;
-        childContainer.style.width = `${c.w}px`;
-        childContainer.style.height = `${c.h}px`;
-
-        const skin = skinManager.getSkin(
-          `editor_${obj.className}_${c.w}_${c.h}`,
-          c.w,
-          c.h,
-          skinFunc
-        );
-        childContainer.appendChild(skin);
-
-        container.appendChild(childContainer);
-      });
-    } else {
-      const skin = skinManager.getSkin(
-        `editor_${obj.className}_${obj.w}_${obj.h}`,
-        obj.w,
-        obj.h,
-        skinFunc
-      );
-      container.appendChild(skin);
-    }
+    container.appendChild(skinCanvas);
 
     this.domLayer.appendChild(container);
     obj.domElement = container;
+
     this.updateObjectDOM(obj);
   }
 
@@ -236,14 +214,7 @@ export class EditorCore {
     this.createObjectDOM(obj);
     this.selectObject(obj);
   }
-
-  createObjectDOM(obj) {
-    const el = document.createElement("div");
-    el.className = `obs-base ${obj.className}`;
-    this.domLayer.appendChild(el);
-    obj.domElement = el;
-    this.updateObjectDOM(obj);
-  }
+  
 
   updateObjectDOM(obj) {
     if (!obj.domElement) return;

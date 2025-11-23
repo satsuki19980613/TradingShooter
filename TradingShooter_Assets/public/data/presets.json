@@ -1,33 +1,10 @@
 [{
-  "id": "obs_glitch_artifact_001",
-  "name": "Corrupted Data Cluster",
-  "type": "complex_obstacle",
-  "className": "obs-glitch-node",
-  "width": 120,
-  "height": 120,
-  "colliders": [
-    { "x": 10, "y": 10, "w": 40, "h": 90, "borderRadius": 0 },
-    { "x": 55, "y": 20, "w": 50, "h": 30, "borderRadius": 0 },
-    { "x": 60, "y": 60, "w": 30, "h": 30, "borderRadius": 0 },
-    { "x": 0, "y": 40, "w": 10, "h": 10, "borderRadius": 0 },
-    { "x": 95, "y": 80, "w": 15, "h": 15, "borderRadius": 0 }
-  ]
-},
-{
-  "id": "obs_ruined_server_01",
-  "name": "Ruined Server Cluster Alpha",
-  "type": "complex_obstacle",
-  "className": "obstacle-ruined-server",
-  "width": 220,
-  "height": 180,
-  "colliders": [
-    { "note": "メインラック（倒れずに残っている本体）", "x": 20, "y": 20, "w": 60, "h": 140, "borderRadius": 4 },
-    { "note": "倒壊したラック（横倒しになった部分）", "x": 70, "y": 100, "w": 110, "h": 50, "borderRadius": 2 },
-    { "note": "歪んだ背面パネル（鋭利な出っ張り）", "x": 10, "y": 40, "w": 15, "h": 80, "borderRadius": 0 },
-    { "note": "内部フレーム（連結部の補強材）", "x": 60, "y": 60, "w": 30, "h": 50, "borderRadius": 0 },
-    { "note": "飛び散ったサーバーブレード（小さな遮蔽物）", "x": 190, "y": 130, "w": 30, "h": 15, "borderRadius": 1 },
-    { "note": "垂れ下がった配線ダクト（上部の不規則な突起）", "x": 40, "y": 5, "w": 40, "h": 20, "borderRadius": 5 },
-    { "note": "破壊された冷却ユニット（角のアクセント）", "x": 160, "y": 90, "w": 30, "h": 30, "borderRadius": 2 }
-  ]
+  "id": "neon_crate_01",
+  "name": "Neon Crate",
+  "type": "obstacle_wall",
+  "className": "obs-neon-crate",
+  "width": 100,
+  "height": 100,
+  "borderRadius": 0
 }
 ]
