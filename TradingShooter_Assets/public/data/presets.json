@@ -6,5 +6,23 @@
   "width": 100,
   "height": 100,
   "borderRadius": 0
+},
+{
+    "id": "obs-power-plant",
+    "name": "Power Plant",
+    "type": "obstacle_wall",
+    "className": "obs-power-plant",
+    "width": 200,
+    "height": 200,
+    "borderRadius": 10
+  },
+  {
+  "id": "obs-plasma-gen",
+  "name": "Plasma Gen",
+  "type": "obstacle_wall",
+  "className": "obs-plasma-gen",
+  "width": 180,
+  "height": 180,
+  "borderRadius": 90
 }
 ]

@@ -1,14 +1,11 @@
 import { NeonCrateSkin } from "./obstacles/NeonCrate.js";
 import { PowerPlantSkin } from "./obstacles/PowerPlant.js";
-import { PlasmaGeneratorSkin } from "./obstacles/PlasmaGenerator.js";
 // import { MagmaWallSkin } from "./obstacles/MagmaWall.js"; // 今後追加
 
 export const ObstacleSkins = {
   // ID と スキン関数の紐付け
   // ここで color を指定してバリエーションを作ることも可能
   "obs-neon-crate": NeonCrateSkin("#00e5ff"),
-  "obs-power-plant": PowerPlantSkin("#00e5ff"),
-  "obs-plasma-gen": PlasmaGeneratorSkin(),
   // デフォルト（未定義の場合用）
   "default": (ctx, w, h) => {
       ctx.fillStyle = "#333";
