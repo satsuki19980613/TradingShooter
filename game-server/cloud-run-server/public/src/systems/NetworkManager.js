@@ -228,7 +228,8 @@ export class NetworkManager {
         offset += 4;
         const isDeadVal = view.getUint8(offset);
         offset += 1;
-
+        const epVal = view.getUint16(offset, true);
+        offset += 2;
         const betAmount = view.getUint16(offset, true);
         offset += 2;
 
@@ -258,7 +259,7 @@ export class NetworkManager {
           h: hp,
           a: angle,
           d: isDeadVal,
-
+          e: epVal,
           ba: betAmount,
           cp: chargePos,
           sb: stockedBullets,
@@ -309,7 +310,7 @@ export class NetworkManager {
         let type = "player";
         if (typeId === 1) type = "enemy";
         else if (typeId === 2) type = "player_special";
-
+        else if (typeId === 3) type = "item_ep";
         delta.updated.bullets.push({
           i: id,
           x: x,

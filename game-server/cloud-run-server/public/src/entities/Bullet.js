@@ -1,4 +1,6 @@
 import { GameObject } from "./GameObject.js";
+import { skinManager } from "../systems/SkinManager.js";
+import { BulletSkins } from "../skins/BulletSkins.js";
 
 /**
  * 弾クラス (SFエネルギー弾 ver)
@@ -18,7 +20,7 @@ export class Bullet extends GameObject {
   }
 
   setState(state) {
-    this.id = state.i; // i: id
+    this.id = state.i;
 
     if (!this.isInitialized) {
       this.x = state.x;
@@ -27,11 +29,60 @@ export class Bullet extends GameObject {
     }
     this.targetX = state.x;
     this.targetY = state.y;
-    this.angle = state.a; // a: angle
-    this.type = state.t;  // t: type
+    this.angle = state.a;
+    this.type = state.t;
   }
 
   draw(ctx) {
+    if (this.type === "item_ep") {
+      const baseSize = 64;
+      const crystalSize = 48;
+      const ringSize = 48;
+
+      const baseSkin = skinManager.getSkin(
+        "item_ep_base",
+        baseSize,
+        baseSize,
+        BulletSkins.item_ep_base()
+      );
+      const crystalSkin = skinManager.getSkin(
+        "item_ep_crystal",
+        crystalSize,
+        crystalSize,
+        BulletSkins.item_ep_crystal()
+      );
+      const ringSkin = skinManager.getSkin(
+        "item_ep_ring",
+        ringSize,
+        ringSize,
+        BulletSkins.item_ep_ring()
+      );
+
+      ctx.save();
+      ctx.translate(this.x, this.y);
+
+      const time = Date.now();
+      const bobOffset = Math.sin(time / 400) * 4;
+      const rotation = time / 800;
+      const pulse = 1 + Math.sin(time / 200) * 0.1;
+
+      ctx.translate(0, bobOffset);
+      ctx.save();
+      ctx.scale(pulse, pulse);
+      ctx.drawImage(baseSkin, -baseSize / 2, -baseSize / 2);
+      ctx.restore();
+      ctx.save();
+      ctx.rotate(rotation);
+      ctx.scale(pulse, pulse);
+      ctx.drawImage(crystalSkin, -crystalSize / 2, -crystalSize / 2);
+      ctx.restore();
+      ctx.save();
+      ctx.rotate(-rotation * 1.5);
+      ctx.drawImage(ringSkin, -ringSize / 2, -ringSize / 2);
+      ctx.restore();
+      ctx.restore();
+      return;
+    }
     const isEnemy = this.type === "enemy";
 
     ctx.save();

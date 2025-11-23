@@ -99,7 +99,7 @@ export class ServerEnemy extends ServerGameObject {
         const epBonus = type === "player_special" ? 100 : 25;
 
         attackerPlayer.ep += epBonus;
-
+        attackerPlayer.hp = Math.min(100, attackerPlayer.hp + 20);
         attackerPlayer.isDirty = true;
       }
 

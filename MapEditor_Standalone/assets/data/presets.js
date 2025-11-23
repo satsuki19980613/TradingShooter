@@ -113,14 +113,34 @@ export const OBSTACLE_PRESETS = [
         className: "obs-mecha-plate",
         shape: "rect"
     },
+ 
     {
-        id: "speed_barrier",
-        name: "Manga Barrier",
-        type: "obstacle_wall",
-        width: 150,
-        height: 80,
-        borderRadius: 0,
-        className: "obs-speed-barrier",
-        shape: "rect"
-    }
+    id: "complex_fort_01",
+    name: "Fortress Wall",
+    type: "complex_obstacle", // 識別用
+    // width, height は自動計算されるので不要（または目安として記述）
+    className: "obs-mecha-plate", // 全体に適用する見た目
+    colliders: [
+      // メインの壁 (横長)
+      { x: 0, y: 20, w: 200, h: 40, borderRadius: 4 },
+      // 左の柱
+      { x: 0, y: 0, w: 40, h: 80, borderRadius: 2 },
+      // 右の柱
+      { x: 160, y: 0, w: 40, h: 80, borderRadius: 2 },
+      // 中央の出っ張り
+      { x: 80, y: 60, w: 40, h: 20, borderRadius: 0 }
+    ]
+  },
+  {
+    id: "complex_cross",
+    name: "Cross Barrier",
+    type: "complex_obstacle",
+    className: "obs-neon-crate",
+    colliders: [
+      // 十字型
+      { x: 50, y: 0, w: 50, h: 150 },
+      { x: 0, y: 50, w: 150, h: 50 }
+    ]
+  }
 ];
+

@@ -13,6 +13,7 @@ import { WebSocket } from "ws";
 import { ServerConfig, GameConstants } from "./ServerConfig.js";
 import { ServerAccountManager } from "./ServerAccountManager.js";
 import { ServerNetworkSystem } from "./ServerNetworkSystem.js";
+import { ServerPhysicsSystem } from "./ServerPhysicsSystem.js";
 
 const IDLE_WARNING_TIME = 180000;
 const IDLE_TIMEOUT_TIME = 300000;
@@ -48,6 +49,10 @@ export class ServerGame {
       GRID_CELL_SIZE
     );
     this.networkSystem = new ServerNetworkSystem(this);
+    this.physicsSystem = new ServerPhysicsSystem(
+      this.WORLD_WIDTH,
+      this.WORLD_HEIGHT
+    );
     this.gameLoopInterval = null;
     this.chartLoopInterval = null;
     this.broadcastLoopInterval = null;
@@ -277,98 +282,42 @@ export class ServerGame {
     this.players.forEach((p) => this.grid.insert(p));
     this.enemies.forEach((e) => this.grid.insert(e));
     this.bullets.forEach((b) => this.grid.insert(b));
-    this.handleObstacleCollisions();
-    this.checkCollisions();
+    this.maintainEpItems();
+    this.physicsSystem.applyZoneEffects(this);
+    this.physicsSystem.handleObstacleCollisions(this);
+    this.physicsSystem.checkCollisions(this);
+
     if (this.debugPlayerCount > 0) {
       const endTime = process.hrtime.bigint();
       this.tickTimes.push(Number(endTime - startTime));
     }
   }
+  maintainEpItems() {
+    const epItems = this.bullets.filter((b) => b.type === "item_ep");
 
-  handleObstacleCollisions() {
-    const checkedPairs = new Set();
+    const targetCount = 10;
+    const minCount = 5;
 
-    this.players.forEach((player1) => {
-      if (player1.isDead) return;
+    if (epItems.length < minCount) {
+      const spawnCount = targetCount - epItems.length;
+      for (let i = 0; i < spawnCount; i++) {
+        if (Math.random() < 0.1) {
+          const pos = this.findRandomValidPosition(15);
 
-      const nearbyEntities = this.grid.getNearbyEntities(player1);
-      for (const entity of nearbyEntities) {
-        if (entity instanceof ServerObstacle) {
-          entity.collideWith(player1);
-          continue;
-        }
-        if (entity instanceof ServerPlayer) {
-          const player2 = entity;
-
-          if (player2.isDead || player1.id === player2.id) continue;
-
-          const pairKey =
-            player1.id < player2.id
-              ? `${player1.id}:${player2.id}`
-              : `${player2.id}:${player1.id}`;
-
-          if (checkedPairs.has(pairKey)) continue;
-          checkedPairs.add(pairKey);
-
-          const dist = getDistance(player1.x, player1.y, player2.x, player2.y);
-          const totalRadius = player1.radius + player2.radius;
-          const overlap = totalRadius - dist;
-
-          if (overlap > 0) {
-            const dx = player1.x - player2.x;
-            const dy = player1.y - player2.y;
-
-            let pushX = 0;
-            let pushY = 0;
-            if (dist === 0) {
-              pushX = 0.1;
-              pushY = 0;
-            } else {
-              pushX = dx / dist;
-              pushY = dy / dist;
-            }
-
-            const pushAmount = overlap / 2;
-
-            player1.x += pushX * pushAmount;
-            player1.y += pushY * pushAmount;
-
-            player2.x -= pushX * pushAmount;
-            player2.y -= pushY * pushAmount;
-
-            player1.x = Math.max(
-              player1.radius,
-              Math.min(this.WORLD_WIDTH - player1.radius, player1.x)
-            );
-            player1.y = Math.max(
-              player1.radius,
-              Math.min(this.WORLD_HEIGHT - player1.radius, player1.y)
-            );
-            player2.x = Math.max(
-              player2.radius,
-              Math.min(this.WORLD_WIDTH - player2.radius, player2.x)
-            );
-            player2.y = Math.max(
-              player2.radius,
-              Math.min(this.WORLD_HEIGHT - player2.radius, player2.y)
-            );
-
-            player1.isDirty = true;
-            player2.isDirty = true;
-          }
+          const item = new ServerBullet(
+            pos.x,
+            pos.y,
+            15,
+            0,
+            0,
+            "item_ep",
+            0,
+            null
+          );
+          this.addBullet(item);
         }
       }
-    });
-
-    this.enemies.forEach((enemy) => {
-      const nearbyEntities = this.grid.getNearbyEntities(enemy);
-      for (const entity of nearbyEntities) {
-        if (!(entity instanceof ServerObstacle)) {
-          continue;
-        }
-        entity.collideWith(enemy);
-      }
-    });
+    }
   }
 
   updateChart() {
@@ -516,6 +465,8 @@ export class ServerGame {
 
     if (inputActions.wasPressed) {
       for (const action in inputActions.wasPressed) {
+        if (!inputActions.wasPressed[action]) continue;
+
         if (action === "shoot") {
           player.shoot(player.mouseWorldPos.x, player.mouseWorldPos.y, this);
         }
@@ -564,6 +515,7 @@ export class ServerGame {
         `${attackerPlayer.name} が ${player.name} のEP ${stolenEP} を強奪`
       );
       attackerPlayer.ep += stolenEP;
+      attackerPlayer.hp = Math.min(100, attackerPlayer.hp + 20);
       attackerPlayer.isDirty = true;
     }
     player.ep = 0;
@@ -616,97 +568,6 @@ export class ServerGame {
         "[ServerGame] Firestore へのスコア保存 (トランザクション) に失敗:",
         error
       );
-    }
-  }
-
-  checkCollisions() {
-    for (let i = this.bullets.length - 1; i >= 0; i--) {
-      const bullet = this.bullets[i];
-      let bulletRemoved = false;
-
-      for (const obstacle of this.obstacles) {
-        if (obstacle.checkCollisionWithCircle(bullet)) {
-          this.removeBullet(bullet, i);
-          bulletRemoved = true;
-
-          break;
-        }
-      }
-      if (bulletRemoved) continue;
-
-      const nearbyEntities = this.grid.getNearbyEntities(bullet);
-
-      for (const entity of nearbyEntities) {
-        if (
-          entity instanceof ServerBullet ||
-          entity instanceof ServerObstacle
-        ) {
-          continue;
-        }
-
-        if (
-          getDistance(bullet.x, bullet.y, entity.x, entity.y) <
-          bullet.radius + entity.radius
-        ) {
-          if (
-            (bullet.type === "player" || bullet.type === "player_special") &&
-            entity instanceof ServerEnemy
-          ) {
-            const attackerPlayer = this.players.get(bullet.ownerId);
-            entity.takeDamage(bullet.damage, bullet.type, this, attackerPlayer);
-
-            this.frameEvents.push({
-              type: "hit",
-              x: bullet.x,
-              y: bullet.y,
-              color: "#ff9800",
-            });
-
-            this.removeBullet(bullet, i);
-            bulletRemoved = true;
-            break;
-          }
-
-          if (bullet.type === "enemy" && entity instanceof ServerPlayer) {
-            if (entity.isDead) continue;
-            entity.takeDamage(bullet.damage, this, null);
-
-            this.frameEvents.push({
-              type: "hit",
-              x: bullet.x,
-              y: bullet.y,
-              color: "#f44336",
-            });
-
-            this.removeBullet(bullet, i);
-            bulletRemoved = true;
-            break;
-          }
-
-          if (
-            (bullet.type === "player" || bullet.type === "player_special") &&
-            entity instanceof ServerPlayer
-          ) {
-            if (entity.id === bullet.ownerId || entity.isDead) {
-              continue;
-            }
-
-            const attackerPlayer = this.players.get(bullet.ownerId);
-            entity.takeDamage(bullet.damage, this, attackerPlayer);
-
-            this.frameEvents.push({
-              type: "hit",
-              x: bullet.x,
-              y: bullet.y,
-              color: "#00ffff",
-            });
-
-            this.removeBullet(bullet, i);
-            bulletRemoved = true;
-            break;
-          }
-        }
-      }
     }
   }
 
@@ -769,30 +630,6 @@ export class ServerGame {
       leaderboard,
       serverStatsPayload
     );
-  }
-
-  applyZoneEffects() {
-    const slowZones = this.obstacles.filter(
-      (obs) => obs instanceof ServerSlowZone
-    );
-    if (slowZones.length === 0) return;
-
-    this.players.forEach((player) => {
-      if (player.isDead) return;
-
-      let isInSlowZone = false;
-      for (const zone of slowZones) {
-        if (zone.checkCollisionWithCircle(player)) {
-          isInSlowZone = true;
-          break;
-        }
-      }
-
-      if (isInSlowZone) {
-        player.speed = player.defaultSpeed * 0.5;
-        player.isDirty = true;
-      }
-    });
   }
 
   /**

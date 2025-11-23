@@ -1,4 +1,3 @@
-
 export class EditorCore {
   constructor(canvasId, domLayerId) {
     this.canvas = document.getElementById(canvasId);
@@ -22,6 +21,138 @@ export class EditorCore {
     };
 
     this.init();
+  }
+  addObjectFromPreset(preset, x, y) {
+    const snapX = Math.floor(x / 25) * 25;
+    const snapY = Math.floor(y / 25) * 25;
+
+    const obj = {
+      id: this.nextId++,
+      type: preset.type || "obstacle_wall",
+      x: snapX,
+      y: snapY,
+      rotation: 0,
+      styleType: preset.id,
+      className: preset.className || "",
+      domElement: null,
+
+      isComposite: !!preset.colliders,
+      colliders: [],
+    };
+
+    if (obj.isComposite) {
+      let minX = Infinity,
+        minY = Infinity;
+      let maxX = -Infinity,
+        maxY = -Infinity;
+
+      const rawColliders = JSON.parse(JSON.stringify(preset.colliders));
+
+      rawColliders.forEach((c) => {
+        if (c.x < minX) minX = c.x;
+        if (c.y < minY) minY = c.y;
+        if (c.x + c.w > maxX) maxX = c.x + c.w;
+        if (c.y + c.h > maxY) maxY = c.y + c.h;
+      });
+
+      obj.w = maxX - minX;
+      obj.h = maxY - minY;
+
+      const centerX = minX + obj.w / 2;
+      const centerY = minY + obj.h / 2;
+
+      obj.colliders = rawColliders.map((c) => ({
+        ...c,
+
+        offsetX: c.x - centerX,
+        offsetY: c.y - centerY,
+      }));
+    } else {
+      obj.w = preset.width;
+      obj.h = preset.height;
+      obj.borderRadius = preset.borderRadius || 0;
+    }
+
+    this.objects.push(obj);
+    this.createObjectDOM(obj);
+    this.selectObject(obj);
+  }
+
+  /**
+   * DOM要素の生成（コンポジット対応）
+   */
+  createObjectDOM(obj) {
+    const container = document.createElement("div");
+
+    container.style.position = "absolute";
+
+    if (obj.isComposite) {
+      obj.colliders.forEach((c) => {
+        const child = document.createElement("div");
+
+        child.className = `obs-base ${obj.className}`;
+
+        const left = obj.w / 2 + c.offsetX;
+        const top = obj.h / 2 + c.offsetY;
+
+        child.style.left = `${left}px`;
+        child.style.top = `${top}px`;
+        child.style.width = `${c.w}px`;
+        child.style.height = `${c.h}px`;
+
+        if (c.borderRadius) {
+          child.style.borderRadius = `${c.borderRadius}px`;
+        }
+
+        container.appendChild(child);
+      });
+    } else {
+      container.className = `obs-base ${obj.className}`;
+      if (obj.borderRadius) {
+        container.style.borderRadius = `${obj.borderRadius}px`;
+      }
+    }
+
+    this.domLayer.appendChild(container);
+    obj.domElement = container;
+    this.updateObjectDOM(obj);
+  }
+
+  updateObjectDOM(obj) {
+    if (!obj.domElement) return;
+    const el = obj.domElement;
+
+    const screenPos = this.worldToScreen(obj.x, obj.y);
+    const screenW = obj.w * this.camera.zoom;
+    const screenH = obj.h * this.camera.zoom;
+
+    const left = screenPos.x - screenW / 2;
+    const top = screenPos.y - screenH / 2;
+
+    el.style.left = `${left}px`;
+    el.style.top = `${top}px`;
+
+    el.style.width = `${screenW}px`;
+    el.style.height = `${screenH}px`;
+
+    if (obj.isComposite) {
+      Array.from(el.children).forEach((child, index) => {
+        const c = obj.colliders[index];
+        child.style.width = `${c.w * this.camera.zoom}px`;
+        child.style.height = `${c.h * this.camera.zoom}px`;
+
+        child.style.left = `${(obj.w / 2 + c.offsetX) * this.camera.zoom}px`;
+        child.style.top = `${(obj.h / 2 + c.offsetY) * this.camera.zoom}px`;
+      });
+    }
+
+    el.style.transform = `rotate(${obj.rotation}deg)`;
+    el.style.transformOrigin = "50% 50%";
+    el.style.outline = "none";
+
+    if (this.selectedObj === obj) {
+      el.style.outline = "1px dashed #00ffff";
+    }
   }
 
   init() {

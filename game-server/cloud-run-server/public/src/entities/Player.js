@@ -68,7 +68,7 @@ export class Player extends GameObject {
       this.isInitialized = true;
     }
 
-    this.name = state.n;
+    if (state.n) this.name = state.n;
     this.targetX = state.x;
     this.targetY = state.y;
     this.targetAimAngle = state.a;
