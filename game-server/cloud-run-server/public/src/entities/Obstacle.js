@@ -8,28 +8,28 @@ export class Obstacle {
     this.width = width;
     this.height = height;
     this.styleType = type;
-    this.rotation = 0; // 初期値
+    this.rotation = 0;
   }
 
   /**
    * サーバーからの初期化データを受け取る
    */
- setState(state) {
+  setState(state) {
     if (state.className) {
       this.styleType = state.className;
     }
-
+    if (state.rotation !== undefined) {
+      this.rotation = state.rotation;
+    }
   }
 
   draw(ctx) {
     const TOTAL_FRAMES = 60;
     const LOOP_DURATION = 4000;
-
     const isAnimated = this.styleType === "obs-hexagon-fortress-animated";
 
     let skinKey;
     let drawFunc;
-
     if (isAnimated) {
       const time = Date.now();
       const progress = (time % LOOP_DURATION) / LOOP_DURATION;
@@ -50,6 +50,16 @@ export class Obstacle {
       drawFunc
     );
 
-    ctx.drawImage(skin, this.x, this.y);
+    ctx.save();
+
+    const cx = this.x + this.width / 2;
+    const cy = this.y + this.height / 2;
+    ctx.translate(cx, cy);
+
+    ctx.rotate(this.rotation || 0);
+
+    ctx.drawImage(skin, -this.width / 2, -this.height / 2);
+
+    ctx.restore();
   }
 }

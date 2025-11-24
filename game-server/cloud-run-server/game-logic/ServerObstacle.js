@@ -12,6 +12,7 @@ export class ServerObstacle extends ServerGameObject {
     this.height = height;
     this.className = className;
     // 障害物の中心（絶対座標）
+    this.rotation = (rotation || 0) * (Math.PI / 180);
     this.centerX = x + width / 2;
     this.centerY = y + height / 2;
 
@@ -65,11 +66,11 @@ export class ServerObstacle extends ServerGameObject {
       const dy = cy - boxCenterY;
       
       // コライダーの角度 (度 -> ラジアン)
-      const angleRad = (c.angle || 0) * Math.PI / 180;
+      const totalAngle = (c.angle || 0) * (Math.PI / 180) + this.rotation;
       
       // 逆回転行列 (World -> Local)
-      const cos = Math.cos(-angleRad);
-      const sin = Math.sin(-angleRad);
+      const cos = Math.cos(-totalAngle);
+      const sin = Math.sin(-totalAngle);
       
       const localX = dx * cos - dy * sin;
       const localY = dx * sin + dy * cos;
@@ -134,8 +135,8 @@ export class ServerObstacle extends ServerGameObject {
 
           // ローカルの押し出しベクトルを、ワールド座標系に戻す
           // 順回転行列 (Local -> World)
-          const cosR = Math.cos(angleRad);
-          const sinR = Math.sin(angleRad);
+          const cosR = Math.cos(totalAngle);
+          const sinR = Math.sin(totalAngle);
           
           bestPushX = pushLocX * cosR - pushLocY * sinR;
           bestPushY = pushLocX * sinR + pushLocY * cosR;
@@ -159,7 +160,9 @@ export class ServerObstacle extends ServerGameObject {
       y: this.y,
       width: this.width,
       height: this.height,
-      radius: Math.max(this.width, this.height), // クライアント側のカリング用
+      // ▼ 追加: 初期角度をクライアントに教える
+      rotation: this.rotation,
+      radius: Math.max(this.width, this.height),
       className: this.className
     };
   }
