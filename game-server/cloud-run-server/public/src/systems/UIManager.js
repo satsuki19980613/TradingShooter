@@ -629,6 +629,7 @@ export class UIManager {
 
     ctx.restore();
   }
+
   drawRadar(
     ctx,
     canvasWidth,
@@ -640,63 +641,102 @@ export class UIManager {
     obstaclesState,
     otherPlayersState
   ) {
-    const radarSize = 150;
+    const radarSize = 160;
+    const radarRadius = radarSize / 2;
     const radarPadding = 20;
-    const radarX = canvasWidth - radarSize - radarPadding;
-    const radarY = radarPadding;
-    const scaleX = radarSize / worldWidth;
-    const scaleY = radarSize / worldHeight;
+
+    const centerX = canvasWidth - radarRadius - radarPadding;
+    const centerY = radarPadding + radarRadius;
+
+    const viewRadiusWorld = 1500;
+    const scale = radarRadius / viewRadiusWorld;
+
     ctx.save();
-    ctx.fillStyle = "rgba(0, 50, 80, 0.3)";
-    ctx.fillRect(radarX, radarY, radarSize, radarSize);
+
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radarRadius, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(5, 15, 25, 0.85)";
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(0, 255, 255, 0.8)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.clip();
+
     ctx.strokeStyle = "rgba(0, 255, 255, 0.3)";
     ctx.lineWidth = 1;
-    ctx.strokeRect(radarX, radarY, radarSize, radarSize);
-    const getRadarX = (worldX) => radarX + worldX * scaleX;
-    const getRadarY = (worldY) => radarY + worldY * scaleY;
+
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radarRadius * 0.33, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radarRadius * 0.66, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(centerX - radarRadius, centerY);
+    ctx.lineTo(centerX + radarRadius, centerY);
+    ctx.moveTo(centerX, centerY - radarRadius);
+    ctx.lineTo(centerX, centerY + radarRadius);
+    ctx.stroke();
 
     if (!playerState) {
       ctx.restore();
       return;
     }
 
-    ctx.fillStyle = "rgba(200, 240, 255, 0.5)";
-    (obstaclesState || []).forEach((obs) => {
-      const rX = getRadarX(obs.x);
-      const rY = getRadarY(obs.y);
-      const rW = Math.max(1, obs.width * scaleX);
-      const rH = Math.max(1, obs.height * scaleY);
-      ctx.fillRect(rX, rY, rW, rH);
-    });
+    const getRadarPos = (wx, wy) => {
+      const dx = wx - playerState.x;
+      const dy = wy - playerState.y;
+      return {
+        x: centerX + dx * scale,
+        y: centerY + dy * scale,
+      };
+    };
 
-    ctx.fillStyle = "#f44336";
+    if (enemiesState && enemiesState.length > 0) {
+      ctx.fillStyle = "#f44336";
+      enemiesState.forEach((enemy) => {
+        const pos = getRadarPos(enemy.x, enemy.y);
+
+        const distSq = (pos.x - centerX) ** 2 + (pos.y - centerY) ** 2;
+        if (distSq <= radarRadius ** 2) {
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+    }
+
+    if (otherPlayersState && otherPlayersState.length > 0) {
+      ctx.fillStyle = "#76ff03";
+      otherPlayersState.forEach((p) => {
+        const pos = getRadarPos(p.x, p.y);
+
+        const distSq = (pos.x - centerX) ** 2 + (pos.y - centerY) ** 2;
+        if (distSq <= radarRadius ** 2) {
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+    }
+
+    ctx.fillStyle = "#00bbd477";
     ctx.beginPath();
-
-    (enemiesState || []).forEach((enemy) => {
-      const rX = getRadarX(enemy.x);
-      const rY = getRadarY(enemy.y);
-      ctx.moveTo(rX + 1.5, rY);
-      ctx.arc(rX, rY, 1.5, 0, Math.PI * 2);
-    });
-
-    (otherPlayersState || []).forEach((player) => {
-      const rX = getRadarX(player.x);
-      const rY = getRadarY(player.y);
-      ctx.moveTo(rX + 1.5, rY);
-      ctx.arc(rX, rY, 1.5, 0, Math.PI * 2);
-    });
-
+    ctx.arc(centerX, centerY, 4, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = "#00bcd4";
-    const playerRX = getRadarX(playerState.x);
-    const playerRY = getRadarY(playerState.y);
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.arc(playerRX, playerRY, 2.5, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.arc(centerX, centerY, 6, 0, Math.PI * 2);
+    ctx.stroke();
+
     ctx.restore();
   }
-
   setGameOverMessage(message) {
     this.gameoverMessageEl.textContent = message;
   }
@@ -769,6 +809,9 @@ export class UIManager {
       el.style.height = `${entity.height}px`;
       el.style.left = `${entity.x}px`;
       el.style.top = `${entity.y}px`;
+      if (entity.rotation) {
+        el.style.transform = `rotate(${entity.rotation}rad)`;
+      }
       if (entity.borderRadius > 0) {
         el.style.borderRadius = `${entity.borderRadius}px`;
       } else if (

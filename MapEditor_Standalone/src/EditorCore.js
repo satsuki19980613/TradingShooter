@@ -110,8 +110,8 @@ export class EditorCore {
       const exportObj = {
         id: obj.styleType,
         type: obj.type,
-        x: obj.x,
-        y: obj.y,
+        x: obj.x - obj.w / 2,
+        y: obj.y - obj.h / 2,
         width: obj.w,
         height: obj.h,
         rotation: obj.rotation,

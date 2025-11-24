@@ -66,7 +66,7 @@ export class ServerObstacle extends ServerGameObject {
       const dy = cy - boxCenterY;
       
       // コライダーの角度 (度 -> ラジアン)
-      const totalAngle = (c.angle || 0) * (Math.PI / 180) + this.rotation;
+      const totalAngle = (c.angle || 0) * (Math.PI / 180);
       
       // 逆回転行列 (World -> Local)
       const cos = Math.cos(-totalAngle);

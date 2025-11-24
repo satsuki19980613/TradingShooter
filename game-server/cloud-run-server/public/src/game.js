@@ -446,17 +446,19 @@ export class Game {
     }
   }
 
+  // 付近 setStaticState メソッド内
+
   setStaticState(staticData) {
     if (!staticData) return;
 
     this.uiManager.clearObstacleLayer();
     this.obstacleEntities.clear();
-
+    
     if (staticData.obstacles && staticData.obstacles.length > 0) {
       console.log(
         `[Game] 静的障害物 ${staticData.obstacles.length} 件を読み込み...`
       );
-
+      
       staticData.obstacles.forEach((obsState) => {
         const obsId = obsState.id || `${obsState.x},${obsState.y}`;
         const obs = new Obstacle(
@@ -465,9 +467,13 @@ export class Game {
           obsState.width,
           obsState.height
         );
+        
         if (obsState.className) {
             obs.styleType = obsState.className;
         }
+        
+        obs.rotation = obsState.rotation || 0;
+
         obs.borderRadius = obsState.borderRadius || 0;
         obs.individualRadii = obsState.individualRadii || {};
 
@@ -478,6 +484,7 @@ export class Game {
 
         this.obstacleEntities.set(obsId, obs);
       });
+      
       this.obstacleStateArray = Array.from(this.obstacleEntities.values());
     }
   }
