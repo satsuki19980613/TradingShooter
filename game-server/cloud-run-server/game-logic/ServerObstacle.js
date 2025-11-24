@@ -10,7 +10,7 @@ export class ServerObstacle extends ServerGameObject {
 
     this.width = width;
     this.height = height;
-    
+    this.className = className;
     // 障害物の中心（絶対座標）
     this.centerX = x + width / 2;
     this.centerY = y + height / 2;
@@ -159,7 +159,8 @@ export class ServerObstacle extends ServerGameObject {
       y: this.y,
       width: this.width,
       height: this.height,
-      radius: Math.max(this.width, this.height) // クライアント側のカリング用
+      radius: Math.max(this.width, this.height), // クライアント側のカリング用
+      className: this.className
     };
   }
 }

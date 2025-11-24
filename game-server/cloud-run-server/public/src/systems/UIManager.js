@@ -760,7 +760,11 @@ export class UIManager {
     let el = null;
     if (entity.type === "obstacle_wall") {
       el = document.createElement("div");
-      el.className = "obstacle-cube";
+      if (entity.styleType && entity.styleType.includes("hexagon")) {
+        el.className = "obs-base";
+      } else {
+        el.className = "obstacle-cube";
+      }
       el.style.width = `${entity.width}px`;
       el.style.height = `${entity.height}px`;
       el.style.left = `${entity.x}px`;

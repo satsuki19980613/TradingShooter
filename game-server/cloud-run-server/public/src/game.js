@@ -465,7 +465,9 @@ export class Game {
           obsState.width,
           obsState.height
         );
-
+        if (obsState.className) {
+            obs.styleType = obsState.className;
+        }
         obs.borderRadius = obsState.borderRadius || 0;
         obs.individualRadii = obsState.individualRadii || {};
 

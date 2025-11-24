@@ -6,10 +6,10 @@
   "obstacles": [
     {
       "type": "obstacle_wall",
-      "x": 990,
-      "y": 930,
-      "width": 930,
-      "height": 980,
+      "x": 825,
+      "y": 975,
+      "width": 870,
+      "height": 850,
       "rotation": 0,
       "styleType": "obs-hexagon-fortress",
       "className": "obs-hexagon-fortress-animated"
