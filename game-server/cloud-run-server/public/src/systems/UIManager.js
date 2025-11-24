@@ -800,15 +800,15 @@ export class UIManager {
     let el = null;
     if (entity.type === "obstacle_wall") {
       el = document.createElement("div");
-      if (entity.styleType && entity.styleType.includes("hexagon")) {
-        el.className = "obs-base";
-      } else {
-        el.className = "obstacle-cube";
+      el.className = "obs-base";
+      if (entity.styleType) {
+        el.classList.add(entity.styleType);
       }
       el.style.width = `${entity.width}px`;
       el.style.height = `${entity.height}px`;
       el.style.left = `${entity.x}px`;
       el.style.top = `${entity.y}px`;
+
       if (entity.rotation) {
         el.style.transform = `rotate(${entity.rotation}rad)`;
       }

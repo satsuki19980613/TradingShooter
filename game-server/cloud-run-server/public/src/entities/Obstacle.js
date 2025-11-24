@@ -26,8 +26,13 @@ export class Obstacle {
   draw(ctx) {
     const TOTAL_FRAMES = 60;
     const LOOP_DURATION = 4000;
-    const isAnimated = this.styleType === "obs-hexagon-fortress-animated";
-
+    const isAnimated =
+      this.styleType === "obs-hexagon-fortress-animated" ||
+      this.styleType === "obs-long-corner" ||
+      this.styleType === "obs-wide-neon" ||
+      this.styleType === "obs-ushape-hangar" ||
+      this.styleType === "obs-long-cross" ||
+      this.styleType === "obs-standard-cyber";
     let skinKey;
     let drawFunc;
     if (isAnimated) {

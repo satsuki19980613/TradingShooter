@@ -8,6 +8,8 @@ export const LongCornerMagentaSkin = (progress) => {
     // progress (0~1) を time に変換 (無限ループアニメーション用)
     const time = progress * Math.PI * 4; 
 
+    const BASE_W = 320;
+    const BASE_H = 220;
     const colors = {
       concrete: '#252629',
       darkMetal: '#111111',
@@ -26,30 +28,36 @@ export const LongCornerMagentaSkin = (progress) => {
     };
 
     ctx.save();
-    ctx.translate(cx - 105, cy + 30);
+    ctx.translate(cx, cy);
+
+    // ▼▼▼ 追加: スケーリング処理 ▼▼▼
+    // 指定されたサイズ(w, h) と 基準サイズ(BASE) の比率で拡大縮小
+    const scaleX = w / BASE_W;
+    const scaleY = h / BASE_H;
+    ctx.scale(scaleX, scaleY);
+    // ▲▲▲
+
+    // 2. 図形の位置補正 (BASEサイズ基準での補正値)
+    ctx.translate(-80, 30); 
 
     // --- メイン構造 (Base) ---
     drawBaseShape(ctx, false, colors, dims);
-
-    // --- コンポーネント ---
+    
+    // ... (以下のコンポーネント描画呼び出しはそのまま) ...
     drawCornerUnit(ctx, time, colors);
-
-    // 短いアーム（上）
+    
     ctx.save();
     ctx.translate(0, -60);
     drawShortArmDetail(ctx, time);
     ctx.restore();
 
-    // 長いアーム（右）
     ctx.save();
     ctx.translate(60, 0);
     drawLongArmDetail(ctx, time, colors, dims);
     ctx.restore();
 
-    // --- ディテール ---
     drawEnergyLines(ctx, time, colors);
 
-    // --- オーバーレイ効果 ---
     ctx.globalCompositeOperation = 'lighter';
     drawGlow(ctx, colors);
 
