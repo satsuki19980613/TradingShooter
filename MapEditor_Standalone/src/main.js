@@ -9,7 +9,9 @@ const PRESETS_URL = "https://trading-charge-shooter.web.app/data/presets.json";
 
 async function initEditor() {
   try {
-    const res = await fetch(PRESETS_URL);
+    // 末尾に ?t=現在時刻 をつけることで、ブラウザに「新しいファイルだ」と思わせてキャッシュを回避する
+    const noCacheUrl = `${PRESETS_URL}?t=${Date.now()}`;
+    const res = await fetch(noCacheUrl);
     if (!res.ok) throw new Error("プリセットの取得に失敗しました");
 
     const presets = await res.json();
