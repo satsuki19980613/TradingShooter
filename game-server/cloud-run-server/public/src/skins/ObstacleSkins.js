@@ -1,4 +1,3 @@
-import { NeonCrateSkin } from "./obstacles/NeonCrate.js";
 import { HexagonFortressSkin } from "./obstacles/HexagonFortress.js";
 import { LongCornerMagentaSkin } from "./obstacles/LongCornerMagenta.js";
 import { WideNeonSkin } from "./obstacles/WideNeon.js";
@@ -7,7 +6,6 @@ import { LongCrossSkin } from "./obstacles/LongCross.js";
 import { StandardCyberSkin } from "./obstacles/StandardCyber.js";
 
 export const ObstacleSkins = {
-  "obs-neon-crate": NeonCrateSkin("#00e5ff"),
 
   // ▼ 追加: IDと関数の紐付け (progressを渡すラッパー関数)
   "obs-hexagon-fortress-animated": (progress) => HexagonFortressSkin(progress, "#00ffea"),

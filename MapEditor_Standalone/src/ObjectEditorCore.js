@@ -137,10 +137,22 @@ function setupUI() {
     };
 
     document.getElementById("btn-export").onclick = () => {
-        const json = JSON.stringify({
-            // className: state.className, // サーバーでは不要な場合が多いですが一応
+        // ▼▼▼ 修正: 出力するJSONオブジェクトを拡張 ▼▼▼
+        const exportData = {
+            // idとnameは一旦 className と同じにしておきます（必要に応じて手動変更）
+            id: state.className,
+            name: state.className, 
+            type: "obstacle_wall", // 固定値
+            className: state.className,
+            width: state.width,
+            height: state.height,
+            borderRadius: 0, // 必要であればデフォルト値
             colliders: state.colliders
-        }, null, 2);
+        };
+
+        const json = JSON.stringify(exportData, null, 2);
+        // ▲▲▲
+
         document.getElementById("json-output").value = json;
         navigator.clipboard.writeText(json).then(() => alert("JSON Copied to Clipboard!"));
     };

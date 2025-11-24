@@ -26,7 +26,7 @@ export const LongCornerMagentaSkin = (progress) => {
     };
 
     ctx.save();
-    ctx.translate(cx - 80, cy + 30);
+    ctx.translate(cx - 105, cy + 30);
 
     // --- メイン構造 (Base) ---
     drawBaseShape(ctx, false, colors, dims);

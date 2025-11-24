@@ -1,87 +1,97 @@
-[{
-  "id": "neon_crate_01",
-  "name": "Neon Crate",
-  "type": "obstacle_wall",
-  "className": "obs-neon-crate",
-  "width": 100,
-  "height": 100,
-  "borderRadius": 0
-},
-{
-    "id": "obs-power-plant",
-    "name": "Power Plant",
+[
+  
+  {
+    "id": "obs-hexagon-fortress",
+    "name": "Hex Fortress",
     "type": "obstacle_wall",
-    "className": "obs-power-plant",
-    "width": 200,
-    "height": 200,
-    "borderRadius": 10
+    "className": "obs-hexagon-fortress-animated",
+    "width": 160,
+    "height": 160,
+    "colliders": [
+      {
+        "type": "rect",
+        "x": -18.5,
+        "y": -30.5,
+        "w": 42,
+        "h": 66,
+        "angle": 60
+      },
+      {
+        "type": "rect",
+        "x": -37,
+        "y": 2,
+        "w": 40,
+        "h": 66,
+        "angle": 0
+      },
+      {
+        "type": "rect",
+        "x": -19,
+        "y": 33.5,
+        "w": 63,
+        "h": 40,
+        "angle": 31
+      },
+      {
+        "type": "rect",
+        "x": 19,
+        "y": 33.5,
+        "w": 36,
+        "h": 67,
+        "angle": 60
+      },
+      {
+        "type": "rect",
+        "x": 36,
+        "y": 0,
+        "w": 40,
+        "h": 64,
+        "angle": 0
+      },
+      {
+        "type": "rect",
+        "x": 18.5,
+        "y": -31.5,
+        "w": 40,
+        "h": 63,
+        "angle": -60
+      }
+    ]
   },
   {
-  "id": "obs-plasma-gen",
-  "name": "Plasma Gen",
+  "id": "obs-long-corner",
+  "name": "obs-long-corner",
   "type": "obstacle_wall",
-  "className": "obs-plasma-gen",
-  "width": 180,
-  "height": 180,
-  "borderRadius": 90
-},
-
-{
-  "id": "obs-hexagon-fortress",
-  "name": "Hex Fortress",
-  "type": "obstacle_wall",
-  "className": "obs-hexagon-fortress-animated",
-  "width": 160,
-  "height": 160,
+  "className": "obs-long-corner",
+  "width": 320,
+  "height": 220,
+  "borderRadius": 0,
   "colliders": [
     {
       "type": "rect",
-      "x": -18.5,
-      "y": -30.5,
-      "w": 42,
-      "h": 66,
-      "angle": 60
-    },
-    {
-      "type": "rect",
-      "x": -37,
-      "y": 2,
-      "w": 40,
-      "h": 66,
+      "x": 11,
+      "y": 30,
+      "w": 286,
+      "h": 99,
       "angle": 0
     },
     {
       "type": "rect",
-      "x": -19,
-      "y": 33.5,
-      "w": 63,
+      "x": -106,
+      "y": -7,
+      "w": 98,
+      "h": 127,
+      "angle": 0
+    },
+    {
+      "type": "rect",
+      "x": -129.5,
+      "y": 54,
+      "w": 29,
       "h": 40,
-      "angle": 31
-    },
-    {
-      "type": "rect",
-      "x": 19,
-      "y": 33.5,
-      "w": 36,
-      "h": 67,
-      "angle": 60
-    },
-    {
-      "type": "rect",
-      "x": 36,
-      "y": 0,
-      "w": 40,
-      "h": 64,
-      "angle": 0
-    },
-    {
-      "type": "rect",
-      "x": 18.5,
-      "y": -31.5,
-      "w": 40,
-      "h": 63,
-      "angle": -60
+      "angle": 45
     }
   ]
 }
+
 ]
