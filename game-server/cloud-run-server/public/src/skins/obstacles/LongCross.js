@@ -24,7 +24,7 @@ export const LongCrossSkin = (progress) => {
     const armSize = { top: 110, side: 110, bottom: 230, width: 50 };
 
     ctx.save();
-    ctx.translate(cx, cy); // まず中心へ
+    ctx.translate(0, -80); // まず中心へ
 
     // ▼▼▼ 追加: スケーリング ▼▼▼
     const scaleX = w / BASE_W;

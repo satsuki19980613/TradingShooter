@@ -37,9 +37,8 @@ export const LongCornerMagentaSkin = (progress) => {
     ctx.scale(scaleX, scaleY);
     // ▲▲▲
 
-    // 2. 図形の位置補正 (BASEサイズ基準での補正値)
-    ctx.translate(-80, 30); 
 
+    ctx.translate(-105, 25);
     // --- メイン構造 (Base) ---
     drawBaseShape(ctx, false, colors, dims);
     
