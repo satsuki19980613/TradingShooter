@@ -7,7 +7,7 @@ export class ServerAccountManager {
     this.firestore = firestore;
   }
 
-  /**
+  /**よふかしうた
    * ユーザー名を登録する（初回のみ、一意性チェックあり）
    * @param {string} uid - Firebase User ID
    * @param {string} requestedName - 希望する名前
