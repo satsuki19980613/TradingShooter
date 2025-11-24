@@ -9,7 +9,7 @@ export const HexagonFortressSkin = (progress, color = "#00ffea") => {
     const cy = h / 2;
     const size = (Math.min(w, h) / 2) * 0.85;
 
-    // ヘルパー: 多角形描画
+    // s11079
     const drawPolygon = (g, x, y, r, sides) => {
       if (sides < 3) return;
       const a = (Math.PI * 2) / sides;
