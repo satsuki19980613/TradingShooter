@@ -21,9 +21,26 @@ export class Obstacle {
   }
 
   draw(ctx) {
-    const skinKey = `obs_${this.styleType}_${this.width}_${this.height}`;
+    const TOTAL_FRAMES = 60;
+    const LOOP_DURATION = 4000;
 
-    const drawFunc = ObstacleSkins[this.styleType] || ObstacleSkins["default"];
+    const isAnimated = this.styleType === "obs-hexagon-fortress-animated";
+
+    let skinKey;
+    let drawFunc;
+
+    if (isAnimated) {
+      const time = Date.now();
+      const progress = (time % LOOP_DURATION) / LOOP_DURATION;
+      const frameIndex = Math.floor(progress * TOTAL_FRAMES);
+
+      skinKey = `obs_${this.styleType}_${this.width}_${this.height}_f${frameIndex}`;
+
+      drawFunc = ObstacleSkins[this.styleType](progress);
+    } else {
+      skinKey = `obs_${this.styleType}_${this.width}_${this.height}`;
+      drawFunc = ObstacleSkins[this.styleType] || ObstacleSkins["default"];
+    }
 
     const skin = skinManager.getSkin(
       skinKey,

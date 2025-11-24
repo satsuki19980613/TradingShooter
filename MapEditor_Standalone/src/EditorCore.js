@@ -1,5 +1,5 @@
-import { skinManager } from "./systems/SkinManager.js";
-import { ObstacleSkins } from "./skins/ObstacleSkins.js";
+import { skinManager } from "../../../game-server/cloud-run-server/public/src/systems/SkinManager.js";
+import { ObstacleSkins } from "../../../game-server/cloud-run-server/public/src/skins/ObstacleSkins.js";
 
 export class EditorCore {
   constructor(canvasId, domLayerId) {

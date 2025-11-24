@@ -24,5 +24,64 @@
   "width": 180,
   "height": 180,
   "borderRadius": 90
+},
+
+{
+  "id": "obs-hexagon-fortress",
+  "name": "Hex Fortress",
+  "type": "obstacle_wall",
+  "className": "obs-hexagon-fortress-animated",
+  "width": 160,
+  "height": 160,
+  "colliders": [
+    {
+      "type": "rect",
+      "x": -18.5,
+      "y": -30.5,
+      "w": 42,
+      "h": 66,
+      "angle": 60
+    },
+    {
+      "type": "rect",
+      "x": -37,
+      "y": 2,
+      "w": 40,
+      "h": 66,
+      "angle": 0
+    },
+    {
+      "type": "rect",
+      "x": -19,
+      "y": 33.5,
+      "w": 63,
+      "h": 40,
+      "angle": 31
+    },
+    {
+      "type": "rect",
+      "x": 19,
+      "y": 33.5,
+      "w": 36,
+      "h": 67,
+      "angle": 60
+    },
+    {
+      "type": "rect",
+      "x": 36,
+      "y": 0,
+      "w": 40,
+      "h": 64,
+      "angle": 0
+    },
+    {
+      "type": "rect",
+      "x": 18.5,
+      "y": -31.5,
+      "w": 40,
+      "h": 63,
+      "angle": -60
+    }
+  ]
 }
 ]

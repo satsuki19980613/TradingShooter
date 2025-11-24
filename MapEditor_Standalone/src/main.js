@@ -1,6 +1,6 @@
 import { EditorCore } from "./EditorCore.js";
-import { skinManager } from "./systems/SkinManager.js";
-import { ObstacleSkins } from "./skins/ObstacleSkins.js";
+import { skinManager } from "../../../game-server/cloud-run-server/public/src/systems/SkinManager.js";
+import { ObstacleSkins } from "../../../game-server/cloud-run-server/public/src/skins/ObstacleSkins.js";
 const engine = new EditorCore("editor-canvas", "dom-preview-layer");
 const presetList = document.getElementById("preset-list");
 const canvasWrapper = document.getElementById("canvas-wrapper");
