@@ -7,17 +7,18 @@ export class Obstacle {
     this.y = y;
     this.width = width;
     this.height = height;
-
     this.styleType = type;
+    this.rotation = 0; // 初期値
   }
 
   /**
    * サーバーからの初期化データを受け取る
    */
-  setState(state) {
+ setState(state) {
     if (state.className) {
       this.styleType = state.className;
     }
+
   }
 
   draw(ctx) {

@@ -5,14 +5,126 @@
   },
   "obstacles": [
     {
+      "id": "obs-hexagon-fortress",
       "type": "obstacle_wall",
-      "x": 930,
-      "y": 760,
-      "width": 950,
-      "height": 940,
+      "x": 2075,
+      "y": 700,
+      "width": 160,
+      "height": 160,
       "rotation": 0,
-      "styleType": "obs-hexagon-fortress",
-      "className": "obs-hexagon-fortress-animated"
+      "className": "obs-hexagon-fortress-animated",
+      "borderRadius": 0,
+      "colliders": [
+        {
+          "type": "rect",
+          "x": -18.5,
+          "y": -30.5,
+          "w": 42,
+          "h": 66,
+          "angle": 60
+        },
+        {
+          "type": "rect",
+          "x": -37,
+          "y": 2,
+          "w": 40,
+          "h": 66,
+          "angle": 0
+        },
+        {
+          "type": "rect",
+          "x": -19,
+          "y": 33.5,
+          "w": 63,
+          "h": 40,
+          "angle": 31
+        },
+        {
+          "type": "rect",
+          "x": 19,
+          "y": 33.5,
+          "w": 36,
+          "h": 67,
+          "angle": 60
+        },
+        {
+          "type": "rect",
+          "x": 36,
+          "y": 0,
+          "w": 40,
+          "h": 64,
+          "angle": 0
+        },
+        {
+          "type": "rect",
+          "x": 18.5,
+          "y": -31.5,
+          "w": 40,
+          "h": 63,
+          "angle": -60
+        }
+      ]
+    },
+    {
+      "id": "obs-hexagon-fortress",
+      "type": "obstacle_wall",
+      "x": 900,
+      "y": 1325,
+      "width": 830,
+      "height": 780,
+      "rotation": 14,
+      "className": "obs-hexagon-fortress-animated",
+      "borderRadius": 0,
+      "colliders": [
+        {
+          "type": "rect",
+          "x": -57.14730612907394,
+          "y": -167.48778771899282,
+          "w": 217.875,
+          "h": 321.75,
+          "angle": 74
+        },
+        {
+          "type": "rect",
+          "x": -188.59487444419582,
+          "y": -36.973500505470255,
+          "w": 207.5,
+          "h": 321.75,
+          "angle": 14
+        },
+        {
+          "type": "rect",
+          "x": -135.14364209619865,
+          "y": 134.61699396240644,
+          "w": 326.8125,
+          "h": 195,
+          "angle": 45
+        },
+        {
+          "type": "rect",
+          "x": 56.12590294595717,
+          "y": 182.30584763249092,
+          "w": 186.75,
+          "h": 326.625,
+          "angle": 74
+        },
+        {
+          "type": "rect",
+          "x": 181.20272688204233,
+          "y": 45.17891400323795,
+          "w": 207.5,
+          "h": 312,
+          "angle": 14
+        },
+        {
+          "type": "rect",
+          "x": 130.2681990740735,
+          "y": -125.78409554792711,
+          "w": 207.5,
+          "h": 307.125,
+          "angle": -46
+        }
+      ]
     }
   ],
   "playerSpawns": [

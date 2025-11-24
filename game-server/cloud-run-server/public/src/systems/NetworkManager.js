@@ -345,7 +345,6 @@ export class NetworkManager {
    */
   sendInput(inputActions) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
-
     let mask = 0;
 
     if (inputActions.states) {
@@ -353,15 +352,16 @@ export class NetworkManager {
       if (inputActions.states.move_down) mask |= 2;
       if (inputActions.states.move_left) mask |= 4;
       if (inputActions.states.move_right) mask |= 8;
-      if (inputActions.states.bet_up) mask |= 64;
-      if (inputActions.states.bet_down) mask |= 128;
-      if (inputActions.states.bet_all) mask |= 256;
-      if (inputActions.states.bet_min) mask |= 512;
     }
 
     if (inputActions.wasPressed) {
-      if (inputActions.wasPressed.shoot)  mask |= 16;
-      if (inputActions.wasPressed.trade)  mask |= 32;
+      if (inputActions.wasPressed.shoot) mask |= 16;
+      if (inputActions.wasPressed.trade) mask |= 32;
+
+      if (inputActions.wasPressed.bet_up) mask |= 64;
+      if (inputActions.wasPressed.bet_down) mask |= 128;
+      if (inputActions.wasPressed.bet_all) mask |= 256;
+      if (inputActions.wasPressed.bet_min) mask |= 512;
     }
 
     const buffer = new ArrayBuffer(11);

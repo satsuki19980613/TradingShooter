@@ -136,14 +136,15 @@ wss.on("connection", (ws, req) => {
                 move_down: !!(mask & 2),
                 move_left: !!(mask & 4),
                 move_right: !!(mask & 8),
-                bet_up: !!(mask & 64),
-                bet_down: !!(mask & 128),
-                bet_all: !!(mask & 256),
-                bet_min: !!(mask & 512),
+
               },
               wasPressed: {
                 shoot: !!(mask & 16),
                 trade: !!(mask & 32),
+                bet_up: !!(mask & 64),
+                bet_down: !!(mask & 128),
+                bet_all: !!(mask & 256),
+                bet_min: !!(mask & 512),
               },
               mouseWorldPos: {
                 x: mouseX,

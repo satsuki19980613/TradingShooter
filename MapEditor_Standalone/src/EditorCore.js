@@ -25,123 +25,6 @@ export class EditorCore {
 
     this.init();
   }
-  addObjectFromPreset(preset, x, y) {
-    const snapX = Math.floor(x / 25) * 25;
-    const snapY = Math.floor(y / 25) * 25;
-
-    const obj = {
-      id: this.nextId++,
-      type: preset.type || "obstacle_wall",
-      x: snapX,
-      y: snapY,
-      rotation: 0,
-      styleType: preset.id,
-      className: preset.className || "",
-      domElement: null,
-
-      isComposite: !!preset.colliders,
-      colliders: [],
-    };
-
-    if (obj.isComposite) {
-      let minX = Infinity,
-        minY = Infinity;
-      let maxX = -Infinity,
-        maxY = -Infinity;
-
-      const rawColliders = JSON.parse(JSON.stringify(preset.colliders));
-
-      rawColliders.forEach((c) => {
-        if (c.x < minX) minX = c.x;
-        if (c.y < minY) minY = c.y;
-        if (c.x + c.w > maxX) maxX = c.x + c.w;
-        if (c.y + c.h > maxY) maxY = c.y + c.h;
-      });
-
-      obj.w = maxX - minX;
-      obj.h = maxY - minY;
-
-      const centerX = minX + obj.w / 2;
-      const centerY = minY + obj.h / 2;
-
-      obj.colliders = rawColliders.map((c) => ({
-        ...c,
-
-        offsetX: c.x - centerX,
-        offsetY: c.y - centerY,
-      }));
-    } else {
-      obj.w = preset.width;
-      obj.h = preset.height;
-      obj.borderRadius = preset.borderRadius || 0;
-    }
-
-    this.objects.push(obj);
-    this.createObjectDOM(obj);
-    this.selectObject(obj);
-  }
-
-  /**
-   * DOM要素の生成（Canvas埋め込み版）
-   */
-  // MapEditor_Standalone/src/EditorCore.js
-
-  /**
-   * DOM要素の生成（Canvas埋め込み版）
-   */
-  createObjectDOM(obj) {
-    const container = document.createElement("div");
-    container.className = `obs-base ${obj.className || ""}`;
-    container.style.position = "absolute";
-    let rawFunc = ObstacleSkins[obj.className];
-    
-    const skinFunc = (typeof rawFunc === 'function' && rawFunc.length === 1)
-        ? rawFunc(0.0)
-        : (rawFunc || ObstacleSkins["default"]);
-
-    const skinCanvas = skinManager.getSkin(
-      `editor_${obj.className}_${obj.w}_${obj.h}`,
-      obj.w,
-      obj.h,
-      skinFunc
-    );
-
-    container.appendChild(skinCanvas);
-    this.domLayer.appendChild(container);
-    obj.domElement = container;
-    this.updateObjectDOM(obj);
-  }
-
-  updateObjectDOM(obj) {
-    if (!obj.domElement) return;
-    const el = obj.domElement;
-
-    const screenPos = this.worldToScreen(obj.x, obj.y);
-    const screenW = obj.w * this.camera.zoom;
-    const screenH = obj.h * this.camera.zoom;
-    const left = screenPos.x - screenW / 2;
-    const top = screenPos.y - screenH / 2;
-    el.style.left = `${left}px`;
-    el.style.top = `${top}px`;
-    el.style.width = `${screenW}px`;
-    el.style.height = `${screenH}px`;
-    if (obj.isComposite) {
-      Array.from(el.children).forEach((child, index) => {
-        const c = obj.colliders[index];
-        child.style.width = `${c.w * this.camera.zoom}px`;
-        child.style.height = `${c.h * this.camera.zoom}px`;
-        child.style.left = `${(obj.w / 2 + c.offsetX) * this.camera.zoom}px`;
-        child.style.top = `${(obj.h / 2 + c.offsetY) * this.camera.zoom}px`;
-      });
-    }
-
-    el.style.transform = `rotate(${obj.rotation}deg)`;
-    el.style.transformOrigin = "50% 50%";
-    el.style.outline = "none";
-    if (this.selectedObj === obj) {
-      el.style.outline = "1px dashed #00ffff";
-    }
-  }
 
   init() {
     const resizeObserver = new ResizeObserver(() => {
@@ -154,6 +37,235 @@ export class EditorCore {
     this.resize();
     this.fitCameraToWorld();
     this.startLoop();
+  }
+
+  /**
+   * プリセットからオブジェクトを追加
+   */
+  addObjectFromPreset(preset, x, y) {
+    const snapX = Math.floor(x / 25) * 25;
+    const snapY = Math.floor(y / 25) * 25;
+
+    // ★修正: プリセットのサイズ（見た目のサイズ）を正とする
+    let w = preset.width;
+    let h = preset.height;
+
+    let calculatedColliders = [];
+
+    if (preset.colliders) {
+      // プリセット内のコライダー座標は「中心からの相対座標（オフセット）」としてそのまま扱う
+      // （以前のようにバウンディングボックスを再計算して w, h を上書きしない）
+      const rawColliders = JSON.parse(JSON.stringify(preset.colliders));
+
+      calculatedColliders = rawColliders.map((c) => ({
+        ...c,
+        // プリセットの時点で中心相対になっている前提 (例: Hexagon Fortressは -18.5 など)
+        // もしプリセットが絶対座標なら調整が必要ですが、現状のpresets.jsonは相対座標です
+        offsetX: c.x,
+        offsetY: c.y,
+      }));
+    }
+
+    // 2. オブジェクト生成
+    const obj = {
+      id: this.nextId++,
+      type: preset.type || "obstacle_wall",
+      x: snapX,
+      y: snapY,
+      rotation: 0,
+      styleType: preset.id,
+      className: preset.className || "",
+      domElement: null,
+
+      isComposite: !!preset.colliders,
+      colliders: calculatedColliders, 
+
+      w: w,
+      h: h,
+      borderRadius: preset.borderRadius || 0,
+
+      // ▼▼▼ スケーリング計算用に「元のサイズとコライダー」を保存 ▼▼▼
+      originalW: w,
+      originalH: h,
+      originalColliders: JSON.parse(JSON.stringify(calculatedColliders)),
+      // ▲▲▲
+    };
+
+    this.objects.push(obj);
+    this.createObjectDOM(obj);
+    this.selectObject(obj);
+  }
+
+  /**
+   * 現在のオブジェクトリストから、サーバー用JSONデータを生成する
+   * ここで拡大縮小に合わせたコライダーの再計算を行います。
+   */
+  /**
+   * 現在のオブジェクトリストから、サーバー用JSONデータを生成する
+   * ★修正点: 拡大縮小に加え、「回転」に合わせてコライダー座標と角度を再計算します。
+   */
+  getExportData() {
+    return this.objects.map((obj) => {
+      // 基本データのコピー
+      const exportObj = {
+        id: obj.styleType,
+        type: obj.type,
+        x: obj.x,
+        y: obj.y,
+        width: obj.w,
+        height: obj.h,
+        rotation: obj.rotation,
+        className: obj.className,
+        borderRadius: obj.borderRadius,
+      };
+
+      // コライダーがある場合、現在のサイズと「回転」に合わせて再計算
+      if (
+        obj.isComposite &&
+        obj.originalColliders &&
+        obj.originalW > 0 &&
+        obj.originalH > 0
+      ) {
+        // 1. 拡大率を計算
+        const scaleX = obj.w / obj.originalW;
+        const scaleY = obj.h / obj.originalH;
+
+        // 2. 回転の準備 (度 -> ラジアン)
+        const rad = (obj.rotation || 0) * (Math.PI / 180);
+        const cos = Math.cos(rad);
+        const sin = Math.sin(rad);
+
+        exportObj.colliders = obj.originalColliders.map((c) => {
+          // まず拡大縮小を適用（中心相対座標）
+          const scaledX = c.offsetX * scaleX;
+          const scaledY = c.offsetY * scaleY;
+
+          // 次に回転行列を適用して座標を変換
+          // x' = x cosθ - y sinθ
+          // y' = x sinθ + y cosθ
+          const rotatedX = scaledX * cos - scaledY * sin;
+          const rotatedY = scaledX * sin + scaledY * cos;
+
+          return {
+            type: "rect",
+            x: rotatedX, 
+            y: rotatedY,
+            w: c.w * scaleX,
+            h: c.h * scaleY,
+            // ★コライダー自体の角度に、親オブジェクトの回転を加算
+            angle: (c.angle || 0) + obj.rotation, 
+          };
+        });
+      }
+
+      return exportObj;
+    });
+  }
+
+ createObjectDOM(obj) {
+    const container = document.createElement("div");
+    container.className = `obs-base ${obj.className || ""}`;
+    container.style.position = "absolute";
+    let rawFunc = ObstacleSkins[obj.className];
+
+    const skinFunc =
+      typeof rawFunc === "function" && rawFunc.length === 1
+        ? rawFunc(0.0)
+        : rawFunc || ObstacleSkins["default"];
+
+    // キャッシュされた元画像を取得
+    const cachedSkin = skinManager.getSkin(
+      `editor_${obj.className}_${obj.w}_${obj.h}`,
+      obj.w,
+      obj.h,
+      skinFunc
+    );
+
+    // ★修正: このオブジェクト専用のCanvasを作成してコピーする
+    const objCanvas = document.createElement("canvas");
+    objCanvas.width = obj.w;
+    objCanvas.height = obj.h;
+    const ctx = objCanvas.getContext("2d");
+    
+    // キャッシュ画像をここに描画（コピー）
+    ctx.drawImage(cachedSkin, 0, 0);
+
+    // 専用のCanvasを追加する
+    container.appendChild(objCanvas);
+    
+    this.domLayer.appendChild(container);
+    obj.domElement = container;
+    this.updateObjectDOM(obj);
+  }
+  updateObjectDOM(obj) {
+    if (!obj.domElement) return;
+    const el = obj.domElement;
+
+    const screenPos = this.worldToScreen(obj.x, obj.y);
+    const screenW = obj.w * this.camera.zoom;
+    const screenH = obj.h * this.camera.zoom;
+    
+    // DOMは左上基準なので、中心座標からサイズ半分を引く
+    const left = screenPos.x - screenW / 2;
+    const top = screenPos.y - screenH / 2;
+
+    el.style.left = `${left}px`;
+    el.style.top = `${top}px`;
+    el.style.width = `${screenW}px`;
+    el.style.height = `${screenH}px`;
+
+    if (obj.isComposite) {
+      // 子要素（コライダー可視化用）があれば更新
+      Array.from(el.children).forEach((child, index) => {
+        if (child.tagName === "CANVAS") return;
+        
+        const c = obj.colliders[index];
+        if(c) {
+            child.style.width = `${c.w * this.camera.zoom}px`;
+            child.style.height = `${c.h * this.camera.zoom}px`;
+            // offsetX/Y は中心からの相対位置なので、width/2 を足して左上基準に直す
+            child.style.left = `${(obj.w / 2 + c.offsetX) * this.camera.zoom}px`;
+            child.style.top = `${(obj.h / 2 + c.offsetY) * this.camera.zoom}px`;
+        }
+      });
+    }
+
+    el.style.transform = `rotate(${obj.rotation}deg)`;
+    el.style.transformOrigin = "50% 50%";
+    el.style.outline = "none";
+    if (this.selectedObj === obj) {
+      el.style.outline = "1px dashed #00ffff";
+    }
+  }
+
+  deleteSelected() {
+    if (!this.selectedObj) return;
+    if (this.selectedObj.domElement) {
+      this.selectedObj.domElement.remove();
+    }
+
+    this.objects = this.objects.filter((o) => o !== this.selectedObj);
+    this.selectObject(null);
+  }
+
+  selectObject(obj) {
+    this.selectedObj = obj;
+    const event = new CustomEvent("selectionChanged", { detail: obj });
+    window.dispatchEvent(event);
+  }
+
+  screenToWorld(sx, sy) {
+    return {
+      x: sx / this.camera.zoom + this.camera.x,
+      y: sy / this.camera.zoom + this.camera.y,
+    };
+  }
+
+  worldToScreen(wx, wy) {
+    return {
+      x: (wx - this.camera.x) * this.camera.zoom,
+      y: (wy - this.camera.y) * this.camera.zoom,
+    };
   }
 
   fitCameraToWorld() {
@@ -187,77 +299,6 @@ export class EditorCore {
     this.render();
   }
 
-  addObjectFromPreset(preset, x, y) {
-    const snapX = Math.floor(x / 25) * 25;
-    const snapY = Math.floor(y / 25) * 25;
-
-    const obj = {
-      id: this.nextId++,
-      type: preset.type,
-      x: snapX,
-      y: snapY,
-      w: preset.width,
-      h: preset.height,
-      rotation: 0,
-      borderRadius: preset.borderRadius,
-      styleType: preset.id,
-      className: preset.className,
-      domElement: null,
-    };
-
-    this.objects.push(obj);
-    this.createObjectDOM(obj);
-    this.selectObject(obj);
-  }
-  
-
-  updateObjectDOM(obj) {
-    if (!obj.domElement) return;
-    const el = obj.domElement;
-    const screenPos = this.worldToScreen(obj.x, obj.y);
-    const screenW = obj.w * this.camera.zoom;
-    const screenH = obj.h * this.camera.zoom;
-
-    el.style.left = `${screenPos.x}px`;
-    el.style.top = `${screenPos.y}px`;
-    el.style.width = `${screenW}px`;
-    el.style.height = `${screenH}px`;
-    el.style.transform = `rotate(${obj.rotation}deg)`;
-    el.style.transformOrigin = "50% 50%";
-    el.style.outline = "none";
-  }
-
-  deleteSelected() {
-    if (!this.selectedObj) return;
-    if (this.selectedObj.domElement) {
-      this.selectedObj.domElement.remove();
-    }
-
-    this.objects = this.objects.filter((o) => o !== this.selectedObj);
-
-    this.selectObject(null);
-  }
-
-  selectObject(obj) {
-    this.selectedObj = obj;
-    const event = new CustomEvent("selectionChanged", { detail: obj });
-    window.dispatchEvent(event);
-  }
-
-  screenToWorld(sx, sy) {
-    return {
-      x: sx / this.camera.zoom + this.camera.x,
-      y: sy / this.camera.zoom + this.camera.y,
-    };
-  }
-
-  worldToScreen(wx, wy) {
-    return {
-      x: (wx - this.camera.x) * this.camera.zoom,
-      y: (wy - this.camera.y) * this.camera.zoom,
-    };
-  }
-
   startLoop() {
     const loop = () => {
       this.render();
@@ -281,7 +322,6 @@ export class EditorCore {
 
   drawGrid(ctx) {
     ctx.save();
-
     const worldScreenPos = this.worldToScreen(0, 0);
     const worldScreenSize = this.WORLD_SIZE * this.camera.zoom;
 
@@ -317,18 +357,19 @@ export class EditorCore {
       worldScreenSize,
       worldScreenSize
     );
-
     ctx.restore();
   }
 
   drawSelectionUI(ctx, obj) {
     ctx.save();
-
     const screenPos = this.worldToScreen(obj.x, obj.y);
     const sw = obj.w * this.camera.zoom;
     const sh = obj.h * this.camera.zoom;
-    const cx = screenPos.x + sw / 2;
-    const cy = screenPos.y + sh / 2;
+
+    // ★修正: 中心座標をそのまま使う (以前はここで +sw/2 してズレていました)
+    const cx = screenPos.x;
+    const cy = screenPos.y;
+
     ctx.translate(cx, cy);
     ctx.rotate((obj.rotation * Math.PI) / 180);
     const localLeft = -sw / 2;
@@ -336,9 +377,10 @@ export class EditorCore {
     ctx.strokeStyle = "#00ffff";
     ctx.lineWidth = 2;
     ctx.strokeRect(localLeft, localTop, sw, sh);
+    
+    // ハンドル（四隅）
     ctx.fillStyle = "#00ff00";
     const handleSize = 8;
-
     const handles = [
       { x: localLeft, y: localTop },
       { x: localLeft + sw, y: localTop },
@@ -373,8 +415,11 @@ export class EditorCore {
     const sw = obj.w * this.camera.zoom;
     const sh = obj.h * this.camera.zoom;
     const hitSize = 16;
-    const cx = screenPos.x + sw / 2;
-    const cy = screenPos.y + sh / 2;
+    
+    // ★修正: 中心座標をそのまま使う
+    const cx = screenPos.x;
+    const cy = screenPos.y;
+
     const rad = -(obj.rotation * Math.PI) / 180;
     const dx = sx - cx;
     const dy = sy - cy;
@@ -406,8 +451,10 @@ export class EditorCore {
       const sw = obj.w * this.camera.zoom;
       const sh = obj.h * this.camera.zoom;
 
-      const cx = screenPos.x + sw / 2;
-      const cy = screenPos.y + sh / 2;
+      // ★修正: 中心座標をそのまま使う
+      const cx = screenPos.x;
+      const cy = screenPos.y;
+
       const rad = -(obj.rotation * Math.PI) / 180;
 
       const dx = sx - cx;

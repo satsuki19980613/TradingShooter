@@ -308,32 +308,25 @@ if (ui.btnDel)
   ui.btnDel.addEventListener("click", () => engine.deleteSelected());
 
 document.getElementById("btn-export").addEventListener("click", () => {
+  
+  // ★ EditorCore側で計算済みのデータ（拡大縮小されたコライダーを含む）を取得
+  const calculatedObstacles = engine.getExportData(); 
+
   const exportData = {
     worldSize: { width: engine.WORLD_SIZE, height: engine.WORLD_SIZE },
-    obstacles: engine.objects.map((o) => ({
-      type: "obstacle_wall",
-      x: o.x,
-      y: o.y,
-      width: o.w,
-      height: o.h,
-      rotation: o.rotation,
-      borderRadius: o.borderRadius,
-      styleType: o.styleType,
-      className: o.className,
-      colliders: o.colliders
-    })),
+    obstacles: calculatedObstacles, // ★ ここに代入
     playerSpawns: [{ x: 500, y: 500 }],
     enemySpawns: [{ x: 1500, y: 1500 }],
   };
+
   const jsonStr = JSON.stringify(exportData, null, 2);
   const blob = new Blob([jsonStr], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "map_design.json";
+  a.download = "map_default.json";
   a.click();
 });
-
 window.addEventListener("keydown", (e) => {
   if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
   if (e.key === "Delete" || e.key === "Backspace") {
