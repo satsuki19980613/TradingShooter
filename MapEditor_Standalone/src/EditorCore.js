@@ -84,11 +84,21 @@ export class EditorCore {
   /**
    * DOM要素の生成（Canvas埋め込み版）
    */
+  // MapEditor_Standalone/src/EditorCore.js
+
+  /**
+   * DOM要素の生成（Canvas埋め込み版）
+   */
   createObjectDOM(obj) {
     const container = document.createElement("div");
     container.className = `obs-base ${obj.className || ""}`;
     container.style.position = "absolute";
-    const skinFunc = ObstacleSkins[obj.className] || ObstacleSkins["default"];
+    let rawFunc = ObstacleSkins[obj.className];
+    
+    const skinFunc = (typeof rawFunc === 'function' && rawFunc.length === 1)
+        ? rawFunc(0.0)
+        : (rawFunc || ObstacleSkins["default"]);
+
     const skinCanvas = skinManager.getSkin(
       `editor_${obj.className}_${obj.w}_${obj.h}`,
       obj.w,

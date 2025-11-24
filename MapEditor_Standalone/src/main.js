@@ -37,10 +37,15 @@ function generatePresetButtons(presets) {
     previewContainer.style.width = "40px";
     previewContainer.style.height = "40px";
 
-    let skinFunc = ObstacleSkins["default"];
-    
-    if (ObstacleSkins[preset.className]) {
-        skinFunc = ObstacleSkins[preset.className];
+    let rawFunc = ObstacleSkins[preset.className];
+    let skinFunc;
+
+    if (rawFunc) {
+        if (typeof rawFunc === 'function' && rawFunc.length === 1) {
+            skinFunc = rawFunc(0.0);
+        } else {
+            skinFunc = rawFunc;
+        }
     } else {
         console.warn(`Skin not found for class: ${preset.className}. Using default.`);
         skinFunc = (ctx, w, h) => {
@@ -313,6 +318,7 @@ document.getElementById("btn-export").addEventListener("click", () => {
       borderRadius: o.borderRadius,
       styleType: o.styleType,
       className: o.className,
+      colliders: o.colliders
     })),
     playerSpawns: [{ x: 500, y: 500 }],
     enemySpawns: [{ x: 1500, y: 1500 }],

@@ -97,7 +97,7 @@ export class ServerGame {
     this.obstacles = mapData.obstacles
       .map((obsData) => {
         if (obsData.type === "obstacle_wall" || obsData.type === "WALL") {
-          return new ServerObstacle(
+          const obs = new ServerObstacle(
             obsData.x,
             obsData.y,
             obsData.width,
@@ -108,6 +108,12 @@ export class ServerGame {
             obsData.rotation || 0,
             obsData.className
           );
+
+          if (obsData.colliders) {
+            obs.setColliders(obsData.colliders);
+          }
+
+          return obs;
         }
         return null;
       })
