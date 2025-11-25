@@ -5,39 +5,39 @@
   },
   "obstacles": [
     {
-      "id": "obs-long-corner",
+      "id": "obs-hexagon-fortress-animated",
       "type": "obstacle_wall",
-      "x": 840,
-      "y": 775,
-      "width": 1100,
+      "x": 975,
+      "y": 870,
+      "width": 800,
       "height": 810,
-      "rotation": 15,
-      "className": "obs-long-corner",
+      "rotation": 0,
+      "className": "obs-hexagon-fortress-animated",
       "borderRadius": 0,
       "colliders": [
         {
           "type": "rect",
-          "x": 11.748028989014092,
-          "y": 102.25204015042895,
-          "w": 986.5625,
-          "h": 368.1818181818182,
-          "angle": 15
+          "x": 0,
+          "y": -2.53125,
+          "w": 175,
+          "h": 91.125,
+          "angle": 0
         },
         {
           "type": "rect",
-          "x": -478.1106142449868,
-          "y": 64.38142956428256,
-          "w": 99.6875,
-          "h": 147.27272727272725,
+          "x": -2.5,
+          "y": 0,
+          "w": 175,
+          "h": 101.25,
           "angle": 60
         },
         {
           "type": "rect",
-          "x": -336.4964965856242,
-          "y": -132.09264982262837,
-          "w": 340.3125,
-          "h": 474.95454545454544,
-          "angle": 15
+          "x": -2.5,
+          "y": -2.53125,
+          "w": 100,
+          "h": 172.125,
+          "angle": 30
         }
       ]
     }

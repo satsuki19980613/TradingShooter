@@ -1,63 +1,40 @@
 [
   
   {
-    "id": "obs-hexagon-fortress",
-    "name": "Hex Fortress",
-    "type": "obstacle_wall",
-    "className": "obs-hexagon-fortress-animated",
-    "width": 160,
-    "height": 160,
-    "colliders": [
-      {
-        "type": "rect",
-        "x": -18.5,
-        "y": -30.5,
-        "w": 42,
-        "h": 66,
-        "angle": 60
-      },
-      {
-        "type": "rect",
-        "x": -37,
-        "y": 2,
-        "w": 40,
-        "h": 66,
-        "angle": 0
-      },
-      {
-        "type": "rect",
-        "x": -19,
-        "y": 33.5,
-        "w": 63,
-        "h": 40,
-        "angle": 31
-      },
-      {
-        "type": "rect",
-        "x": 19,
-        "y": 33.5,
-        "w": 36,
-        "h": 67,
-        "angle": 60
-      },
-      {
-        "type": "rect",
-        "x": 36,
-        "y": 0,
-        "w": 40,
-        "h": 64,
-        "angle": 0
-      },
-      {
-        "type": "rect",
-        "x": 18.5,
-        "y": -31.5,
-        "w": 40,
-        "h": 63,
-        "angle": -60
-      }
-    ]
-  },
+  "id": "obs-hexagon-fortress-animated",
+  "name": "obs-hexagon-fortress-animated",
+  "type": "obstacle_wall",
+  "className": "obs-hexagon-fortress-animated",
+  "width": 160,
+  "height": 160,
+  "borderRadius": 0,
+  "colliders": [
+    {
+      "type": "rect",
+      "x": 0,
+      "y": -0.5,
+      "w": 35,
+      "h": 18,
+      "angle": 0
+    },
+    {
+      "type": "rect",
+      "x": -0.5,
+      "y": 0,
+      "w": 35,
+      "h": 20,
+      "angle": 60
+    },
+    {
+      "type": "rect",
+      "x": -0.5,
+      "y": -0.5,
+      "w": 20,
+      "h": 34,
+      "angle": 30
+    }
+  ]
+},
  {
   "id": "obs-long-corner",
   "name": "obs-long-corner",

@@ -27,7 +27,7 @@ export const UShapeHangarSkin = (progress) => {
     const scaleX = w / BASE_W;
     const scaleY = h / BASE_H;
     ctx.scale(scaleX, scaleY);
-
+    ctx.translate(0, -35);
     drawBaseShape(ctx, false, colors, dims);
 
     drawBackWallDetails(ctx, time, colors, dims);

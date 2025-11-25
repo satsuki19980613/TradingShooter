@@ -69,6 +69,24 @@ export class Player extends GameObject {
     }
 
     if (state.n) this.name = state.n;
+    if (this.isMe) {
+      const dist = Math.sqrt(
+        Math.pow(state.x - this.x, 2) + Math.pow(state.y - this.y, 2)
+      );
+
+      const TOLERANCE = 20.0;
+
+      if (dist > TOLERANCE) {
+        this.targetX = state.x;
+        this.targetY = state.y;
+      } else {
+        this.targetX = this.x;
+        this.targetY = this.y;
+      }
+    } else {
+      this.targetX = state.x;
+      this.targetY = state.y;
+    }
     this.targetX = state.x;
     this.targetY = state.y;
     this.targetAimAngle = state.a;

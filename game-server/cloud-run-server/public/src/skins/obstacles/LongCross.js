@@ -1,17 +1,19 @@
 /**
  * Cyberpunk Long Cross Obstacle
  */
+/**
+ * Cyberpunk Long Cross Obstacle
+ */
 export const LongCrossSkin = (progress) => {
   return (ctx, w, h) => {
     const cx = w / 2;
     const cy = h / 2;
     const time = progress * Math.PI * 2;
-
     // ★基準サイズ
     const BASE_W = 240;
     const BASE_H = 360;
 
-    // ... (colors, armSize 定義はそのまま) ...
+    // ... (colors 定義などはそのまま) ...
     const colors = {
       concrete: "#252629",
       darkMetal: "#111111",
@@ -24,16 +26,20 @@ export const LongCrossSkin = (progress) => {
     const armSize = { top: 110, side: 110, bottom: 230, width: 50 };
 
     ctx.save();
-    ctx.translate(0, -80); // まず中心へ
+    ctx.translate(cx, cy); // キャンバスの中心へ移動
 
-    // ▼▼▼ 追加: スケーリング ▼▼▼
+    // ▼▼▼ 修正箇所: 過剰な translate を削除し、形状の中心補正のみ行う ▼▼▼
+    
+    // スケーリング
     const scaleX = w / BASE_W;
     const scaleY = h / BASE_H;
     ctx.scale(scaleX, scaleY);
-    // ▲▲▲
 
-    // 位置補正 (基準サイズ内での調整)
-    ctx.translate(0, -50);
+    // 形状の中心合わせ
+    // 上(110)と下(230)の中間点は +60 の位置なので、-60 して中心に戻す
+    ctx.translate(0, -60); 
+
+    // ▲▲▲ 修正ここまで ▲▲▲
 
     drawBaseShape(ctx, false, colors, armSize);
 
@@ -77,7 +83,6 @@ export const LongCrossSkin = (progress) => {
     ctx.restore();
   };
 };
-
 function drawBaseShape(ctx, isShadow, colors, armSize) {
   ctx.fillStyle = isShadow ? "black" : colors.concrete;
   const w = armSize.width;
