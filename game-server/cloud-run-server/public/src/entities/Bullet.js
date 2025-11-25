@@ -1,10 +1,6 @@
 import { GameObject } from "./GameObject.js";
 import { skinManager } from "../systems/SkinManager.js";
-import { BulletSkins } from "../skins/BulletSkins.js";
-
-/**
- * 弾クラス (SFエネルギー弾 ver)
- */
+import { BulletSkins } from "../skins/bullets/BulletSkins.js";
 export class Bullet extends GameObject {
   constructor(x, y, angle, type) {
     const color = type === "enemy" ? "#ff9800" : "#00ffff";

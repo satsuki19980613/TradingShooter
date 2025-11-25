@@ -8,8 +8,7 @@ import { Trading } from "./systems/Trading.js";
 import { InputManager } from "./systems/InputManager.js";
 import { ClientConfig } from "./ClientConfig.js";
 import { skinManager } from "./systems/SkinManager.js";
-import { GridSkin } from "./skins/GridSkin.js";
-
+import { GridSkin } from "./skins/environment/GridSkin.js";
 const RENDER_LOOP_INTERVAL = ClientConfig.RENDER_LOOP_INTERVAL;
 const INPUT_SEND_INTERVAL = ClientConfig.INPUT_SEND_INTERVAL;
 

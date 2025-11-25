@@ -1,7 +1,7 @@
 export const PlayerSkins = {
   /**
    * ホバータンクの車体 (Chassis)
-   * @param {string} primaryColor - メインカラー (例: "#00e5ff")
+   * @param {string} primaryColor - メインカラー (例: "#00ffddcb")
    */
   chassis: (primaryColor) => {
     const secondaryColor = "#006064";

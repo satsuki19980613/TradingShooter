@@ -1,9 +1,10 @@
 import { GameObject } from "./GameObject.js";
 import { skinManager } from "../systems/SkinManager.js";
-import { PlayerSkins } from "../skins/PlayerSkins.js";
-/**
- * 角度を滑らかに補間 (Lerp) する
- */
+import { PlayerSkins } from "../skins/players/PlayerSkins.js";
+import { GMSkins } from "../skins/players/GMSkins.js";
+
+
+
 function lerpAngle(current, target, rate) {
   let delta = target - current;
   if (delta > Math.PI) delta -= Math.PI * 2;
@@ -111,8 +112,20 @@ export class Player extends GameObject {
   draw(ctx) {
     if (this.isDead) return;
 
-    const skinSize = 120;
-    const color = "#00e5ff";
+    // const skinSize = 500;
+    // const color = "#00e5ff";
+    // const chassisSkin = skinManager.getSkin(
+    //   "gm_chassis", // キャッシュキーも一意なものに変更
+    //   skinSize,
+    //   skinSize,
+    //   GMSkins.chassis() // GMSkinsのメソッドを呼ぶ
+    // );
+    // const turretSkin = skinManager.getSkin(
+    //   "gm_turret",
+    //   skinSize,
+    //   skinSize,
+    //   GMSkins.turret()
+    // );
 
     const chassisSkin = skinManager.getSkin(
       `player_chassis_${color}`,

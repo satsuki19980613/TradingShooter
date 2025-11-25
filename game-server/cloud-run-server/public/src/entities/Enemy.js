@@ -1,7 +1,6 @@
 import { GameObject } from "./GameObject.js";
 import { skinManager } from "../systems/SkinManager.js";
-import { EnemySkins } from "../skins/EnemySkins.js";
-/**
+import { EnemySkins } from "../skins/enemies/EnemySkins.js";/**
  * 敵クラス (サイバーパンク・ヘビータンク ver)
  */
 export class Enemy extends GameObject {
