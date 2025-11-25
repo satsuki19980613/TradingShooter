@@ -12,7 +12,7 @@ function lerpAngle(current, target, rate) {
   return current + delta * rate;
 }
 
-/**
+/*オクトパス
  * プレイヤークラス (サイバーパンク・ホバータンク ver)
  * 修正: トレード情報の同期漏れを解消 & 回転ロジックを改善
  */
