@@ -509,52 +509,40 @@ export class UIManager {
 
   drawChargeUI(ctx, playerState, canvasWidth, canvasHeight) {
     if (!playerState) return;
-
     const stockedBullets = playerState.stockedBullets || [];
     const maxStock = playerState.maxStock || 10;
-    const padding = 20;
-    const slotHeight = 16;
-    const slotWidth = 70;
-    const gap = 6;
-    const slant = 10;
-    const totalContentHeight = maxStock * (slotHeight + gap);
-    const containerWidth = slotWidth + padding * 2;
-    const containerHeight = totalContentHeight + padding * 2 + 25;
-    const x = canvasWidth - containerWidth - 20;
-    const y = canvasHeight - containerHeight - 20;
+
+    // ★修正ポイント: パネルサイズに合わせて自動調整
+    // 上下に少し余白を開ける
+    const paddingY = 20;
+    const availableHeight = canvasHeight - (paddingY * 2);
+    
+    // スロット1つあたりの高さを計算（隙間含む）
+    const gap = 4;
+    const slotHeight = Math.floor((availableHeight / maxStock) - gap);
+    // スロット幅はキャンバス幅の70%くらい
+    const slotWidth = Math.floor(canvasWidth * 0.7);
+    // 左端の位置（中央寄せ）
+    const startX = (canvasWidth - slotWidth) / 2;
+    
+    // 下から積み上げるための開始位置 (Y)
+    // マガジン全体の下底位置
+    const bottomY = canvasHeight - paddingY;
+
+    // マガジン枠のデザイン（斜めカット）
+    const slant = 10; 
+
     ctx.save();
-    ctx.beginPath();
-    const cutSize = 20;
-    ctx.moveTo(x, y);
-    ctx.lineTo(x + containerWidth - cutSize, y);
-    ctx.lineTo(x + containerWidth, y + cutSize);
-    ctx.lineTo(x + containerWidth, y + containerHeight);
-    ctx.lineTo(x + cutSize, y + containerHeight);
-    ctx.lineTo(x, y + containerHeight - cutSize);
-    ctx.closePath();
-    const bgGrad = ctx.createLinearGradient(x, y, x, y + containerHeight);
-    bgGrad.addColorStop(0, "rgba(2, 10, 25, 0.95)");
-    bgGrad.addColorStop(1, "rgba(0, 5, 10, 0.7)");
-    ctx.fillStyle = bgGrad;
-    ctx.fill();
-    ctx.strokeStyle = "rgba(0, 255, 255, 0.6)";
-    ctx.lineWidth = 2;
-    ctx.shadowColor = "rgba(0, 255, 255, 0.5)";
-    ctx.shadowBlur = 15;
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = "#00ffff";
-    ctx.font = "bold 14px 'Eurostile', 'Roboto', sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "top";
-    ctx.letterSpacing = "2px";
-    ctx.fillText("MAGAZINE", x + containerWidth / 2, y + 10);
-    const startX = x + padding;
-    const bottomY = y + containerHeight - padding - slotHeight;
+
+    // スロット描画ループ
     for (let i = 0; i < maxStock; i++) {
-      const currentY = bottomY - i * (slotHeight + gap);
+      // 下から順に描画するためのY座標計算
+      const currentY = bottomY - (i + 1) * (slotHeight + gap) + gap; // +gapで微調整
+      
       const hasBullet = i < stockedBullets.length;
       const damageVal = hasBullet ? Math.ceil(stockedBullets[i]) : 0;
+
+      // スロットのパス定義
       ctx.beginPath();
       ctx.moveTo(startX + slant, currentY);
       ctx.lineTo(startX + slotWidth, currentY);
@@ -563,45 +551,49 @@ export class UIManager {
       ctx.closePath();
 
       if (hasBullet) {
+        // 弾がある場合
         ctx.save();
-
         let bulletColor, glowColor, textColor;
-
+        
+        // ダメージ量による色分け
         if (damageVal >= 100) {
-          bulletColor = "#d500f9";
+          bulletColor = "#d500f9"; // 紫
           glowColor = "#ea80fc";
           textColor = "#ffffff";
         } else if (damageVal >= 50) {
-          bulletColor = "#ff6d00";
+          bulletColor = "#ff6d00"; // オレンジ
           glowColor = "#ffab40";
           textColor = "#ffffff";
         } else {
-          bulletColor = "#00e5ff";
+          bulletColor = "#00e5ff"; // シアン
           glowColor = "#84ffff";
           textColor = "#003333";
         }
+
+        // 発光表現
         ctx.shadowColor = glowColor;
-        ctx.shadowBlur = 12;
+        ctx.shadowBlur = 15;
         ctx.fillStyle = bulletColor;
         ctx.fill();
+
+        // 光沢ハイライト
         ctx.fillStyle = "rgba(255,255,255,0.3)";
-        ctx.fillRect(
-          startX + slant,
-          currentY,
-          slotWidth - slant * 2,
-          slotHeight / 2
-        );
+        ctx.fillRect(startX + slant + 2, currentY, slotWidth - slant * 2 - 4, slotHeight / 2);
+
+        // ダメージ数値
         ctx.shadowBlur = 0;
         ctx.fillStyle = textColor;
-        ctx.font = "bold 11px 'Roboto Mono', monospace";
+        ctx.font = "bold 14px 'Roboto Mono', monospace"; // フォントサイズ調整
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         const centerX = startX + slotWidth / 2;
         const centerY = currentY + slotHeight / 2;
         ctx.fillText(damageVal, centerX, centerY + 1);
         ctx.restore();
+
       } else {
-        ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+        // 空きスロットの場合
+        ctx.fillStyle = "rgba(255, 255, 255, 0.05)"; // 薄いグレー
         ctx.fill();
         ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
         ctx.lineWidth = 1;
@@ -609,22 +601,24 @@ export class UIManager {
       }
     }
 
+    // 残弾数の巨大数字表示（背景として薄く表示）
     ctx.save();
-    ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
-    ctx.font = "italic 60px 'Impact', sans-serif";
+    ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+    ctx.font = "italic 80px 'Impact', sans-serif"; // さらに巨大に
     ctx.textAlign = "right";
     ctx.textBaseline = "bottom";
-    ctx.fillText(stockedBullets.length, x - 8, y + containerHeight + 5);
+    // マガジンの右下に配置
+    ctx.fillText(stockedBullets.length, canvasWidth + 10, canvasHeight + 10);
     ctx.restore();
 
+    // フルチャージ時のエフェクト
     if (stockedBullets.length === maxStock) {
       ctx.fillStyle = "#00ff00";
       ctx.font = "bold 12px sans-serif";
       ctx.shadowColor = "#00ff00";
-      ctx.shadowBlur = 5;
-      ctx.textAlign = "right";
-      ctx.fillText("FULL CHARGE", x + containerWidth, y - 5);
-      ctx.shadowBlur = 0;
+      ctx.shadowBlur = 10;
+      ctx.textAlign = "center";
+      ctx.fillText("FULL CHARGE", canvasWidth / 2, paddingY - 5);
     }
 
     ctx.restore();

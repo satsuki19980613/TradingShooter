@@ -58,6 +58,16 @@ export class Game {
     this.lastTickTime = 0;
     this.obstacleStateArray = [];
     this.serverPerformanceStats = {};
+    this.chartCanvas = document.getElementById("chart-canvas");
+    this.chartCtx = this.chartCanvas ? this.chartCanvas.getContext("2d") : null;
+
+    this.radarCanvas = document.getElementById("radar-canvas");
+    this.radarCtx = this.radarCanvas ? this.radarCanvas.getContext("2d") : null;
+
+    this.magazineCanvas = document.getElementById("magazine-canvas");
+    this.magazineCtx = this.magazineCanvas
+      ? this.magazineCanvas.getContext("2d")
+      : null;
   }
 
   sendPause() {
@@ -104,7 +114,7 @@ export class Game {
     this.particles = [];
     this.inputManager.resetActionStates();
     requestAnimationFrame(() => {
-        this.resizeCanvas();
+      this.resizeCanvas();
     });
     this.uiManager.setWorldSize(this.WORLD_WIDTH, this.WORLD_HEIGHT);
 
@@ -135,17 +145,26 @@ export class Game {
   resizeCanvas() {
     if (!this.uiManager) return;
 
-    const fieldRect = this.gameCanvas.parentElement.getBoundingClientRect();
+    // 親要素IDの変更に対応: game-field-container -> game-field-wrapper
+    const fieldWrapper = document.getElementById("game-field-wrapper");
+    const fieldContainer = document.getElementById("game-field-container");
+    
+    if (fieldWrapper && fieldContainer) {
+      const rect = fieldWrapper.getBoundingClientRect();
+      
+      // コンテナ自体のサイズも合わせる
+      fieldContainer.style.width = `${rect.width}px`;
+      fieldContainer.style.height = `${rect.height}px`;
 
-    this.gameCanvas.width = fieldRect.width;
-    this.gameCanvas.height = fieldRect.height;
+      this.gameCanvas.width = rect.width;
+      this.gameCanvas.height = rect.height;
 
-    if (this.uiCanvas) {
-      this.uiCanvas.width = fieldRect.width;
-      this.uiCanvas.height = fieldRect.height;
+      if (this.uiCanvas) {
+        this.uiCanvas.width = rect.width;
+        this.uiCanvas.height = rect.height;
+      }
     }
   }
-
   /**
    * イベントリスナーの設定
    * エディタ関連のイベント処理をすべて削除しました
@@ -232,33 +251,72 @@ export class Game {
 
     ctx.restore();
     this.uiCtx.clearRect(0, 0, this.uiCanvas.width, this.uiCanvas.height);
+
     this.uiManager.syncDomElements(this.cameraX, this.cameraY);
+
     const myPlayerState = this.playerEntities.get(this.userId);
+
     this.uiManager.syncHUD(myPlayerState, this.trading.tradeState);
-    const w = this.gameCanvas.width;
-    const h = this.gameCanvas.height;
-    this.trading.drawChart(this.uiCtx, w, h, myPlayerState);
-    this.uiManager.drawChargeUI(this.uiCtx, myPlayerState, w, h);
-    const enemiesState = Array.from(this.enemyEntities.values());
 
-    const otherPlayersState = [];
-    for (const [id, player] of this.playerEntities.entries()) {
-      if (id !== this.userId && !player.isDead) {
-        otherPlayersState.push(player);
-      }
+    if (this.chartCtx) {
+      this.chartCtx.clearRect(
+        0,
+        0,
+        this.chartCanvas.width,
+        this.chartCanvas.height
+      );
+
+      this.trading.drawChart(
+        this.chartCtx,
+        this.chartCanvas.width,
+        this.chartCanvas.height,
+        myPlayerState
+      );
     }
-    this.uiManager.drawRadar(
-      this.uiCtx,
-      w,
-      h,
-      this.WORLD_WIDTH,
-      this.WORLD_HEIGHT,
-      myPlayerState,
-      enemiesState,
-      this.obstacleStateArray,
-      otherPlayersState
-    );
 
+    if (this.magazineCtx) {
+      this.magazineCtx.clearRect(
+        0,
+        0,
+        this.magazineCanvas.width,
+        this.magazineCanvas.height
+      );
+      this.uiManager.drawChargeUI(
+        this.magazineCtx,
+        myPlayerState,
+        this.magazineCanvas.width,
+        this.magazineCanvas.height
+      );
+    }
+
+    if (this.radarCtx) {
+      this.radarCtx.clearRect(
+        0,
+        0,
+        this.radarCanvas.width,
+        this.radarCanvas.height
+      );
+
+      const enemiesState = Array.from(this.enemyEntities.values());
+      const otherPlayersState = [];
+      for (const [id, player] of this.playerEntities.entries()) {
+        if (id !== this.userId && !player.isDead) {
+          otherPlayersState.push(player);
+        }
+      }
+
+      this.uiManager.drawRadar(
+        this.radarCtx,
+        this.radarCanvas.width,
+        this.radarCanvas.height,
+        this.WORLD_WIDTH,
+        this.WORLD_HEIGHT,
+        myPlayerState,
+        enemiesState,
+        this.obstacleStateArray,
+        otherPlayersState
+      );
+    }
     if (this.uiManager.isDebugMode) {
       const stats = this.networkManager.getStats();
       const simStats = this.networkManager.getSimulationStats();

@@ -189,76 +189,89 @@
         <button id="btn-ranking-back" class="ui-button">戻る</button>
       </div>
     </div>
-    <div id="screen-game" class="screen">
-      <div id="game-container">
-        <div id="game-field-container">
-          <canvas id="game-field" tabindex="0"></canvas>
-
-          <canvas
-            id="ui-field"
-            style="position: absolute; top: 0; left: 0; pointer-events: none"
-          ></canvas>
-
-          <div id="obstacle-layer"></div>
-        </div>
-      </div>
-
-      <div id="hud-top-left" class="ui-panel">
-        <div class="stat-row">
-          <span class="stat-label">HP</span>
-          <div class="stat-bar-outer">
-            <div id="hp-bar-inner" class="stat-bar hp"></div>
+   <div id="screen-game" class="screen">
+      <div id="cockpit-container">
+        
+        <div id="panel-left" class="cockpit-panel side-panel">
+          <div class="panel-module">
+            <h3>STATUS</h3>
+            <div id="hud-status-area">
+              <div class="stat-row">
+                <span class="stat-label">HP</span>
+                <div class="stat-bar-outer">
+                  <div id="hp-bar-inner" class="stat-bar hp"></div>
+                </div>
+                <span id="hp-value" class="stat-value">100</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">EP</span>
+                <div class="stat-bar-outer" style="visibility: hidden; height:0;"></div> 
+                <span id="ep-value" class="stat-value ep-value">100</span>
+              </div>
+              <div class="stat-row no-bar">
+                <span class="stat-label">Size</span>
+                <span id="size-value" class="stat-value">10</span>
+              </div>
+              <div class="stat-row no-bar">
+                <span class="stat-label" id="power-label">Power</span>
+                <span id="power-value" class="stat-value">0</span>
+              </div>
+            </div>
           </div>
-          <span id="hp-value" class="stat-value">100</span>
+
+          <div class="panel-module" style="flex-grow: 1;">
+            <h3>LEADERBOARD</h3>
+            <div id="hud-leaderboard-container">
+               <ol id="leaderboard-list"></ol>
+            </div>
+          </div>
+          </div>
+
+        <div id="panel-center" class="cockpit-panel">
+          <div id="game-field-wrapper">
+            <div id="game-field-container">
+              <canvas id="game-field" tabindex="0"></canvas>
+              <canvas id="ui-field" style="position: absolute; top: 0; left: 0; pointer-events: none"></canvas>
+              <div id="obstacle-layer"></div>
+            </div>
+          </div>
+          
+          <div id="bottom-chart-panel" class="panel-module">
+            <h3 style="position: absolute; top: 5px; left: 10px; z-index: 10; background: rgba(0,0,0,0.5); padding: 2px 5px;">MARKET CHART</h3>
+            <div class="canvas-wrapper" style="height: 100%;">
+              <canvas id="chart-canvas"></canvas>
+            </div>
+          </div>
         </div>
 
-        <div class="stat-row">
-          <span class="stat-label">EP</span>
-          <div class="stat-bar-outer" style="visibility: hidden"></div>
-          <span id="ep-value" class="stat-value ep-value">100</span>
+        <div id="panel-right" class="cockpit-panel side-panel">
+          <div class="panel-module seamless-module">
+            <h3>RADAR</h3>
+            <div class="canvas-wrapper" style="height: 220px;">
+              <canvas id="radar-canvas"></canvas>
+            </div>
+          </div>
+
+          <div class="panel-module seamless-module" style="flex-grow: 1;">
+             <h3>MAGAZINE</h3>
+             <div class="canvas-wrapper" style="height: 100%;">
+               <canvas id="magazine-canvas"></canvas>
+             </div>
+          </div>
+
+          <div class="panel-module seamless-module">
+            <button id="btn-retire" class="ui-button small" style="width: 100%; background-color: #d32f2f;">RETIRE</button>
+          </div>
+          
+          <div id="debug-panel" class="ui-panel" style="position: relative; top: 0; left: 0; width: 100%; display: none;">
+             <h4>Stats</h4>
+             <div id="debug-stats-container"></div>
+             <hr />
+             <div id="debug-simulation-container"></div>
+          </div>
         </div>
 
-        <div class="stat-row">
-          <span class="stat-label">Size</span>
-          <div
-            class="stat-bar-outer"
-            style="background: transparent; border: none; padding: 0"
-          ></div>
-          <span id="size-value" class="stat-value">10</span>
-        </div>
-
-        <div class="stat-row">
-          <span class="stat-label" id="power-label">Power</span>
-          <div
-            class="stat-bar-outer"
-            style="background: transparent; border: none; padding: 0"
-          ></div>
-          <span id="power-value" class="stat-value">0</span>
-        </div>
       </div>
-      <div id="debug-panel" class="ui-panel">
-        <h4>Stats</h4>
-        <div id="debug-stats-container"></div>
-        <hr />
-        <div id="debug-simulation-container"></div>
-      </div>
-      <div id="hud-leaderboard" class="ui-panel">
-        <ol id="leaderboard-list"></ol>
-      </div>
-      <button
-        id="btn-retire"
-        class="ui-button small"
-        style="
-          position: absolute;
-          top: 190px;
-          right: 20px;
-          background-color: rgba(244, 67, 54, 0.8);
-          color: white;
-          border: 1px solid #f44336;
-        "
-      >
-        Retire
-      </button>
     </div>
     <div id="screen-gameover" class="screen">
       <div class="screen-content">
