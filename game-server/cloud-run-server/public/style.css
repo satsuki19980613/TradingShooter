@@ -3,7 +3,7 @@
  * ======================================== */
 body {
     font-family: 'Verdana', 'Noto Sans JP', sans-serif;
-    background-color: #050a15; /* Dark sci-fi blue */
+    background-color: #213135; /* Dark sci-fi blue */
     color: #f0f0f0;
     overflow: hidden;
     display: flex;
@@ -104,22 +104,46 @@ body {
  * ゲーム画面 (#screen-game)
  * ======================================== */
 #screen-game {
-    justify-content: flex-start;
-    align-items: flex-start;
+    display: flex;
+    justify-content: center; /* 左右中央 */
+    align-items: center;     /* 上下中央 */
+    background-color: #000;  /* 余白部分の色（黒帯） */
 }
 #game-container {
     width: 100%;
     height: 100%;
+    
+    /* ▼▼▼ ここが調整のキモです ▼▼▼ */
+    
+    /* 最大幅を制限 (例: フルHD以上には広がらない) */
+    max-width: 1600px; 
+    
+    /* アスペクト比を 16:9 に固定 */
+    aspect-ratio: 16 / 9; 
+    
+    /* 画面からはみ出さないように調整 */
+    max-height: 90vh; /* 上下に少し余白を持たせる */
+    
+    /* 画面サイズに合わせて縮小・拡大 */
+    width: auto;
+    height: auto;
+    
+    /* ゲーム画面自体の枠線や影（没入感を高める） */
+    box-shadow: 0 0 50px rgba(0, 255, 255, 0.2);
+    border: 1px solid #333;
     position: relative;
+    overflow: hidden; /* はみ出し防止 */
+    background-color: #050a15; /* ゲーム背景色 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 #game-field-container {
     width: 100%;
     height: 100%;
     position: relative;
-    background-color: #050a15;
-    overflow: hidden;
+    background-color: #213135;
 }
-
 /* レイヤー構造 (Z-Index) */
 canvas#game-field {
     /* 背景・キャラクター描画用 */

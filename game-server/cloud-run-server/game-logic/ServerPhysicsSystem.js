@@ -25,6 +25,12 @@ export class ServerPhysicsSystem {
       if (bullet.type === "item_ep") {
         const nearbyEntities = game.grid.getNearbyEntities(bullet);
         for (const entity of nearbyEntities) {
+          if (
+            entity instanceof ServerBullet ||
+            entity instanceof ServerObstacle
+          ) {
+            continue; // 次のループへ（衝突判定を行わない）
+          }
           if (entity instanceof ServerPlayer && !entity.isDead) {
             if (
               getDistance(bullet.x, bullet.y, entity.x, entity.y) <
@@ -200,10 +206,13 @@ export class ServerPhysicsSystem {
           }
         }
         if (entity instanceof ServerEnemy) {
-            const enemy = entity;
-            if (getDistance(player1.x, player1.y, enemy.x, enemy.y) < player1.radius + enemy.radius) {
-                this.resolveOverlap(player1, enemy);
-            }
+          const enemy = entity;
+          if (
+            getDistance(player1.x, player1.y, enemy.x, enemy.y) <
+            player1.radius + enemy.radius
+          ) {
+            this.resolveOverlap(player1, enemy);
+          }
         }
       }
     });

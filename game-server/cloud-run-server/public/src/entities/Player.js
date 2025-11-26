@@ -3,8 +3,6 @@ import { skinManager } from "../systems/SkinManager.js";
 import { PlayerSkins } from "../skins/players/PlayerSkins.js";
 import { GMSkins } from "../skins/players/GMSkins.js";
 
-
-
 function lerpAngle(current, target, rate) {
   let delta = target - current;
   if (delta > Math.PI) delta -= Math.PI * 2;
@@ -12,10 +10,6 @@ function lerpAngle(current, target, rate) {
   return current + delta * rate;
 }
 
-/*オクトパス
- * プレイヤークラス (サイバーパンク・ホバータンク ver)
- * 修正: トレード情報の同期漏れを解消 & 回転ロジックを改善
- */
 export class Player extends GameObject {
   constructor(x, y) {
     super(x, y, 45, "#00bcd4");
@@ -111,21 +105,8 @@ export class Player extends GameObject {
   }
   draw(ctx) {
     if (this.isDead) return;
-
-    // const skinSize = 500;
-    // const color = "#00e5ff";
-    // const chassisSkin = skinManager.getSkin(
-    //   "gm_chassis", // キャッシュキーも一意なものに変更
-    //   skinSize,
-    //   skinSize,
-    //   GMSkins.chassis() // GMSkinsのメソッドを呼ぶ
-    // );
-    // const turretSkin = skinManager.getSkin(
-    //   "gm_turret",
-    //   skinSize,
-    //   skinSize,
-    //   GMSkins.turret()
-    // );
+    const skinSize = 150;
+    const color = this.color || "#00e5ff";
 
     const chassisSkin = skinManager.getSkin(
       `player_chassis_${color}`,

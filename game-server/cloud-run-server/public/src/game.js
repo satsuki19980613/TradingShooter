@@ -103,7 +103,9 @@ export class Game {
     }
     this.particles = [];
     this.inputManager.resetActionStates();
-    this.resizeCanvas();
+    requestAnimationFrame(() => {
+        this.resizeCanvas();
+    });
     this.uiManager.setWorldSize(this.WORLD_WIDTH, this.WORLD_HEIGHT);
 
     if (this.renderLoopId) {
@@ -132,9 +134,12 @@ export class Game {
 
   resizeCanvas() {
     if (!this.uiManager) return;
+
     const fieldRect = this.gameCanvas.parentElement.getBoundingClientRect();
+
     this.gameCanvas.width = fieldRect.width;
     this.gameCanvas.height = fieldRect.height;
+
     if (this.uiCanvas) {
       this.uiCanvas.width = fieldRect.width;
       this.uiCanvas.height = fieldRect.height;
@@ -211,14 +216,14 @@ export class Game {
     ctx.save();
     ctx.translate(-this.cameraX, -this.cameraY);
     this.obstacleEntities.forEach((obs) => {
-        if (
-            obs.x + obs.width > this.cameraX &&
-            obs.x < this.cameraX + this.gameCanvas.width &&
-            obs.y + obs.height > this.cameraY &&
-            obs.y < this.cameraY + this.gameCanvas.height
-        ) {
-            obs.draw(ctx);
-        }
+      if (
+        obs.x + obs.width > this.cameraX &&
+        obs.x < this.cameraX + this.gameCanvas.width &&
+        obs.y + obs.height > this.cameraY &&
+        obs.y < this.cameraY + this.gameCanvas.height
+      ) {
+        obs.draw(ctx);
+      }
     });
     this.particles.forEach((p) => p.draw(ctx));
     this.bulletEntities.forEach((b) => b.draw(ctx));
@@ -445,19 +450,17 @@ export class Game {
     }
   }
 
-  // 付近 setStaticState メソッド内
-
   setStaticState(staticData) {
     if (!staticData) return;
 
     this.uiManager.clearObstacleLayer();
     this.obstacleEntities.clear();
-    
+
     if (staticData.obstacles && staticData.obstacles.length > 0) {
       console.log(
         `[Game] 静的障害物 ${staticData.obstacles.length} 件を読み込み...`
       );
-      
+
       staticData.obstacles.forEach((obsState) => {
         const obsId = obsState.id || `${obsState.x},${obsState.y}`;
         const obs = new Obstacle(
@@ -466,24 +469,19 @@ export class Game {
           obsState.width,
           obsState.height
         );
-        
-        if (obsState.className) {
-            obs.styleType = obsState.className;
-        }
-        
-        obs.rotation = obsState.rotation || 0;
 
+        if (obsState.className) {
+          obs.styleType = obsState.className;
+        }
+
+        obs.rotation = obsState.rotation || 0;
         obs.borderRadius = obsState.borderRadius || 0;
         obs.individualRadii = obsState.individualRadii || {};
-
         obs.type = obsState.type || "obstacle_wall";
         obs.radius = obsState.radius;
-
-        this.uiManager.addObstacleDOM(obs);
-
         this.obstacleEntities.set(obsId, obs);
       });
-      
+
       this.obstacleStateArray = Array.from(this.obstacleEntities.values());
     }
   }
@@ -523,7 +521,7 @@ export class Game {
   }
 
   drawBackground(ctx) {
-    ctx.fillStyle = "#050a15";
+    ctx.fillStyle = "#213135";
     ctx.fillRect(0, 0, this.gameCanvas.width, this.gameCanvas.height);
     const gridSize = 50;
     const tileCanvas = skinManager.getSkin(
