@@ -512,118 +512,155 @@ export class UIManager {
     const stockedBullets = playerState.stockedBullets || [];
     const maxStock = playerState.maxStock || 10;
 
-    // ★修正ポイント: パネルサイズに合わせて自動調整
-    // 上下に少し余白を開ける
-    const paddingY = 20;
-    const availableHeight = canvasHeight - (paddingY * 2);
+    // --- レイアウト設定 ---
+    // 【修正】数値を 60 -> 85 に変更
+    // 下部の数字(64px)を表示するスペースを確保するために余白を広げます
+    const paddingY = 100; 
     
-    // スロット1つあたりの高さを計算（隙間含む）
+    const availableHeight = canvasHeight - (paddingY * 2);
     const gap = 4;
     const slotHeight = Math.floor((availableHeight / maxStock) - gap);
-    // スロット幅はキャンバス幅の70%くらい
-    const slotWidth = Math.floor(canvasWidth * 0.7);
-    // 左端の位置（中央寄せ）
-    const startX = (canvasWidth - slotWidth) / 2;
     
-    // 下から積み上げるための開始位置 (Y)
-    // マガジン全体の下底位置
+    // 幅設定
+    const contentWidth = canvasWidth * 0.90;
+    const startX = (canvasWidth - contentWidth) / 2;
     const bottomY = canvasHeight - paddingY;
-
-    // マガジン枠のデザイン（斜めカット）
-    const slant = 10; 
+    
+    const slant = 0; // 長方形
 
     ctx.save();
 
-    // スロット描画ループ
+    // 1. マガジン全体を囲む枠線 (Frame)
+    const totalStackHeight = maxStock * (slotHeight + gap) - gap;
+    const stackTopY = bottomY - totalStackHeight;
+    
+    const framePadding = 8; 
+    const frameX = startX - framePadding;
+    const frameY = stackTopY - framePadding;
+    const frameW = contentWidth + (framePadding * 2);
+    const frameH = totalStackHeight + (framePadding * 2);
+
+    ctx.save();
+    // 枠の線
+    ctx.strokeStyle = "rgba(255, 97, 208, 0.4)"; 
+    ctx.lineWidth = 2;
+
+    // シンプルな四角形の枠を描画
+    ctx.strokeRect(frameX, frameY, frameW, frameH);
+    
+    // 枠内の背景を極薄く塗ってエリアを強調
+    ctx.fillStyle = "rgba(0, 10, 20, 0.3)";
+    ctx.fillRect(frameX, frameY, frameW, frameH);
+    ctx.restore();
+
+
+    // 2. 各スロットの描画
     for (let i = 0; i < maxStock; i++) {
-      // 下から順に描画するためのY座標計算
-      const currentY = bottomY - (i + 1) * (slotHeight + gap) + gap; // +gapで微調整
+      const currentY = bottomY - (i + 1) * (slotHeight + gap) + gap;
       
       const hasBullet = i < stockedBullets.length;
       const damageVal = hasBullet ? Math.ceil(stockedBullets[i]) : 0;
 
-      // スロットのパス定義
       ctx.beginPath();
-      ctx.moveTo(startX + slant, currentY);
-      ctx.lineTo(startX + slotWidth, currentY);
-      ctx.lineTo(startX + slotWidth - slant, currentY + slotHeight);
-      ctx.lineTo(startX, currentY + slotHeight);
+      ctx.rect(startX, currentY, contentWidth, slotHeight);
       ctx.closePath();
 
       if (hasBullet) {
-        // 弾がある場合
+        // --- 弾がある場合 ---
         ctx.save();
-        let bulletColor, glowColor, textColor;
         
-        // ダメージ量による色分け
+        let baseColor, highColor;
         if (damageVal >= 100) {
-          bulletColor = "#d500f9"; // 紫
-          glowColor = "#ea80fc";
-          textColor = "#ffffff";
+          baseColor = "#aa00ff"; // 紫
+          highColor = "#ea80fc";
         } else if (damageVal >= 50) {
-          bulletColor = "#ff6d00"; // オレンジ
-          glowColor = "#ffab40";
-          textColor = "#ffffff";
+          baseColor = "#ff6d00"; // オレンジ
+          highColor = "#ffab40";
         } else {
-          bulletColor = "#00e5ff"; // シアン
-          glowColor = "#84ffff";
-          textColor = "#003333";
+          baseColor = "#00bcd4"; // シアン
+          highColor = "#84ffff";
         }
 
-        // 発光表現
-        ctx.shadowColor = glowColor;
-        ctx.shadowBlur = 15;
-        ctx.fillStyle = bulletColor;
+        const grad = ctx.createLinearGradient(startX, currentY, startX + contentWidth, currentY + slotHeight);
+        grad.addColorStop(0, highColor);
+        grad.addColorStop(0.5, baseColor);
+        grad.addColorStop(1, "rgba(0,0,0,0.3)");
+        
+        ctx.fillStyle = grad;
+        
+        ctx.shadowColor = baseColor;
+        ctx.shadowBlur = 10;
         ctx.fill();
+        ctx.shadowBlur = 0;
 
-        // 光沢ハイライト
-        ctx.fillStyle = "rgba(255,255,255,0.3)";
-        ctx.fillRect(startX + slant + 2, currentY, slotWidth - slant * 2 - 4, slotHeight / 2);
+        // ハイライト線
+        ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+        ctx.fillRect(startX + 2, currentY + 2, contentWidth - 4, 2);
 
         // ダメージ数値
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = textColor;
-        ctx.font = "bold 14px 'Roboto Mono', monospace"; // フォントサイズ調整
-        ctx.textAlign = "center";
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 12px 'Roboto Mono', monospace";
+        ctx.textAlign = "right";
         ctx.textBaseline = "middle";
-        const centerX = startX + slotWidth / 2;
-        const centerY = currentY + slotHeight / 2;
-        ctx.fillText(damageVal, centerX, centerY + 1);
+        ctx.fillText(damageVal, startX + contentWidth - 5, currentY + slotHeight / 2);
+        
         ctx.restore();
 
       } else {
-        // 空きスロットの場合
-        ctx.fillStyle = "rgba(255, 255, 255, 0.05)"; // 薄いグレー
+        // --- 空きスロット ---
+        const emptyGrad = ctx.createLinearGradient(startX, currentY, startX + contentWidth, currentY);
+        emptyGrad.addColorStop(0, "rgba(255, 255, 255, 0)");
+        emptyGrad.addColorStop(0.2, "rgba(255, 255, 255, 0.05)");
+        emptyGrad.addColorStop(0.5, "rgba(255, 255, 255, 0.1)"); 
+        emptyGrad.addColorStop(0.8, "rgba(255, 255, 255, 0.05)");
+        emptyGrad.addColorStop(1, "rgba(255, 255, 255, 0)");
+
+        ctx.fillStyle = emptyGrad;
         ctx.fill();
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
-        ctx.lineWidth = 1;
-        ctx.stroke();
       }
     }
 
-    // 残弾数の巨大数字表示（背景として薄く表示）
+    // 3. 残弾数カウンター
     ctx.save();
-    ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
-    ctx.font = "italic 80px 'Impact', sans-serif"; // さらに巨大に
     ctx.textAlign = "right";
-    ctx.textBaseline = "bottom";
-    // マガジンの右下に配置
-    ctx.fillText(stockedBullets.length, canvasWidth + 10, canvasHeight + 10);
+    ctx.textBaseline = "bottom"; // 文字の底辺を基準にする
+    
+    const countText = stockedBullets.length.toString();
+    const countX = canvasWidth - 10;
+    // 下端から10px上の位置に描画
+    const countY = canvasHeight - 10;
+
+    ctx.font = "italic 900 64px 'Verdana', sans-serif";
+    
+    ctx.strokeStyle = "rgba(0, 255, 255, 0.2)";
+    ctx.lineWidth = 2;
+    ctx.strokeText(countText, countX, countY);
+    
+    ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
+    ctx.fillText(countText, countX, countY);
+    
     ctx.restore();
 
-    // フルチャージ時のエフェクト
+    // 4. FULL CHARGE インジケーター
     if (stockedBullets.length === maxStock) {
-      ctx.fillStyle = "#00ff00";
-      ctx.font = "bold 12px sans-serif";
+      ctx.save();
+      // paddingYが増えたので、それに合わせて少し調整
+      ctx.translate(canvasWidth / 2, paddingY - 20);
+      
+      const alpha = 0.5 + Math.sin(Date.now() / 200) * 0.5;
+      
+      ctx.fillStyle = `rgba(0, 255, 0, ${alpha})`;
       ctx.shadowColor = "#00ff00";
       ctx.shadowBlur = 10;
+      ctx.font = "bold 12px 'Courier New', monospace";
       ctx.textAlign = "center";
-      ctx.fillText("FULL CHARGE", canvasWidth / 2, paddingY - 5);
+      ctx.fillText(">> SYSTEM READY <<", 0, 0);
+      
+      ctx.restore();
     }
 
     ctx.restore();
   }
-
   drawRadar(
     ctx,
     canvasWidth,
@@ -635,13 +672,11 @@ export class UIManager {
     obstaclesState,
     otherPlayersState
   ) {
-    const radarSize = 160;
-    const radarRadius = radarSize / 2;
-    const radarPadding = 20;
+    const size = Math.min(canvasWidth, canvasHeight);
+    const radarRadius = (size * 0.95) / 2;
 
-    const centerX = canvasWidth - radarRadius - radarPadding;
-    const centerY = radarPadding + radarRadius;
-
+    const centerX = canvasWidth / 2;
+    const centerY = canvasHeight / 2;
     const viewRadiusWorld = 1500;
     const scale = radarRadius / viewRadiusWorld;
 
@@ -698,7 +733,7 @@ export class UIManager {
         const distSq = (pos.x - centerX) ** 2 + (pos.y - centerY) ** 2;
         if (distSq <= radarRadius ** 2) {
           ctx.beginPath();
-          ctx.arc(pos.x, pos.y, 2.5, 0, Math.PI * 2);
+          ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
           ctx.fill();
         }
       });
@@ -708,26 +743,19 @@ export class UIManager {
       ctx.fillStyle = "#76ff03";
       otherPlayersState.forEach((p) => {
         const pos = getRadarPos(p.x, p.y);
-
         const distSq = (pos.x - centerX) ** 2 + (pos.y - centerY) ** 2;
         if (distSq <= radarRadius ** 2) {
           ctx.beginPath();
-          ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
+          ctx.arc(pos.x, pos.y, 3.5, 0, Math.PI * 2);
           ctx.fill();
         }
       });
     }
 
-    ctx.fillStyle = "#00bbd477";
+    ctx.fillStyle = "#00bbd4";
     ctx.beginPath();
     ctx.arc(centerX, centerY, 4, 0, Math.PI * 2);
     ctx.fill();
-
-    ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, 6, 0, Math.PI * 2);
-    ctx.stroke();
 
     ctx.restore();
   }

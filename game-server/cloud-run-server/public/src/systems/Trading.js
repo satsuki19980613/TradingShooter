@@ -93,13 +93,13 @@ export class Trading {
     const firstPrice = visibleData[0];
     // 上昇なら緑、下降なら赤
     ctx.strokeStyle = lastPrice >= firstPrice ? "#00ff00" : "#ff0055";
-    ctx.lineWidth = 2; // ★線を太くして見やすく
+    ctx.lineWidth = 1; // ★線を太くして見やすく
     ctx.shadowColor = ctx.strokeStyle;
     ctx.shadowBlur = 10; // ★発光エフェクト追加
     ctx.stroke();
     ctx.shadowBlur = 0; // リセット
 
-    // --- 移動平均線 (MA) ---
+    // --- 移動平均線 (MA) --
     ctx.beginPath();
     ctx.strokeStyle = "#00e1ff80"; // 半透明のシアン
     ctx.lineWidth = 1;
@@ -144,16 +144,28 @@ export class Trading {
       ctx.setLineDash([]);
     }
 
-    // --- 現在価格のテキスト表示 ---
-    ctx.font = "bold 24px 'Roboto Mono', monospace"; // ★文字を大きく
+   
+    
+    ctx.font = "bold 14px 'Roboto Mono', monospace"; 
+    const priceText = currentPrice.toFixed(0);
+    const textMetrics = ctx.measureText(priceText);
+    const textHeight = 14;
+    const textPadding = 4;
+    
+    const textX = chartX + chartWidth + 5;
+    const textY = Math.max(chartY + textHeight/2, Math.min(currentY, chartY + chartHeight - textHeight/2));
+
+    ctx.save();
+    ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+    ctx.fillRect(textX - 2, textY - textHeight/2 - 2, textMetrics.width + 4, textHeight + 4);
+
     ctx.fillStyle = lastPrice >= (chartData[chartData.length - 2] || 0) ? "#00ff00" : "#ff0055";
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
     ctx.shadowColor = "black";
-    ctx.shadowBlur = 4;
-    // チャートの右側に配置
-    ctx.fillText(currentPrice.toFixed(0), chartX + chartWidth + 5, Math.max(chartY + 12, Math.min(currentY, chartY + chartHeight - 12)));
+    ctx.shadowBlur = 0;
     
+    ctx.fillText(priceText, textX, textY);
     ctx.restore();
   }
 }

@@ -5,12 +5,147 @@
   },
   "obstacles": [
     {
+      "id": "obs-long-corner",
+      "type": "obstacle_wall",
+      "x": 1115,
+      "y": 825,
+      "width": 1030,
+      "height": 690,
+      "rotation": -90,
+      "className": "obs-long-corner",
+      "borderRadius": 0,
+      "colliders": [
+        {
+          "type": "rect",
+          "x": 81.54545454545455,
+          "y": -35.40624999999999,
+          "w": 923.78125,
+          "h": 313.6363636363636,
+          "angle": -90
+        },
+        {
+          "type": "rect",
+          "x": 158.3863636363636,
+          "y": 416.828125,
+          "w": 93.34375,
+          "h": 125.45454545454545,
+          "angle": -45
+        },
+        {
+          "type": "rect",
+          "x": -34.50000000000002,
+          "y": 336.359375,
+          "w": 318.65625,
+          "h": 404.59090909090907,
+          "angle": -90
+        }
+      ]
+    },
+    {
+      "id": "obs-long-corner",
+      "type": "obstacle_wall",
+      "x": 354,
+      "y": 1065,
+      "width": 1050,
+      "height": 720,
+      "rotation": 0,
+      "className": "obs-long-corner",
+      "borderRadius": 0,
+      "colliders": [
+        {
+          "type": "rect",
+          "x": 36.09375,
+          "y": 85.0909090909091,
+          "w": 941.71875,
+          "h": 327.2727272727273,
+          "angle": 0
+        },
+        {
+          "type": "rect",
+          "x": -424.921875,
+          "y": 165.27272727272728,
+          "w": 95.15625,
+          "h": 130.9090909090909,
+          "angle": 45
+        },
+        {
+          "type": "rect",
+          "x": -342.890625,
+          "y": -36,
+          "w": 324.84375,
+          "h": 422.1818181818182,
+          "angle": 0
+        }
+      ]
+    },
+    {
+      "id": "obs-standard-cyber",
+      "type": "obstacle_wall",
+      "x": 1540,
+      "y": 165,
+      "width": 980,
+      "height": 730,
+      "rotation": 0,
+      "className": "obs-standard-cyber",
+      "borderRadius": 0,
+      "colliders": [
+        {
+          "type": "rect",
+          "x": -49,
+          "y": -125.72222222222221,
+          "w": 838.4444444444445,
+          "h": 377.16666666666663,
+          "angle": 0
+        },
+        {
+          "type": "rect",
+          "x": 337.55555555555554,
+          "y": -206.83333333333331,
+          "w": 157.88888888888889,
+          "h": 182.5,
+          "angle": 44
+        },
+        {
+          "type": "rect",
+          "x": 370.22222222222223,
+          "y": 22.305555555555554,
+          "w": 217.77777777777777,
+          "h": 511,
+          "angle": 0
+        },
+        {
+          "type": "rect",
+          "x": 114.33333333333334,
+          "y": 212.91666666666666,
+          "w": 517.2222222222223,
+          "h": 292,
+          "angle": 0
+        },
+        {
+          "type": "rect",
+          "x": -280.3888888888889,
+          "y": 56.77777777777777,
+          "w": 370.22222222222223,
+          "h": 166.27777777777777,
+          "angle": 0
+        },
+        {
+          "type": "rect",
+          "x": 348.44444444444446,
+          "y": 261.5833333333333,
+          "w": 217.77777777777777,
+          "h": 117.6111111111111,
+          "angle": 45
+        }
+      ]
+    },
+    {
       "id": "obs-hexagon-fortress-animated",
       "type": "obstacle_wall",
-      "x": 310,
-      "y": 510,
-      "width": 500,
-      "height": 500,
+      "x": 830,
+      "y": 550,
+      "width": 300,
+      "height": 300,
       "rotation": 0,
       "className": "obs-hexagon-fortress-animated",
       "borderRadius": 0,
@@ -18,25 +153,25 @@
         {
           "type": "rect",
           "x": 0,
-          "y": -1.5625,
-          "w": 109.375,
-          "h": 56.25,
+          "y": -0.9375,
+          "w": 65.625,
+          "h": 33.75,
           "angle": 0
         },
         {
           "type": "rect",
-          "x": -1.5625,
+          "x": -0.9375,
           "y": 0,
-          "w": 109.375,
-          "h": 62.5,
+          "w": 65.625,
+          "h": 37.5,
           "angle": 60
         },
         {
           "type": "rect",
-          "x": -1.5625,
-          "y": -1.5625,
-          "w": 62.5,
-          "h": 106.25,
+          "x": -0.9375,
+          "y": -0.9375,
+          "w": 37.5,
+          "h": 63.75,
           "angle": 30
         }
       ]
@@ -44,8 +179,378 @@
     {
       "id": "obs-hexagon-fortress-animated",
       "type": "obstacle_wall",
-      "x": 1940,
-      "y": 420,
+      "x": 610,
+      "y": 810,
+      "width": 300,
+      "height": 300,
+      "rotation": 0,
+      "className": "obs-hexagon-fortress-animated",
+      "borderRadius": 0,
+      "colliders": [
+        {
+          "type": "rect",
+          "x": 0,
+          "y": -0.9375,
+          "w": 65.625,
+          "h": 33.75,
+          "angle": 0
+        },
+        {
+          "type": "rect",
+          "x": -0.9375,
+          "y": 0,
+          "w": 65.625,
+          "h": 37.5,
+          "angle": 60
+        },
+        {
+          "type": "rect",
+          "x": -0.9375,
+          "y": -0.9375,
+          "w": 37.5,
+          "h": 63.75,
+          "angle": 30
+        }
+      ]
+    },
+    {
+      "id": "obs-hexagon-fortress-animated",
+      "type": "obstacle_wall",
+      "x": 980,
+      "y": 840,
+      "width": 300,
+      "height": 300,
+      "rotation": 0,
+      "className": "obs-hexagon-fortress-animated",
+      "borderRadius": 0,
+      "colliders": [
+        {
+          "type": "rect",
+          "x": 0,
+          "y": -0.9375,
+          "w": 65.625,
+          "h": 33.75,
+          "angle": 0
+        },
+        {
+          "type": "rect",
+          "x": -0.9375,
+          "y": 0,
+          "w": 65.625,
+          "h": 37.5,
+          "angle": 60
+        },
+        {
+          "type": "rect",
+          "x": -0.9375,
+          "y": -0.9375,
+          "w": 37.5,
+          "h": 63.75,
+          "angle": 30
+        }
+      ]
+    },
+    {
+      "id": "obs-hexagon-fortress-animated",
+      "type": "obstacle_wall",
+      "x": 440,
+      "y": 530,
+      "width": 300,
+      "height": 300,
+      "rotation": 0,
+      "className": "obs-hexagon-fortress-animated",
+      "borderRadius": 0,
+      "colliders": [
+        {
+          "type": "rect",
+          "x": 0,
+          "y": -0.9375,
+          "w": 65.625,
+          "h": 33.75,
+          "angle": 0
+        },
+        {
+          "type": "rect",
+          "x": -0.9375,
+          "y": 0,
+          "w": 65.625,
+          "h": 37.5,
+          "angle": 60
+        },
+        {
+          "type": "rect",
+          "x": -0.9375,
+          "y": -0.9375,
+          "w": 37.5,
+          "h": 63.75,
+          "angle": 30
+        }
+      ]
+    },
+    {
+      "id": "obs-hexagon-fortress-animated",
+      "type": "obstacle_wall",
+      "x": 650,
+      "y": 240,
+      "width": 300,
+      "height": 300,
+      "rotation": 0,
+      "className": "obs-hexagon-fortress-animated",
+      "borderRadius": 0,
+      "colliders": [
+        {
+          "type": "rect",
+          "x": 0,
+          "y": -0.9375,
+          "w": 65.625,
+          "h": 33.75,
+          "angle": 0
+        },
+        {
+          "type": "rect",
+          "x": -0.9375,
+          "y": 0,
+          "w": 65.625,
+          "h": 37.5,
+          "angle": 60
+        },
+        {
+          "type": "rect",
+          "x": -0.9375,
+          "y": -0.9375,
+          "w": 37.5,
+          "h": 63.75,
+          "angle": 30
+        }
+      ]
+    },
+    {
+      "id": "obs-hexagon-fortress-animated",
+      "type": "obstacle_wall",
+      "x": 30,
+      "y": 2160,
+      "width": 780,
+      "height": 780,
+      "rotation": 0,
+      "className": "obs-hexagon-fortress-animated",
+      "borderRadius": 0,
+      "colliders": [
+        {
+          "type": "rect",
+          "x": 0,
+          "y": -2.4375,
+          "w": 170.625,
+          "h": 87.75,
+          "angle": 0
+        },
+        {
+          "type": "rect",
+          "x": -2.4375,
+          "y": 0,
+          "w": 170.625,
+          "h": 97.5,
+          "angle": 60
+        },
+        {
+          "type": "rect",
+          "x": -2.4375,
+          "y": -2.4375,
+          "w": 97.5,
+          "h": 165.75,
+          "angle": 30
+        }
+      ]
+    },
+    {
+      "id": "obs-long-corner",
+      "type": "obstacle_wall",
+      "x": 2020,
+      "y": 978,
+      "width": 980,
+      "height": 820,
+      "rotation": 0,
+      "className": "obs-long-corner",
+      "borderRadius": 0,
+      "colliders": [
+        {
+          "type": "rect",
+          "x": 33.6875,
+          "y": 96.9090909090909,
+          "w": 878.9375,
+          "h": 372.7272727272727,
+          "angle": 0
+        },
+        {
+          "type": "rect",
+          "x": -396.59375,
+          "y": 188.22727272727272,
+          "w": 88.8125,
+          "h": 149.0909090909091,
+          "angle": 45
+        },
+        {
+          "type": "rect",
+          "x": -320.03125,
+          "y": -41,
+          "w": 303.1875,
+          "h": 480.8181818181818,
+          "angle": 0
+        }
+      ]
+    },
+    {
+      "id": "obs-long-corner",
+      "type": "obstacle_wall",
+      "x": 780,
+      "y": 1725,
+      "width": 1120,
+      "height": 750,
+      "rotation": 180,
+      "className": "obs-long-corner",
+      "borderRadius": 0,
+      "colliders": [
+        {
+          "type": "rect",
+          "x": -38.500000000000014,
+          "y": -88.63636363636364,
+          "w": 1004.5,
+          "h": 340.90909090909093,
+          "angle": 180
+        },
+        {
+          "type": "rect",
+          "x": 453.25,
+          "y": -172.15909090909096,
+          "w": 101.5,
+          "h": 136.36363636363637,
+          "angle": 225
+        },
+        {
+          "type": "rect",
+          "x": 365.75,
+          "y": 37.49999999999996,
+          "w": 346.5,
+          "h": 439.7727272727273,
+          "angle": 180
+        }
+      ]
+    },
+    {
+      "id": "obs-hexagon-fortress-animated",
+      "type": "obstacle_wall",
+      "x": 960,
+      "y": 2250,
+      "width": 400,
+      "height": 400,
+      "rotation": 0,
+      "className": "obs-hexagon-fortress-animated",
+      "borderRadius": 0,
+      "colliders": [
+        {
+          "type": "rect",
+          "x": 0,
+          "y": -1.25,
+          "w": 87.5,
+          "h": 45,
+          "angle": 0
+        },
+        {
+          "type": "rect",
+          "x": -1.25,
+          "y": 0,
+          "w": 87.5,
+          "h": 50,
+          "angle": 60
+        },
+        {
+          "type": "rect",
+          "x": -1.25,
+          "y": -1.25,
+          "w": 50,
+          "h": 85,
+          "angle": 30
+        }
+      ]
+    },
+    {
+      "id": "obs-hexagon-fortress-animated",
+      "type": "obstacle_wall",
+      "x": 1210,
+      "y": 2600,
+      "width": 400,
+      "height": 400,
+      "rotation": 0,
+      "className": "obs-hexagon-fortress-animated",
+      "borderRadius": 0,
+      "colliders": [
+        {
+          "type": "rect",
+          "x": 0,
+          "y": -1.25,
+          "w": 87.5,
+          "h": 45,
+          "angle": 0
+        },
+        {
+          "type": "rect",
+          "x": -1.25,
+          "y": 0,
+          "w": 87.5,
+          "h": 50,
+          "angle": 60
+        },
+        {
+          "type": "rect",
+          "x": -1.25,
+          "y": -1.25,
+          "w": 50,
+          "h": 85,
+          "angle": 30
+        }
+      ]
+    },
+    {
+      "id": "obs-hexagon-fortress-animated",
+      "type": "obstacle_wall",
+      "x": 740,
+      "y": 2530,
+      "width": 400,
+      "height": 400,
+      "rotation": 0,
+      "className": "obs-hexagon-fortress-animated",
+      "borderRadius": 0,
+      "colliders": [
+        {
+          "type": "rect",
+          "x": 0,
+          "y": -1.25,
+          "w": 87.5,
+          "h": 45,
+          "angle": 0
+        },
+        {
+          "type": "rect",
+          "x": -1.25,
+          "y": 0,
+          "w": 87.5,
+          "h": 50,
+          "angle": 60
+        },
+        {
+          "type": "rect",
+          "x": -1.25,
+          "y": -1.25,
+          "w": 50,
+          "h": 85,
+          "angle": 30
+        }
+      ]
+    },
+    {
+      "id": "obs-hexagon-fortress-animated",
+      "type": "obstacle_wall",
+      "x": 2100,
+      "y": 1830,
       "width": 800,
       "height": 800,
       "rotation": 0,
@@ -81,10 +586,10 @@
     {
       "id": "obs-hexagon-fortress-animated",
       "type": "obstacle_wall",
-      "x": 2400,
-      "y": 1070,
-      "width": 500,
-      "height": 500,
+      "x": 1600,
+      "y": 2510,
+      "width": 400,
+      "height": 400,
       "rotation": 0,
       "className": "obs-hexagon-fortress-animated",
       "borderRadius": 0,
@@ -92,383 +597,26 @@
         {
           "type": "rect",
           "x": 0,
-          "y": -1.5625,
-          "w": 109.375,
-          "h": 56.25,
+          "y": -1.25,
+          "w": 87.5,
+          "h": 45,
           "angle": 0
         },
         {
           "type": "rect",
-          "x": -1.5625,
+          "x": -1.25,
           "y": 0,
-          "w": 109.375,
-          "h": 62.5,
+          "w": 87.5,
+          "h": 50,
           "angle": 60
         },
         {
           "type": "rect",
-          "x": -1.5625,
-          "y": -1.5625,
-          "w": 62.5,
-          "h": 106.25,
+          "x": -1.25,
+          "y": -1.25,
+          "w": 50,
+          "h": 85,
           "angle": 30
-        }
-      ]
-    },
-    {
-      "id": "obs-hexagon-fortress-animated",
-      "type": "obstacle_wall",
-      "x": 2400,
-      "y": 1730,
-      "width": 500,
-      "height": 500,
-      "rotation": 0,
-      "className": "obs-hexagon-fortress-animated",
-      "borderRadius": 0,
-      "colliders": [
-        {
-          "type": "rect",
-          "x": 0,
-          "y": -1.5625,
-          "w": 109.375,
-          "h": 56.25,
-          "angle": 0
-        },
-        {
-          "type": "rect",
-          "x": -1.5625,
-          "y": 0,
-          "w": 109.375,
-          "h": 62.5,
-          "angle": 60
-        },
-        {
-          "type": "rect",
-          "x": -1.5625,
-          "y": -1.5625,
-          "w": 62.5,
-          "h": 106.25,
-          "angle": 30
-        }
-      ]
-    },
-    {
-      "id": "obs-hexagon-fortress-animated",
-      "type": "obstacle_wall",
-      "x": 2210,
-      "y": 1400,
-      "width": 500,
-      "height": 500,
-      "rotation": 0,
-      "className": "obs-hexagon-fortress-animated",
-      "borderRadius": 0,
-      "colliders": [
-        {
-          "type": "rect",
-          "x": 0,
-          "y": -1.5625,
-          "w": 109.375,
-          "h": 56.25,
-          "angle": 0
-        },
-        {
-          "type": "rect",
-          "x": -1.5625,
-          "y": 0,
-          "w": 109.375,
-          "h": 62.5,
-          "angle": 60
-        },
-        {
-          "type": "rect",
-          "x": -1.5625,
-          "y": -1.5625,
-          "w": 62.5,
-          "h": 106.25,
-          "angle": 30
-        }
-      ]
-    },
-    {
-      "id": "obs-hexagon-fortress-animated",
-      "type": "obstacle_wall",
-      "x": 2210,
-      "y": 2060,
-      "width": 500,
-      "height": 500,
-      "rotation": 0,
-      "className": "obs-hexagon-fortress-animated",
-      "borderRadius": 0,
-      "colliders": [
-        {
-          "type": "rect",
-          "x": 0,
-          "y": -1.5625,
-          "w": 109.375,
-          "h": 56.25,
-          "angle": 0
-        },
-        {
-          "type": "rect",
-          "x": -1.5625,
-          "y": 0,
-          "w": 109.375,
-          "h": 62.5,
-          "angle": 60
-        },
-        {
-          "type": "rect",
-          "x": -1.5625,
-          "y": -1.5625,
-          "w": 62.5,
-          "h": 106.25,
-          "angle": 30
-        }
-      ]
-    },
-    {
-      "id": "obs-ushape-hangar",
-      "type": "obstacle_wall",
-      "x": 1240,
-      "y": 614.5,
-      "width": 1200,
-      "height": 411,
-      "rotation": -90,
-      "className": "obs-ushape-hangar",
-      "borderRadius": 0,
-      "colliders": [
-        {
-          "type": "rect",
-          "x": -109.6,
-          "y": -6.711064459327495e-15,
-          "w": 1197,
-          "h": 184.95,
-          "angle": -90
-        },
-        {
-          "type": "rect",
-          "x": 95.90000000000002,
-          "y": -513,
-          "w": 177,
-          "h": 219.2,
-          "angle": -90
-        },
-        {
-          "type": "rect",
-          "x": 95.89999999999996,
-          "y": 510,
-          "w": 177,
-          "h": 219.2,
-          "angle": -90
-        }
-      ]
-    },
-    {
-      "id": "obs-ushape-hangar",
-      "type": "obstacle_wall",
-      "x": 440,
-      "y": 614.5,
-      "width": 1200,
-      "height": 411,
-      "rotation": 90,
-      "className": "obs-ushape-hangar",
-      "borderRadius": 0,
-      "colliders": [
-        {
-          "type": "rect",
-          "x": 109.6,
-          "y": -6.711064459327495e-15,
-          "w": 1197,
-          "h": 184.95,
-          "angle": 90
-        },
-        {
-          "type": "rect",
-          "x": -95.89999999999996,
-          "y": 513,
-          "w": 177,
-          "h": 219.2,
-          "angle": 90
-        },
-        {
-          "type": "rect",
-          "x": -95.90000000000002,
-          "y": -510,
-          "w": 177,
-          "h": 219.2,
-          "angle": 90
-        }
-      ]
-    },
-    {
-      "id": "obs-ushape-hangar",
-      "type": "obstacle_wall",
-      "x": 440,
-      "y": 1984.5,
-      "width": 1200,
-      "height": 411,
-      "rotation": 90,
-      "className": "obs-ushape-hangar",
-      "borderRadius": 0,
-      "colliders": [
-        {
-          "type": "rect",
-          "x": 109.6,
-          "y": -6.711064459327495e-15,
-          "w": 1197,
-          "h": 184.95,
-          "angle": 90
-        },
-        {
-          "type": "rect",
-          "x": -95.89999999999996,
-          "y": 513,
-          "w": 177,
-          "h": 219.2,
-          "angle": 90
-        },
-        {
-          "type": "rect",
-          "x": -95.90000000000002,
-          "y": -510,
-          "w": 177,
-          "h": 219.2,
-          "angle": 90
-        }
-      ]
-    },
-    {
-      "id": "obs-ushape-hangar",
-      "type": "obstacle_wall",
-      "x": 1240,
-      "y": 1984.5,
-      "width": 1200,
-      "height": 411,
-      "rotation": -90,
-      "className": "obs-ushape-hangar",
-      "borderRadius": 0,
-      "colliders": [
-        {
-          "type": "rect",
-          "x": -109.6,
-          "y": -6.711064459327495e-15,
-          "w": 1197,
-          "h": 184.95,
-          "angle": -90
-        },
-        {
-          "type": "rect",
-          "x": 95.90000000000002,
-          "y": -513,
-          "w": 177,
-          "h": 219.2,
-          "angle": -90
-        },
-        {
-          "type": "rect",
-          "x": 95.89999999999996,
-          "y": 510,
-          "w": 177,
-          "h": 219.2,
-          "angle": -90
-        }
-      ]
-    },
-    {
-      "id": "obs-standard-cyber",
-      "type": "obstacle_wall",
-      "x": 0,
-      "y": 2385,
-      "width": 620,
-      "height": 430,
-      "rotation": 0,
-      "className": "obs-standard-cyber",
-      "borderRadius": 0,
-      "colliders": [
-        {
-          "type": "rect",
-          "x": -31,
-          "y": -74.05555555555556,
-          "w": 530.4444444444445,
-          "h": 222.16666666666666,
-          "angle": 0
-        },
-        {
-          "type": "rect",
-          "x": 213.55555555555557,
-          "y": -121.83333333333333,
-          "w": 99.8888888888889,
-          "h": 107.5,
-          "angle": 44
-        },
-        {
-          "type": "rect",
-          "x": 234.22222222222223,
-          "y": 13.13888888888889,
-          "w": 137.77777777777777,
-          "h": 301,
-          "angle": 0
-        },
-        {
-          "type": "rect",
-          "x": 72.33333333333334,
-          "y": 125.41666666666666,
-          "w": 327.22222222222223,
-          "h": 172,
-          "angle": 0
-        },
-        {
-          "type": "rect",
-          "x": -177.38888888888889,
-          "y": 33.44444444444444,
-          "w": 234.22222222222223,
-          "h": 97.94444444444444,
-          "angle": 0
-        },
-        {
-          "type": "rect",
-          "x": 220.44444444444446,
-          "y": 154.08333333333334,
-          "w": 137.77777777777777,
-          "h": 69.27777777777777,
-          "angle": 45
-        }
-      ]
-    },
-    {
-      "id": "obs-long-corner",
-      "type": "obstacle_wall",
-      "x": 1,
-      "y": 1085.5,
-      "width": 840,
-      "height": 393,
-      "rotation": 0,
-      "className": "obs-long-corner",
-      "borderRadius": 0,
-      "colliders": [
-        {
-          "type": "rect",
-          "x": 28.875,
-          "y": 46.445454545454545,
-          "w": 753.375,
-          "h": 178.63636363636363,
-          "angle": 0
-        },
-        {
-          "type": "rect",
-          "x": -339.9375,
-          "y": 90.21136363636364,
-          "w": 76.125,
-          "h": 71.45454545454545,
-          "angle": 45
-        },
-        {
-          "type": "rect",
-          "x": -274.3125,
-          "y": -19.65,
-          "w": 259.875,
-          "h": 230.4409090909091,
-          "angle": 0
         }
       ]
     }

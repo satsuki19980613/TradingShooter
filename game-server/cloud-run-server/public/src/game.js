@@ -145,14 +145,11 @@ export class Game {
   resizeCanvas() {
     if (!this.uiManager) return;
 
-    // 親要素IDの変更に対応: game-field-container -> game-field-wrapper
     const fieldWrapper = document.getElementById("game-field-wrapper");
     const fieldContainer = document.getElementById("game-field-container");
-    
+
     if (fieldWrapper && fieldContainer) {
       const rect = fieldWrapper.getBoundingClientRect();
-      
-      // コンテナ自体のサイズも合わせる
       fieldContainer.style.width = `${rect.width}px`;
       fieldContainer.style.height = `${rect.height}px`;
 
@@ -163,6 +160,22 @@ export class Game {
         this.uiCanvas.width = rect.width;
         this.uiCanvas.height = rect.height;
       }
+    }
+
+    if (this.chartCanvas && this.chartCanvas.parentElement) {
+      this.chartCanvas.width = this.chartCanvas.parentElement.clientWidth;
+      this.chartCanvas.height = this.chartCanvas.parentElement.clientHeight;
+    }
+
+    if (this.radarCanvas && this.radarCanvas.parentElement) {
+      this.radarCanvas.width = this.radarCanvas.parentElement.clientWidth;
+      this.radarCanvas.height = this.radarCanvas.parentElement.clientHeight;
+    }
+
+    if (this.magazineCanvas && this.magazineCanvas.parentElement) {
+      this.magazineCanvas.width = this.magazineCanvas.parentElement.clientWidth;
+      this.magazineCanvas.height =
+        this.magazineCanvas.parentElement.clientHeight;
     }
   }
   /**
