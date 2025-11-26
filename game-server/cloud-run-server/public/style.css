@@ -109,34 +109,40 @@ body {
     align-items: center;     /* 上下中央 */
     background-color: #000;  /* 余白部分の色（黒帯） */
 }
+/* style.css */
+
 #game-container {
-    width: 100%;
-    height: 100%;
+    /* width: 100%; */   /* ← 元の記述 */
+    /* height: 100%; */  /* ← 元の記述 */
     
-    /* ▼▼▼ ここが調整のキモです ▼▼▼ */
+    /* ▼▼▼ 修正前 (これが原因でした) ▼▼▼ */
+    /* width: auto; */   /* ← これを削除 */
+    /* height: auto; */  /* ← これを削除 */
     
-    /* 最大幅を制限 (例: フルHD以上には広がらない) */
+    /* ▼▼▼ 修正後: 以下の2行に書き換えてください ▼▼▼ */
+    /* 画面の幅いっぱい(100%) と、高さ制限(90vh)から逆算した幅 のうち、小さい方を採用する */
+    width: min(100%, 177.78vh); /* 16:9比率の場合、高さの1.77倍が幅の上限 */
+    height: auto;               /* アスペクト比に従って高さは自動決定 */
+
+    /* 最大幅制限 */
     max-width: 1600px; 
-    
-    /* アスペクト比を 16:9 に固定 */
+    max-height: 90vh;
+
+    /* アスペクト比を固定 */
     aspect-ratio: 16 / 9; 
     
-    /* 画面からはみ出さないように調整 */
-    max-height: 90vh; /* 上下に少し余白を持たせる */
-    
-    /* 画面サイズに合わせて縮小・拡大 */
-    width: auto;
-    height: auto;
-    
-    /* ゲーム画面自体の枠線や影（没入感を高める） */
+    /* ゲーム画面自体の枠線や影 */
     box-shadow: 0 0 50px rgba(0, 255, 255, 0.2);
     border: 1px solid #333;
     position: relative;
-    overflow: hidden; /* はみ出し防止 */
-    background-color: #050a15; /* ゲーム背景色 */
+    overflow: hidden;
+    background-color: #050a15;
     display: flex;
     justify-content: center;
     align-items: center;
+    
+    /* 中央配置を確実にする */
+    margin: auto;
 }
 #game-field-container {
     width: 100%;
