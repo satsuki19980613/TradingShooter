@@ -26,4 +26,4 @@ window.addEventListener("load", () => {
     bgVideo.volume = 0; // 念のため音量を0に設定
   }
 });
-// ↑ ここでファイルが終わるようにする（以降の export 処理は全削除）
+// KB
