@@ -14,6 +14,7 @@ import { ServerConfig, GameConstants } from "./ServerConfig.js";
 import { ServerAccountManager } from "./ServerAccountManager.js";
 import { ServerNetworkSystem } from "./ServerNetworkSystem.js";
 import { ServerPhysicsSystem } from "./ServerPhysicsSystem.js";
+import { ServerPersistenceManager } from "./ServerPersistenceManager.js";
 
 const IDLE_WARNING_TIME = 180000;
 const IDLE_TIMEOUT_TIME = 300000;
@@ -31,6 +32,7 @@ export class ServerGame {
     this.roomId = roomId;
     this.firestore = firestore;
     this.accountManager = new ServerAccountManager(firestore);
+    this.persistenceManager = new ServerPersistenceManager(firestore);
     this.onRoomEmptyCallback = onRoomEmptyCallback;
     this.players = new Map();
     this.enemies = [];
@@ -525,6 +527,7 @@ export class ServerGame {
       attackerPlayer.hp = Math.min(100, attackerPlayer.hp + 20);
       attackerPlayer.isDirty = true;
     }
+    this.persistenceManager.saveScore(player.id, player.name, player.score);
     player.ep = 0;
     player.isDirty = true;
 
@@ -541,42 +544,7 @@ export class ServerGame {
     }, 0);
   }
 
-  async saveScoreToFirestore(userId, name, score) {
-    if (!this.firestore) {
-      console.error("Firestore インスタンスがありません！");
-      return;
-    }
-    const finalScore = Math.round(score);
-    const rankDocRef = this.firestore.collection("ranking").doc(userId);
-    try {
-      await this.firestore.runTransaction(async (transaction) => {
-        const docSnapshot = await transaction.get(rankDocRef);
-        const currentData = docSnapshot.data();
-        const currentHighScore =
-          currentData && currentData.highScore ? currentData.highScore : 0;
-        if (finalScore > currentHighScore) {
-          const newScoreData = {
-            uid: userId,
-            name: name,
-            highScore: finalScore,
-            lastPlayed: FieldValue.serverTimestamp(),
-          };
-          transaction.set(rankDocRef, newScoreData, { merge: true });
-        } else {
-          if (docSnapshot.exists) {
-            transaction.update(rankDocRef, {
-              lastPlayed: FieldValue.serverTimestamp(),
-            });
-          }
-        }
-      });
-    } catch (error) {
-      console.error(
-        "[ServerGame] Firestore へのスコア保存 (トランザクション) に失敗:",
-        error
-      );
-    }
-  }
+ 
 
   spawnEnemy() {
     const enemyRadius = 45;

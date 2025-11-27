@@ -9,6 +9,7 @@ import { InputManager } from "./systems/InputManager.js";
 import { ClientConfig } from "./ClientConfig.js";
 import { skinManager } from "./systems/SkinManager.js";
 import { GridSkin } from "./skins/environment/GridSkin.js";
+import { RenderSystem } from "./systems/RenderSystem.js";
 const RENDER_LOOP_INTERVAL = ClientConfig.RENDER_LOOP_INTERVAL;
 const INPUT_SEND_INTERVAL = ClientConfig.INPUT_SEND_INTERVAL;
 
@@ -26,6 +27,7 @@ export class Game {
     this.firebaseManager = null;
     this.networkManager = null;
     this.trading = new Trading();
+    this.renderSystem = new RenderSystem();
 
     this.inputManager = new InputManager();
     this.isGameOver = false;
@@ -227,26 +229,35 @@ export class Game {
   renderLoop() {
     this.renderLoopId = requestAnimationFrame(this.renderLoop.bind(this));
 
+    // --- 1. エンティティの更新 (Update) ---
+    // パーティクルの更新と寿命切れの削除
     this.particles = this.particles.filter((p) => {
       p.update();
       return p.alpha > 0;
     });
 
+    // 各エンティティの座標更新
     this.playerEntities.forEach((p) => p.update());
     this.enemyEntities.forEach((e) => e.update());
     this.bulletEntities.forEach((b) => b.update());
 
+    // カメラと入力座標の更新
     this.updateCamera();
-
     this.inputManager.updateMouseWorldPos(
       this.mouseWorldPos.x,
       this.mouseWorldPos.y
     );
 
+    // --- 2. 描画 (Render) ---
     const ctx = this.gameCtx;
+    
+    // 背景描画
     this.drawBackground(ctx);
+
     ctx.save();
     ctx.translate(-this.cameraX, -this.cameraY);
+
+    // 障害物の描画 (画面内のみ描画するカリング処理付き)
     this.obstacleEntities.forEach((obs) => {
       if (
         obs.x + obs.width > this.cameraX &&
@@ -254,23 +265,52 @@ export class Game {
         obs.y + obs.height > this.cameraY &&
         obs.y < this.cameraY + this.gameCanvas.height
       ) {
+        // 将来的には this.renderSystem.renderObstacle(ctx, obs); に移行推奨
         obs.draw(ctx);
       }
     });
-    this.particles.forEach((p) => p.draw(ctx));
-    this.bulletEntities.forEach((b) => b.draw(ctx));
-    this.playerEntities.forEach((p) => p.draw(ctx));
-    this.enemyEntities.forEach((e) => e.draw(ctx));
+
+    // パーティクルの描画
+    this.particles.forEach((p) => {
+        // 将来的には this.renderSystem.renderParticle(ctx, p); に移行推奨
+        p.draw(ctx);
+    });
+
+    // 弾の描画
+    this.bulletEntities.forEach((b) => {
+        // 将来的には this.renderSystem.renderBullet(ctx, b); に移行推奨
+        b.draw(ctx);
+    });
+
+    // ▼▼▼ 変更箇所: RenderSystem を使用して描画 ▼▼▼
+
+    // プレイヤーの描画
+    this.playerEntities.forEach((p) => {
+        // 旧: p.draw(ctx);
+        this.renderSystem.renderPlayer(ctx, p);
+    });
+
+    // 敵の描画
+    this.enemyEntities.forEach((e) => {
+        // 旧: e.draw(ctx);
+        this.renderSystem.renderEnemy(ctx, e);
+    });
+
+    // ▲▲▲ 変更ここまで ▲▲▲
 
     ctx.restore();
+
+    // --- 3. UI (HUD) の更新 ---
     this.uiCtx.clearRect(0, 0, this.uiCanvas.width, this.uiCanvas.height);
 
+    // DOM要素（障害物など）の位置同期
     this.uiManager.syncDomElements(this.cameraX, this.cameraY);
 
+    // 自分のステータスを取得してHUD更新
     const myPlayerState = this.playerEntities.get(this.userId);
-
     this.uiManager.syncHUD(myPlayerState, this.trading.tradeState);
 
+    // チャートの描画
     if (this.chartCtx) {
       this.chartCtx.clearRect(
         0,
@@ -278,7 +318,6 @@ export class Game {
         this.chartCanvas.width,
         this.chartCanvas.height
       );
-
       this.trading.drawChart(
         this.chartCtx,
         this.chartCanvas.width,
@@ -287,6 +326,7 @@ export class Game {
       );
     }
 
+    // マガジン（弾倉）UIの描画
     if (this.magazineCtx) {
       this.magazineCtx.clearRect(
         0,
@@ -302,6 +342,7 @@ export class Game {
       );
     }
 
+    // レーダーの描画
     if (this.radarCtx) {
       this.radarCtx.clearRect(
         0,
@@ -309,7 +350,6 @@ export class Game {
         this.radarCanvas.width,
         this.radarCanvas.height
       );
-
       const enemiesState = Array.from(this.enemyEntities.values());
       const otherPlayersState = [];
       for (const [id, player] of this.playerEntities.entries()) {
@@ -330,6 +370,8 @@ export class Game {
         otherPlayersState
       );
     }
+
+    // デバッグ情報の更新
     if (this.uiManager.isDebugMode) {
       const stats = this.networkManager.getStats();
       const simStats = this.networkManager.getSimulationStats();

@@ -10,7 +10,7 @@ const MSG_TYPE_DELTA = 1;
 export class ServerNetworkSystem {
   constructor(game) {
     this.game = game;
-    this.buffer = Buffer.allocUnsafe(64 * 1024);
+    
   }
 
   broadcastGameState(players, frameEvents) {
@@ -103,110 +103,101 @@ export class ServerNetworkSystem {
   /**
    * バイナリデータの生成（削除情報とトレード情報を含む完全版）
    */
-  createBinaryDelta(oldEntityMaps, newEntityMaps) {
-    let offset = 0;
-    offset = this.buffer.writeUInt8(MSG_TYPE_DELTA, offset);
+createBinaryDelta(oldEntityMaps, newEntityMaps) {
+    const writer = new PacketWriter();
 
+    // 1. メッセージタイプ
+    writer.u8(MSG_TYPE_DELTA);
+
+    // 2. 削除されたプレイヤーID
     const removedPlayers = [];
     if (oldEntityMaps && oldEntityMaps.players) {
       for (const id of oldEntityMaps.players.keys()) {
         if (!newEntityMaps.players.has(id)) removedPlayers.push(id);
       }
     }
-    offset = this.buffer.writeUInt8(
-      Math.min(removedPlayers.length, 255),
-      offset
-    );
-    for (const id of removedPlayers) offset = this.writeString(id, offset);
+    writer.u8(Math.min(removedPlayers.length, 255));
+    for (const id of removedPlayers) writer.string(id);
 
+    // 3. 削除された敵ID
     const removedEnemies = [];
     if (oldEntityMaps && oldEntityMaps.enemies) {
       for (const id of oldEntityMaps.enemies.keys()) {
         if (!newEntityMaps.enemies.has(id)) removedEnemies.push(id);
       }
     }
-    offset = this.buffer.writeUInt8(
-      Math.min(removedEnemies.length, 255),
-      offset
-    );
-    for (const id of removedEnemies) offset = this.writeString(id, offset);
+    writer.u8(Math.min(removedEnemies.length, 255));
+    for (const id of removedEnemies) writer.string(id);
 
+    // 4. 削除された弾ID
     const removedBullets = [];
     if (oldEntityMaps && oldEntityMaps.bullets) {
       for (const id of oldEntityMaps.bullets.keys()) {
         if (!newEntityMaps.bullets.has(id)) removedBullets.push(id);
       }
     }
-    offset = this.buffer.writeUInt16LE(
-      Math.min(removedBullets.length, 65535),
-      offset
-    );
-    for (const id of removedBullets) offset = this.writeString(id, offset);
+    writer.u16(Math.min(removedBullets.length, 65535));
+    for (const id of removedBullets) writer.string(id);
 
+    // 5. プレイヤー更新情報
     const players = Array.from(newEntityMaps.players.values());
-    offset = this.buffer.writeUInt8(Math.min(players.length, 255), offset);
-
+    writer.u8(Math.min(players.length, 255));
     for (const p of players) {
       const s = p.getState();
-      offset = this.writeString(s.id, offset);
-      offset = this.buffer.writeFloatLE(R(s.x), offset);
-      offset = this.buffer.writeFloatLE(R(s.y), offset);
-      offset = this.buffer.writeUInt8(
-        Math.min(Math.max(0, Math.ceil(s.hp)), 255),
-        offset
-      );
-      offset = this.buffer.writeFloatLE(R1(s.aimAngle), offset);
-      offset = this.buffer.writeUInt8(s.isDead ? 1 : 0, offset);
-      offset = this.buffer.writeUInt16LE(Math.floor(s.ep), offset);
-
-      offset = this.buffer.writeUInt16LE(s.chargeBetAmount || 10, offset);
+      writer.string(s.id);
+      writer.f32(R(s.x));
+      writer.f32(R(s.y));
+      writer.u8(Math.min(Math.max(0, Math.ceil(s.hp)), 255));
+      writer.f32(R1(s.aimAngle));
+      writer.u8(s.isDead ? 1 : 0);
+      writer.u16(Math.floor(s.ep));
+      writer.u16(s.chargeBetAmount || 10);
 
       if (s.chargePosition) {
-        offset = this.buffer.writeUInt8(1, offset);
-        offset = this.buffer.writeFloatLE(s.chargePosition.entryPrice, offset);
-        offset = this.buffer.writeFloatLE(s.chargePosition.amount, offset);
+        writer.u8(1);
+        writer.f32(s.chargePosition.entryPrice);
+        writer.f32(s.chargePosition.amount);
       } else {
-        offset = this.buffer.writeUInt8(0, offset);
+        writer.u8(0);
       }
 
       const bullets = s.stockedBullets || [];
-      offset = this.buffer.writeUInt8(Math.min(bullets.length, 255), offset);
+      writer.u8(Math.min(bullets.length, 255));
       for (const dmg of bullets) {
-        offset = this.buffer.writeUInt16LE(Math.ceil(dmg), offset);
+        writer.u16(Math.ceil(dmg));
       }
     }
 
+    // 6. 敵更新情報
     const enemies = Array.from(newEntityMaps.enemies.values());
-    offset = this.buffer.writeUInt8(Math.min(enemies.length, 255), offset);
+    writer.u8(Math.min(enemies.length, 255));
     for (const e of enemies) {
       const s = e.getState();
-      offset = this.writeString(s.id, offset);
-      offset = this.buffer.writeFloatLE(R(s.x), offset);
-      offset = this.buffer.writeFloatLE(R(s.y), offset);
-      offset = this.buffer.writeUInt8(
-        Math.min(Math.max(0, Math.ceil(s.hp)), 255),
-        offset
-      );
-      offset = this.buffer.writeFloatLE(R1(s.targetAngle || 0), offset);
+      writer.string(s.id);
+      writer.f32(R(s.x));
+      writer.f32(R(s.y));
+      writer.u8(Math.min(Math.max(0, Math.ceil(s.hp)), 255));
+      writer.f32(R1(s.targetAngle || 0));
     }
 
+    // 7. 弾更新情報
     const bullets = Array.from(newEntityMaps.bullets.values());
-    offset = this.buffer.writeUInt16LE(Math.min(bullets.length, 65535), offset);
+    writer.u16(Math.min(bullets.length, 65535));
     for (const b of bullets) {
       const s = b.getState();
-      offset = this.writeString(s.id, offset);
-      offset = this.buffer.writeFloatLE(R(s.x), offset);
-      offset = this.buffer.writeFloatLE(R(s.y), offset);
-      offset = this.buffer.writeFloatLE(R1(s.angle), offset);
+      writer.string(s.id);
+      writer.f32(R(s.x));
+      writer.f32(R(s.y));
+      writer.f32(R1(s.angle));
 
       let typeId = 0;
       if (s.type === "enemy") typeId = 1;
       else if (s.type === "player_special") typeId = 2;
       else if (s.type === 'item_ep') typeId = 3;
-      offset = this.buffer.writeUInt8(typeId, offset);
+      writer.u8(typeId);
     }
 
-    return this.buffer.subarray(0, offset);
+    return writer.getData();
   }
 
   writeString(str, offset) {

@@ -1,3 +1,4 @@
+import { PacketReader } from "../utils/PacketReader.js";
 const INPUT_BIT_MAP = {
   move_up: 1 << 0,
   move_down: 1 << 1,
@@ -170,154 +171,97 @@ export class NetworkManager {
     });
   }
 
-  handleBinaryMessage(arrayBuffer) {
-    const view = new DataView(arrayBuffer);
-    let offset = 0;
+ handleBinaryMessage(arrayBuffer) {
+    const reader = new PacketReader(arrayBuffer);
 
-    const msgType = view.getUint8(offset);
-    offset += 1;
+    // 1. メッセージタイプ
+    const msgType = reader.u8();
 
-    if (msgType === 1) {
+    if (msgType === 1) { // MSG_TYPE_DELTA
       const delta = {
         updated: { players: [], enemies: [], bullets: [] },
         removed: { players: [], enemies: [], bullets: [] },
       };
 
-      const remPlayerCount = view.getUint8(offset);
-      offset += 1;
+      // 2. 削除されたプレイヤー
+      const remPlayerCount = reader.u8();
       for (let i = 0; i < remPlayerCount; i++) {
-        const idLen = view.getUint8(offset);
-        offset += 1;
-        delta.removed.players.push(this.readString(view, offset, idLen));
-        offset += idLen;
+        delta.removed.players.push(reader.string());
       }
 
-      const remEnemyCount = view.getUint8(offset);
-      offset += 1;
+      // 3. 削除された敵
+      const remEnemyCount = reader.u8();
       for (let i = 0; i < remEnemyCount; i++) {
-        const idLen = view.getUint8(offset);
-        offset += 1;
-        delta.removed.enemies.push(this.readString(view, offset, idLen));
-        offset += idLen;
+        delta.removed.enemies.push(reader.string());
       }
 
-      const remBulletCount = view.getUint16(offset, true);
-      offset += 2;
+      // 4. 削除された弾
+      const remBulletCount = reader.u16();
       for (let i = 0; i < remBulletCount; i++) {
-        const idLen = view.getUint8(offset);
-        offset += 1;
-        delta.removed.bullets.push(this.readString(view, offset, idLen));
-        offset += idLen;
+        delta.removed.bullets.push(reader.string());
       }
 
-      const playerCount = view.getUint8(offset);
-      offset += 1;
+      // 5. プレイヤー更新
+      const playerCount = reader.u8();
       for (let i = 0; i < playerCount; i++) {
-        const idLen = view.getUint8(offset);
-        offset += 1;
-        const id = this.readString(view, offset, idLen);
-        offset += idLen;
+        const p = {};
+        p.i = reader.string();
+        p.x = reader.f32();
+        p.y = reader.f32();
+        p.h = reader.u8();
+        p.a = reader.f32();
+        p.d = reader.u8();
+        p.e = reader.u16();
+        p.ba = reader.u16();
 
-        const x = view.getFloat32(offset, true);
-        offset += 4;
-        const y = view.getFloat32(offset, true);
-        offset += 4;
-        const hp = view.getUint8(offset);
-        offset += 1;
-        const angle = view.getFloat32(offset, true);
-        offset += 4;
-        const isDeadVal = view.getUint8(offset);
-        offset += 1;
-        const epVal = view.getUint16(offset, true);
-        offset += 2;
-        const betAmount = view.getUint16(offset, true);
-        offset += 2;
-
-        let chargePos = null;
-        const hasCharge = view.getUint8(offset);
-        offset += 1;
+        const hasCharge = reader.u8();
         if (hasCharge === 1) {
-          const ep = view.getFloat32(offset, true);
-          offset += 4;
-          const amt = view.getFloat32(offset, true);
-          offset += 4;
-          chargePos = { ep: ep, a: amt };
+          p.cp = {
+            ep: reader.f32(),
+            a: reader.f32(),
+          };
+        } else {
+          p.cp = null;
         }
 
-        const stockCount = view.getUint8(offset);
-        offset += 1;
-        const stockedBullets = [];
+        const stockCount = reader.u8();
+        p.sb = [];
         for (let j = 0; j < stockCount; j++) {
-          stockedBullets.push(view.getUint16(offset, true));
-          offset += 2;
+          p.sb.push(reader.u16());
         }
 
-        delta.updated.players.push({
-          i: id,
-          x: x,
-          y: y,
-          h: hp,
-          a: angle,
-          d: isDeadVal,
-          e: epVal,
-          ba: betAmount,
-          cp: chargePos,
-          sb: stockedBullets,
-        });
+        delta.updated.players.push(p);
       }
 
-      const enemyCount = view.getUint8(offset);
-      offset += 1;
+      // 6. 敵更新
+      const enemyCount = reader.u8();
       for (let i = 0; i < enemyCount; i++) {
-        const idLen = view.getUint8(offset);
-        offset += 1;
-        const id = this.readString(view, offset, idLen);
-        offset += idLen;
-        const x = view.getFloat32(offset, true);
-        offset += 4;
-        const y = view.getFloat32(offset, true);
-        offset += 4;
-        const hp = view.getUint8(offset);
-        offset += 1;
-        const angle = view.getFloat32(offset, true);
-        offset += 4;
-
-        delta.updated.enemies.push({
-          i: id,
-          x: x,
-          y: y,
-          h: hp,
-          ta: angle,
-        });
+        const e = {};
+        e.i = reader.string();
+        e.x = reader.f32();
+        e.y = reader.f32();
+        e.h = reader.u8();
+        e.ta = reader.f32();
+        delta.updated.enemies.push(e);
       }
 
-      const bulletCount = view.getUint16(offset, true);
-      offset += 2;
+      // 7. 弾更新
+      const bulletCount = reader.u16();
       for (let i = 0; i < bulletCount; i++) {
-        const idLen = view.getUint8(offset);
-        offset += 1;
-        const id = this.readString(view, offset, idLen);
-        offset += idLen;
-        const x = view.getFloat32(offset, true);
-        offset += 4;
-        const y = view.getFloat32(offset, true);
-        offset += 4;
-        const angle = view.getFloat32(offset, true);
-        offset += 4;
-        const typeId = view.getUint8(offset);
-        offset += 1;
-
+        const b = {};
+        b.i = reader.string();
+        b.x = reader.f32();
+        b.y = reader.f32();
+        b.a = reader.f32();
+        
+        const typeId = reader.u8();
         let type = "player";
         if (typeId === 1) type = "enemy";
         else if (typeId === 2) type = "player_special";
         else if (typeId === 3) type = "item_ep";
-        delta.updated.bullets.push({
-          i: id,
-          x: x,
-          y: y,
-          a: angle,
-          t: type,
-        });
+        b.t = type;
+
+        delta.updated.bullets.push(b);
       }
 
       this.game.applyDelta(delta);

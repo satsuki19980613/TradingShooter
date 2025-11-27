@@ -1,7 +1,5 @@
 import { GameObject } from "./GameObject.js";
-import { skinManager } from "../systems/SkinManager.js";
-import { PlayerSkins } from "../skins/players/PlayerSkins.js";
-import { GMSkins } from "../skins/players/GMSkins.js";
+
 
 function lerpAngle(current, target, rate) {
   let delta = target - current;
@@ -103,58 +101,5 @@ export class Player extends GameObject {
 
     this.stockedBullets = state.sb;
   }
-  draw(ctx) {
-    if (this.isDead) return;
-    const skinSize = 150;
-    const color = this.color || "#00e5ff";
 
-    const chassisSkin = skinManager.getSkin(
-      `player_chassis_${color}`,
-      skinSize,
-      skinSize,
-      PlayerSkins.chassis(color)
-    );
-
-    const turretSkin = skinManager.getSkin(
-      `player_turret_${color}`,
-      skinSize,
-      skinSize,
-      PlayerSkins.turret(color)
-    );
-
-    ctx.save();
-    ctx.translate(this.x, this.y);
-
-    ctx.fillStyle = "white";
-    ctx.font = "bold 12px 'Roboto Mono', monospace";
-    ctx.textAlign = "center";
-    ctx.shadowColor = "black";
-    ctx.shadowBlur = 4;
-    ctx.fillText(this.name, 0, -this.radius - 15);
-    ctx.shadowBlur = 0;
-
-    ctx.save();
-
-    ctx.rotate(this.rotationAngle + Math.PI / 2);
-
-    ctx.drawImage(chassisSkin, -skinSize / 2, -skinSize / 2);
-    ctx.restore();
-
-    ctx.save();
-
-    ctx.rotate(this.aimAngle);
-    ctx.drawImage(turretSkin, -skinSize / 2, -skinSize / 2);
-
-    ctx.globalAlpha = 0.2;
-    ctx.strokeStyle = color;
-    ctx.setLineDash([10, 10]);
-    ctx.beginPath();
-    ctx.moveTo(40, 0);
-    ctx.lineTo(300, 0);
-    ctx.stroke();
-
-    ctx.restore();
-
-    ctx.restore();
-  }
 }
