@@ -282,18 +282,7 @@ export class ServerGame {
     this.enemies.forEach((enemy) => {
       enemy.update(this);
     });
-    for (let i = this.bullets.length - 1; i >= 0; i--) {
-      const bullet = this.bullets[i];
-      bullet.update();
-      if (
-        bullet.x < 0 ||
-        bullet.x > this.WORLD_WIDTH ||
-        bullet.y < 0 ||
-        bullet.y > this.WORLD_HEIGHT
-      ) {
-        this.removeBullet(bullet, i);
-      }
-    }
+
     this.grid.clear();
     this.players.forEach((p) => this.grid.insert(p));
     this.enemies.forEach((e) => this.grid.insert(e));
