@@ -186,7 +186,7 @@ export class ServerGame {
     const player = this.players.get(userId);
     if (player) {
       player.name = newName;
-      player.isDirty = true; // クライアントへ変更を通知するため
+      player.isDirty = true; // クライアントへ変更を通知するためよふかしうた2
       console.log(`[ServerGame] プレイヤー名を更新: ID=${userId} -> ${newName}`);
     }
   }
