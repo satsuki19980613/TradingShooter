@@ -51,8 +51,15 @@ export class ServerObstacle extends ServerGameObject {
   }
 
   setColliders(collidersData) {
-    if (collidersData && collidersData.length > 0) {
+    // ★修正: 配列が渡されていれば、空(length 0)でも上書きを実行する
+    if (Array.isArray(collidersData)) {
       this.colliders = collidersData.filter((c) => c.type === "rect");
+      
+      // コライダーが空の場合は半径を0にする
+      if (this.colliders.length === 0) {
+        this.maxColliderRadius = 0;
+        return;
+      }
 
       let maxDist = 0;
       for (const c of this.colliders) {

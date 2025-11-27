@@ -305,5 +305,25 @@
       "angle": 0
     }
   ]
+},
+{
+  "id": "obs-cyberpunk-road",
+  "name": "obs-cyberpunk-road",
+  "type": "obstacle_wall",
+  "className": "obs-cyberpunk-road",
+  "width": 300,
+  "height": 400,
+  "borderRadius": 0,
+  "colliders": []
+},
+{
+  "id": "obs-cyberpunk-road-curve",
+  "name": "obs-cyberpunk-road-curve",
+  "type": "obstacle_wall",
+  "className": "obs-cyberpunk-road-curve",
+  "width": 400,
+  "height": 300,
+  "borderRadius": 0,
+  "colliders": []
 }
 ]

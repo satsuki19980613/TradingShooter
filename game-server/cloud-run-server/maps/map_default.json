@@ -5,554 +5,96 @@
   },
   "obstacles": [
     {
-      "id": "obs-long-corner",
+      "id": "obs-cyberpunk-road",
       "type": "obstacle_wall",
-      "x": 1115,
-      "y": 825,
-      "width": 1030,
-      "height": 690,
-      "rotation": -90,
-      "className": "obs-long-corner",
+      "x": 585,
+      "y": 1570,
+      "width": 450,
+      "height": 480,
+      "rotation": 90,
+      "className": "obs-cyberpunk-road",
       "borderRadius": 0,
-      "colliders": [
-        {
-          "type": "rect",
-          "x": 81.54545454545455,
-          "y": -35.40624999999999,
-          "w": 923.78125,
-          "h": 313.6363636363636,
-          "angle": -90
-        },
-        {
-          "type": "rect",
-          "x": 158.3863636363636,
-          "y": 416.828125,
-          "w": 93.34375,
-          "h": 125.45454545454545,
-          "angle": -45
-        },
-        {
-          "type": "rect",
-          "x": -34.50000000000002,
-          "y": 336.359375,
-          "w": 318.65625,
-          "h": 404.59090909090907,
-          "angle": -90
-        }
-      ]
+      "colliders": []
     },
     {
-      "id": "obs-long-corner",
+      "id": "obs-cyberpunk-road-curve",
       "type": "obstacle_wall",
-      "x": 354,
-      "y": 1065,
-      "width": 1050,
-      "height": 720,
-      "rotation": 0,
-      "className": "obs-long-corner",
-      "borderRadius": 0,
-      "colliders": [
-        {
-          "type": "rect",
-          "x": 36.09375,
-          "y": 85.0909090909091,
-          "w": 941.71875,
-          "h": 327.2727272727273,
-          "angle": 0
-        },
-        {
-          "type": "rect",
-          "x": -424.921875,
-          "y": 165.27272727272728,
-          "w": 95.15625,
-          "h": 130.9090909090909,
-          "angle": 45
-        },
-        {
-          "type": "rect",
-          "x": -342.890625,
-          "y": -36,
-          "w": 324.84375,
-          "h": 422.1818181818182,
-          "angle": 0
-        }
-      ]
-    },
-    {
-      "id": "obs-standard-cyber",
-      "type": "obstacle_wall",
-      "x": 1540,
-      "y": 165,
-      "width": 980,
-      "height": 730,
-      "rotation": 0,
-      "className": "obs-standard-cyber",
-      "borderRadius": 0,
-      "colliders": [
-        {
-          "type": "rect",
-          "x": -49,
-          "y": -125.72222222222221,
-          "w": 838.4444444444445,
-          "h": 377.16666666666663,
-          "angle": 0
-        },
-        {
-          "type": "rect",
-          "x": 337.55555555555554,
-          "y": -206.83333333333331,
-          "w": 157.88888888888889,
-          "h": 182.5,
-          "angle": 44
-        },
-        {
-          "type": "rect",
-          "x": 370.22222222222223,
-          "y": 22.305555555555554,
-          "w": 217.77777777777777,
-          "h": 511,
-          "angle": 0
-        },
-        {
-          "type": "rect",
-          "x": 114.33333333333334,
-          "y": 212.91666666666666,
-          "w": 517.2222222222223,
-          "h": 292,
-          "angle": 0
-        },
-        {
-          "type": "rect",
-          "x": -280.3888888888889,
-          "y": 56.77777777777777,
-          "w": 370.22222222222223,
-          "h": 166.27777777777777,
-          "angle": 0
-        },
-        {
-          "type": "rect",
-          "x": 348.44444444444446,
-          "y": 261.5833333333333,
-          "w": 217.77777777777777,
-          "h": 117.6111111111111,
-          "angle": 45
-        }
-      ]
-    },
-    {
-      "id": "obs-hexagon-fortress-animated",
-      "type": "obstacle_wall",
-      "x": 830,
-      "y": 550,
-      "width": 300,
-      "height": 300,
-      "rotation": 0,
-      "className": "obs-hexagon-fortress-animated",
-      "borderRadius": 0,
-      "colliders": [
-        {
-          "type": "rect",
-          "x": 0,
-          "y": -0.9375,
-          "w": 65.625,
-          "h": 33.75,
-          "angle": 0
-        },
-        {
-          "type": "rect",
-          "x": -0.9375,
-          "y": 0,
-          "w": 65.625,
-          "h": 37.5,
-          "angle": 60
-        },
-        {
-          "type": "rect",
-          "x": -0.9375,
-          "y": -0.9375,
-          "w": 37.5,
-          "h": 63.75,
-          "angle": 30
-        }
-      ]
-    },
-    {
-      "id": "obs-hexagon-fortress-animated",
-      "type": "obstacle_wall",
-      "x": 610,
-      "y": 810,
-      "width": 300,
-      "height": 300,
-      "rotation": 0,
-      "className": "obs-hexagon-fortress-animated",
-      "borderRadius": 0,
-      "colliders": [
-        {
-          "type": "rect",
-          "x": 0,
-          "y": -0.9375,
-          "w": 65.625,
-          "h": 33.75,
-          "angle": 0
-        },
-        {
-          "type": "rect",
-          "x": -0.9375,
-          "y": 0,
-          "w": 65.625,
-          "h": 37.5,
-          "angle": 60
-        },
-        {
-          "type": "rect",
-          "x": -0.9375,
-          "y": -0.9375,
-          "w": 37.5,
-          "h": 63.75,
-          "angle": 30
-        }
-      ]
-    },
-    {
-      "id": "obs-hexagon-fortress-animated",
-      "type": "obstacle_wall",
-      "x": 980,
-      "y": 840,
-      "width": 300,
-      "height": 300,
-      "rotation": 0,
-      "className": "obs-hexagon-fortress-animated",
-      "borderRadius": 0,
-      "colliders": [
-        {
-          "type": "rect",
-          "x": 0,
-          "y": -0.9375,
-          "w": 65.625,
-          "h": 33.75,
-          "angle": 0
-        },
-        {
-          "type": "rect",
-          "x": -0.9375,
-          "y": 0,
-          "w": 65.625,
-          "h": 37.5,
-          "angle": 60
-        },
-        {
-          "type": "rect",
-          "x": -0.9375,
-          "y": -0.9375,
-          "w": 37.5,
-          "h": 63.75,
-          "angle": 30
-        }
-      ]
-    },
-    {
-      "id": "obs-hexagon-fortress-animated",
-      "type": "obstacle_wall",
-      "x": 440,
-      "y": 530,
-      "width": 300,
-      "height": 300,
-      "rotation": 0,
-      "className": "obs-hexagon-fortress-animated",
-      "borderRadius": 0,
-      "colliders": [
-        {
-          "type": "rect",
-          "x": 0,
-          "y": -0.9375,
-          "w": 65.625,
-          "h": 33.75,
-          "angle": 0
-        },
-        {
-          "type": "rect",
-          "x": -0.9375,
-          "y": 0,
-          "w": 65.625,
-          "h": 37.5,
-          "angle": 60
-        },
-        {
-          "type": "rect",
-          "x": -0.9375,
-          "y": -0.9375,
-          "w": 37.5,
-          "h": 63.75,
-          "angle": 30
-        }
-      ]
-    },
-    {
-      "id": "obs-hexagon-fortress-animated",
-      "type": "obstacle_wall",
-      "x": 650,
-      "y": 240,
-      "width": 300,
-      "height": 300,
-      "rotation": 0,
-      "className": "obs-hexagon-fortress-animated",
-      "borderRadius": 0,
-      "colliders": [
-        {
-          "type": "rect",
-          "x": 0,
-          "y": -0.9375,
-          "w": 65.625,
-          "h": 33.75,
-          "angle": 0
-        },
-        {
-          "type": "rect",
-          "x": -0.9375,
-          "y": 0,
-          "w": 65.625,
-          "h": 37.5,
-          "angle": 60
-        },
-        {
-          "type": "rect",
-          "x": -0.9375,
-          "y": -0.9375,
-          "w": 37.5,
-          "h": 63.75,
-          "angle": 30
-        }
-      ]
-    },
-    {
-      "id": "obs-hexagon-fortress-animated",
-      "type": "obstacle_wall",
-      "x": 30,
-      "y": 2160,
-      "width": 780,
-      "height": 780,
-      "rotation": 0,
-      "className": "obs-hexagon-fortress-animated",
-      "borderRadius": 0,
-      "colliders": [
-        {
-          "type": "rect",
-          "x": 0,
-          "y": -2.4375,
-          "w": 170.625,
-          "h": 87.75,
-          "angle": 0
-        },
-        {
-          "type": "rect",
-          "x": -2.4375,
-          "y": 0,
-          "w": 170.625,
-          "h": 97.5,
-          "angle": 60
-        },
-        {
-          "type": "rect",
-          "x": -2.4375,
-          "y": -2.4375,
-          "w": 97.5,
-          "h": 165.75,
-          "angle": 30
-        }
-      ]
-    },
-    {
-      "id": "obs-long-corner",
-      "type": "obstacle_wall",
-      "x": 2020,
-      "y": 978,
-      "width": 980,
-      "height": 820,
-      "rotation": 0,
-      "className": "obs-long-corner",
-      "borderRadius": 0,
-      "colliders": [
-        {
-          "type": "rect",
-          "x": 33.6875,
-          "y": 96.9090909090909,
-          "w": 878.9375,
-          "h": 372.7272727272727,
-          "angle": 0
-        },
-        {
-          "type": "rect",
-          "x": -396.59375,
-          "y": 188.22727272727272,
-          "w": 88.8125,
-          "h": 149.0909090909091,
-          "angle": 45
-        },
-        {
-          "type": "rect",
-          "x": -320.03125,
-          "y": -41,
-          "w": 303.1875,
-          "h": 480.8181818181818,
-          "angle": 0
-        }
-      ]
-    },
-    {
-      "id": "obs-long-corner",
-      "type": "obstacle_wall",
-      "x": 780,
-      "y": 1725,
-      "width": 1120,
-      "height": 750,
-      "rotation": 180,
-      "className": "obs-long-corner",
-      "borderRadius": 0,
-      "colliders": [
-        {
-          "type": "rect",
-          "x": -38.500000000000014,
-          "y": -88.63636363636364,
-          "w": 1004.5,
-          "h": 340.90909090909093,
-          "angle": 180
-        },
-        {
-          "type": "rect",
-          "x": 453.25,
-          "y": -172.15909090909096,
-          "w": 101.5,
-          "h": 136.36363636363637,
-          "angle": 225
-        },
-        {
-          "type": "rect",
-          "x": 365.75,
-          "y": 37.49999999999996,
-          "w": 346.5,
-          "h": 439.7727272727273,
-          "angle": 180
-        }
-      ]
-    },
-    {
-      "id": "obs-hexagon-fortress-animated",
-      "type": "obstacle_wall",
-      "x": 960,
-      "y": 2250,
-      "width": 400,
-      "height": 400,
-      "rotation": 0,
-      "className": "obs-hexagon-fortress-animated",
-      "borderRadius": 0,
-      "colliders": [
-        {
-          "type": "rect",
-          "x": 0,
-          "y": -1.25,
-          "w": 87.5,
-          "h": 45,
-          "angle": 0
-        },
-        {
-          "type": "rect",
-          "x": -1.25,
-          "y": 0,
-          "w": 87.5,
-          "h": 50,
-          "angle": 60
-        },
-        {
-          "type": "rect",
-          "x": -1.25,
-          "y": -1.25,
-          "w": 50,
-          "h": 85,
-          "angle": 30
-        }
-      ]
-    },
-    {
-      "id": "obs-hexagon-fortress-animated",
-      "type": "obstacle_wall",
-      "x": 1210,
-      "y": 2600,
-      "width": 400,
-      "height": 400,
-      "rotation": 0,
-      "className": "obs-hexagon-fortress-animated",
-      "borderRadius": 0,
-      "colliders": [
-        {
-          "type": "rect",
-          "x": 0,
-          "y": -1.25,
-          "w": 87.5,
-          "h": 45,
-          "angle": 0
-        },
-        {
-          "type": "rect",
-          "x": -1.25,
-          "y": 0,
-          "w": 87.5,
-          "h": 50,
-          "angle": 60
-        },
-        {
-          "type": "rect",
-          "x": -1.25,
-          "y": -1.25,
-          "w": 50,
-          "h": 85,
-          "angle": 30
-        }
-      ]
-    },
-    {
-      "id": "obs-hexagon-fortress-animated",
-      "type": "obstacle_wall",
-      "x": 740,
-      "y": 2530,
-      "width": 400,
-      "height": 400,
-      "rotation": 0,
-      "className": "obs-hexagon-fortress-animated",
-      "borderRadius": 0,
-      "colliders": [
-        {
-          "type": "rect",
-          "x": 0,
-          "y": -1.25,
-          "w": 87.5,
-          "h": 45,
-          "angle": 0
-        },
-        {
-          "type": "rect",
-          "x": -1.25,
-          "y": 0,
-          "w": 87.5,
-          "h": 50,
-          "angle": 60
-        },
-        {
-          "type": "rect",
-          "x": -1.25,
-          "y": -1.25,
-          "w": 50,
-          "h": 85,
-          "angle": 30
-        }
-      ]
-    },
-    {
-      "id": "obs-hexagon-fortress-animated",
-      "type": "obstacle_wall",
-      "x": 2100,
-      "y": 1830,
+      "x": 950,
+      "y": 1430,
       "width": 800,
-      "height": 800,
+      "height": 600,
+      "rotation": 0,
+      "className": "obs-cyberpunk-road-curve",
+      "borderRadius": 0,
+      "colliders": []
+    },
+    {
+      "id": "obs-cyberpunk-road",
+      "type": "obstacle_wall",
+      "x": 105,
+      "y": 1570,
+      "width": 450,
+      "height": 480,
+      "rotation": 90,
+      "className": "obs-cyberpunk-road",
+      "borderRadius": 0,
+      "colliders": []
+    },
+    {
+      "id": "obs-cyberpunk-road",
+      "type": "obstacle_wall",
+      "x": 1202,
+      "y": 950,
+      "width": 450,
+      "height": 480,
+      "rotation": 0,
+      "className": "obs-cyberpunk-road",
+      "borderRadius": 0,
+      "colliders": []
+    },
+    {
+      "id": "obs-cyberpunk-road-curve",
+      "type": "obstacle_wall",
+      "x": 1100,
+      "y": 351.5,
+      "width": 800,
+      "height": 597,
+      "rotation": 180,
+      "className": "obs-cyberpunk-road-curve",
+      "borderRadius": 0,
+      "colliders": []
+    },
+    {
+      "id": "obs-cyberpunk-road-curve",
+      "type": "obstacle_wall",
+      "x": 1700,
+      "y": 351.5,
+      "width": 800,
+      "height": 597,
+      "rotation": -90,
+      "className": "obs-cyberpunk-road-curve",
+      "borderRadius": 0,
+      "colliders": []
+    },
+    {
+      "id": "obs-cyberpunk-road",
+      "type": "obstacle_wall",
+      "x": 1950,
+      "y": 950,
+      "width": 450,
+      "height": 480,
+      "rotation": 0,
+      "className": "obs-cyberpunk-road",
+      "borderRadius": 0,
+      "colliders": []
+    },
+    {
+      "id": "obs-hexagon-fortress-animated",
+      "type": "obstacle_wall",
+      "x": 1730,
+      "y": 860,
+      "width": 160,
+      "height": 160,
       "rotation": 0,
       "className": "obs-hexagon-fortress-animated",
       "borderRadius": 0,
@@ -560,25 +102,25 @@
         {
           "type": "rect",
           "x": 0,
-          "y": -2.5,
-          "w": 175,
-          "h": 90,
+          "y": -0.5,
+          "w": 35,
+          "h": 18,
           "angle": 0
         },
         {
           "type": "rect",
-          "x": -2.5,
+          "x": -0.5,
           "y": 0,
-          "w": 175,
-          "h": 100,
+          "w": 35,
+          "h": 20,
           "angle": 60
         },
         {
           "type": "rect",
-          "x": -2.5,
-          "y": -2.5,
-          "w": 100,
-          "h": 170,
+          "x": -0.5,
+          "y": -0.5,
+          "w": 20,
+          "h": 34,
           "angle": 30
         }
       ]
@@ -586,10 +128,10 @@
     {
       "id": "obs-hexagon-fortress-animated",
       "type": "obstacle_wall",
-      "x": 1600,
-      "y": 2510,
-      "width": 400,
-      "height": 400,
+      "x": 1800,
+      "y": 970,
+      "width": 160,
+      "height": 160,
       "rotation": 0,
       "className": "obs-hexagon-fortress-animated",
       "borderRadius": 0,
@@ -597,28 +139,77 @@
         {
           "type": "rect",
           "x": 0,
-          "y": -1.25,
-          "w": 87.5,
-          "h": 45,
+          "y": -0.5,
+          "w": 35,
+          "h": 18,
           "angle": 0
         },
         {
           "type": "rect",
-          "x": -1.25,
+          "x": -0.5,
           "y": 0,
-          "w": 87.5,
-          "h": 50,
+          "w": 35,
+          "h": 20,
           "angle": 60
         },
         {
           "type": "rect",
-          "x": -1.25,
-          "y": -1.25,
-          "w": 50,
-          "h": 85,
+          "x": -0.5,
+          "y": -0.5,
+          "w": 20,
+          "h": 34,
           "angle": 30
         }
       ]
+    },
+    {
+      "id": "obs-hexagon-fortress-animated",
+      "type": "obstacle_wall",
+      "x": 1670,
+      "y": 970,
+      "width": 160,
+      "height": 160,
+      "rotation": 0,
+      "className": "obs-hexagon-fortress-animated",
+      "borderRadius": 0,
+      "colliders": [
+        {
+          "type": "rect",
+          "x": 0,
+          "y": -0.5,
+          "w": 35,
+          "h": 18,
+          "angle": 0
+        },
+        {
+          "type": "rect",
+          "x": -0.5,
+          "y": 0,
+          "w": 35,
+          "h": 20,
+          "angle": 60
+        },
+        {
+          "type": "rect",
+          "x": -0.5,
+          "y": -0.5,
+          "w": 20,
+          "h": 34,
+          "angle": 30
+        }
+      ]
+    },
+    {
+      "id": "obs-cyberpunk-road",
+      "type": "obstacle_wall",
+      "x": 1950,
+      "y": 1430,
+      "width": 450,
+      "height": 480,
+      "rotation": 0,
+      "className": "obs-cyberpunk-road",
+      "borderRadius": 0,
+      "colliders": []
     }
   ],
   "playerSpawns": [
