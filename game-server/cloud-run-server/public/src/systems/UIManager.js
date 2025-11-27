@@ -54,14 +54,10 @@ export class UIManager {
     this.WORLD_HEIGHT = 3000;
   }
 
-  initShell(game, inputManager, firebaseManager, networkManager) {
-    const urlParams = new URLSearchParams(window.location.search);
-    this.isDebugMode = urlParams.get("debug") === "true";
-    if (this.isDebugMode) this.debugPanelEl.classList.add("active");
-
+  bindActions(actions) {
     document
       .getElementById("btn-initial-start")
-      .addEventListener("click", async () => {
+      .addEventListener("click", () => {
         const name = this.initialNameInput.value;
 
         if (!name) return alert("名前を入力してください");
@@ -70,254 +66,79 @@ export class UIManager {
         if (name.toLowerCase() === "guest")
           return alert("その名前は使用できません");
 
-        this.isRegistering = true;
-
-        try {
-          this.setLoadingText("登録中...");
-
-          const user = await firebaseManager.authenticateAnonymously(name);
-          game.setAuthenticatedPlayer(user);
-
-          await networkManager.connect(user.uid, name, this.isDebugMode);
-
-          networkManager.sendAccountAction(
-            "register_name",
-            { name: name },
-            async (res) => {
-              this.isRegistering = false;
-
-              if (res.success) {
-                alert("ようこそ " + res.name + " さん！");
-                this.modalInitial.classList.add("hidden");
-                this.updateDisplayName(res.name);
-
-                networkManager.disconnect();
-                this.showScreen("home");
-              } else {
-                alert("登録エラー: " + res.message);
-
-                networkManager.disconnect();
-                await firebaseManager.signOut();
-              }
-            }
-          );
-        } catch (e) {
-          this.isRegistering = false;
-          console.error(e);
-          alert("エラーが発生しました: " + e.message);
-
-          networkManager.disconnect();
-          await firebaseManager.signOut();
-        }
+        actions.onRegisterName(name);
       });
 
     document
       .getElementById("btn-initial-guest")
-      .addEventListener("click", async () => {
-        try {
-          const user = await firebaseManager.authenticateAnonymously("Guest");
-          game.setAuthenticatedPlayer(user);
-          this.updateDisplayName("Guest");
-          this.modalInitial.classList.add("hidden");
-          this.showScreen("home");
-        } catch (e) {
-          alert("ゲストログイン失敗");
-        }
-      });
-
-    document
-      .getElementById("btn-initial-goto-transfer")
       .addEventListener("click", () => {
-        this.modalInitial.classList.add("hidden");
-        this.isTransferFromInitial = true;
-
-        this.modalTransfer.classList.add("recovery-only");
-        this.openTransferModal(game, firebaseManager, networkManager);
+        actions.onGuestLogin();
       });
 
-    document
-      .getElementById("btn-start-game")
-      .addEventListener("click", async () => {
-        const playerName = this.displayNameEl.textContent || "Guest";
-        this.setLoadingText("接続中...");
-        this.showScreen("loading");
-
-        try {
-          const user = await firebaseManager.authenticateAnonymously(
-            playerName
-          );
-          game.setAuthenticatedPlayer(user);
-
-          const joinData = await networkManager.connect(
-            user.uid,
-            playerName,
-            this.isDebugMode
-          );
-          this.showScreen("game");
-          game.startGameLoop(joinData.worldConfig);
-        } catch (error) {
-          this.showErrorScreen("接続失敗", error);
-        }
-      });
+    document.getElementById("btn-start-game").addEventListener("click", () => {
+      const playerName = this.displayNameEl.textContent || "Guest";
+      actions.onStartGame(playerName);
+    });
 
     document
       .getElementById("btn-goto-ranking")
-      .addEventListener("click", async () => {
-        this.showScreen("loading");
-        this.setLoadingText("ランキング取得中...");
-        this.rankingListEl.innerHTML = "<p>読み込み中...</p>";
-        try {
-          const rankingData = await firebaseManager.fetchRanking();
-          this.displayRanking(rankingData);
-          this.showScreen("ranking");
-        } catch (error) {
-          this.showErrorScreen("取得失敗", error);
-        }
-      });
-
-    document
-      .getElementById("btn-menu-transfer")
       .addEventListener("click", () => {
-        this.isTransferFromInitial = false;
-        this.isRegistering = false;
-        this.modalTransfer.classList.remove("recovery-only");
-        this.openTransferModal(game, firebaseManager, networkManager);
+        actions.onRankingRequest();
       });
 
-    this.btnMenuRegister.addEventListener("click", () => {
-      this.modalRegister.classList.remove("hidden");
-      this.openTemporaryConnection(game, firebaseManager, networkManager);
-    });
+    document.getElementById("btn-do-register").addEventListener("click", () => {
+      const name = this.regNameInput.value;
+      if (!name) return alert("名前を入力してください");
+      if (name.length < 3 || name.length > 12)
+        return alert("3〜12文字で入力してください");
 
-    document.getElementById("btn-do-recover").addEventListener("click", () => {
-      const code = this.recoverCodeInput.value;
-      if (!code) return alert("コードを入力してください");
-
-      if (!confirm("データを復旧しますか？\n現在のデータは上書きされます。"))
-        return;
-
-      networkManager.sendAccountAction(
-        "recover",
-        { code: code },
-        async (res) => {
-          if (res.success) {
-            alert("復旧成功！\nユーザー: " + res.name + "\n再読み込みします。");
-            try {
-              await firebaseManager.signInWithCustomToken(res.token);
-              window.location.reload();
-            } catch (e) {
-              alert("再ログイン失敗: " + e.message);
-            }
-          } else {
-            alert("復旧失敗: " + res.message);
-          }
-        }
-      );
-    });
-
-    document.getElementById("btn-issue-code").addEventListener("click", () => {
-      if (!confirm("引継ぎコードを発行しますか？\n誰にも教えないでください。"))
-        return;
-      networkManager.sendAccountAction("issue_code", {}, (res) => {
-        if (res.success) {
-          this.transferCodeDisplay.textContent = res.code;
-          alert("コードを発行しました。メモしてください。");
-        }
-      });
+      actions.onRegisterName(name);
     });
 
     document
-      .getElementById("btn-close-transfer")
+      .getElementById("btn-gameover-retry")
       .addEventListener("click", () => {
-        this.modalTransfer.classList.add("hidden");
+        actions.onRetry();
+      });
 
-        if (this.isTransferFromInitial) {
-          this.modalInitial.classList.remove("hidden");
-        } else {
-          if (this.activeScreen === this.screens.home) {
-            networkManager.disconnect();
-          }
+    const btnRetire = document.getElementById("btn-retire");
+    if (btnRetire) {
+      btnRetire.addEventListener("click", () => {
+        if (confirm("終了してホームに戻りますか？")) {
+          actions.onRetire();
         }
       });
-
-    document
-      .getElementById("btn-do-register")
-      .addEventListener("click", async () => {
-        const name = this.regNameInput.value;
-
-        if (!name) return alert("名前を入力してください");
-        if (name.length < 3 || name.length > 12)
-          return alert("名前は3文字以上12文字以下にしてください");
-        if (name.toLowerCase() === "guest")
-          return alert("その名前は使用できません");
-
-        networkManager.sendAccountAction(
-          "register_name",
-          { name: name },
-          (res) => {
-            if (res.success) {
-              alert("登録完了: " + res.name);
-              this.modalRegister.classList.add("hidden");
-              this.updateDisplayName(res.name);
-              networkManager.disconnect();
-            } else {
-              alert("エラー: " + res.message);
-            }
-          }
-        );
-      });
-
-    document
-      .getElementById("btn-close-register")
-      .addEventListener("click", () => {
-        this.modalRegister.classList.add("hidden");
-        if (this.activeScreen === this.screens.home) {
-          networkManager.disconnect();
-        }
-      });
+    }
 
     document
       .getElementById("btn-ranking-back")
       .addEventListener("click", () => this.showScreen("home"));
-
-    document
-      .getElementById("btn-gameover-retry")
-      .addEventListener("click", async () => {
-        this.setLoadingText("再接続中...");
-        this.showScreen("loading");
-        try {
-          const joinData = await networkManager.connect(
-            game.userId,
-            game.playerName
-          );
-          this.showScreen("game");
-          game.startGameLoop(joinData.worldConfig);
-        } catch (error) {
-          this.showErrorScreen("接続失敗", error);
-        }
-      });
-
     document
       .getElementById("btn-gameover-home")
       .addEventListener("click", () => this.showScreen("home"));
     document
       .getElementById("btn-error-home")
       .addEventListener("click", () => this.showScreen("home"));
-
-    const btnRetire = document.getElementById("btn-retire");
-    if (btnRetire) {
-      btnRetire.addEventListener("click", () => {
-        if (confirm("終了してホームに戻りますか？")) {
-          game.stopGameLoop();
-          networkManager.stopListening();
-          this.showScreen("home");
-        }
+    document
+      .getElementById("btn-close-register")
+      .addEventListener("click", () => {
+        this.modalRegister.classList.add("hidden");
       });
-    }
+  }
+  hideInitialModal() {
+    if(this.modalInitial) this.modalInitial.classList.add("hidden");
+  }
 
-    this.checkInitialLoginStatus(firebaseManager);
+  showInitialModal() {
+    if(this.modalInitial) this.modalInitial.classList.remove("hidden");
+  }
 
-    this.showScreen("home");
+  hideRegisterModal() {
+    if(this.modalRegister) this.modalRegister.classList.add("hidden");
+  }
+
+  clearRankingList() {
+    if(this.rankingListEl) this.rankingListEl.innerHTML = "<p>読み込み中...</p>";
   }
 
   async openTemporaryConnection(game, firebaseManager, networkManager) {
@@ -512,52 +333,43 @@ export class UIManager {
     const stockedBullets = playerState.stockedBullets || [];
     const maxStock = playerState.maxStock || 10;
 
-    // --- レイアウト設定 ---
-    // 【修正】数値を 60 -> 85 に変更
-    // 下部の数字(64px)を表示するスペースを確保するために余白を広げます
-    const paddingY = 100; 
-    
-    const availableHeight = canvasHeight - (paddingY * 2);
+    const paddingY = 100;
+
+    const availableHeight = canvasHeight - paddingY * 2;
     const gap = 4;
-    const slotHeight = Math.floor((availableHeight / maxStock) - gap);
-    
-    // 幅設定
-    const contentWidth = canvasWidth * 0.90;
+    const slotHeight = Math.floor(availableHeight / maxStock - gap);
+
+    const contentWidth = canvasWidth * 0.9;
     const startX = (canvasWidth - contentWidth) / 2;
     const bottomY = canvasHeight - paddingY;
-    
-    const slant = 0; // 長方形
+
+    const slant = 0;
 
     ctx.save();
 
-    // 1. マガジン全体を囲む枠線 (Frame)
     const totalStackHeight = maxStock * (slotHeight + gap) - gap;
     const stackTopY = bottomY - totalStackHeight;
-    
-    const framePadding = 8; 
+
+    const framePadding = 8;
     const frameX = startX - framePadding;
     const frameY = stackTopY - framePadding;
-    const frameW = contentWidth + (framePadding * 2);
-    const frameH = totalStackHeight + (framePadding * 2);
+    const frameW = contentWidth + framePadding * 2;
+    const frameH = totalStackHeight + framePadding * 2;
 
     ctx.save();
-    // 枠の線
-    ctx.strokeStyle = "rgba(255, 97, 208, 0.4)"; 
+
+    ctx.strokeStyle = "rgba(255, 97, 208, 0.4)";
     ctx.lineWidth = 2;
 
-    // シンプルな四角形の枠を描画
     ctx.strokeRect(frameX, frameY, frameW, frameH);
-    
-    // 枠内の背景を極薄く塗ってエリアを強調
+
     ctx.fillStyle = "rgba(0, 10, 20, 0.3)";
     ctx.fillRect(frameX, frameY, frameW, frameH);
     ctx.restore();
 
-
-    // 2. 各スロットの描画
     for (let i = 0; i < maxStock; i++) {
       const currentY = bottomY - (i + 1) * (slotHeight + gap) + gap;
-      
+
       const hasBullet = i < stockedBullets.length;
       const damageVal = hasBullet ? Math.ceil(stockedBullets[i]) : 0;
 
@@ -566,52 +378,61 @@ export class UIManager {
       ctx.closePath();
 
       if (hasBullet) {
-        // --- 弾がある場合 ---
         ctx.save();
-        
+
         let baseColor, highColor;
         if (damageVal >= 100) {
-          baseColor = "#aa00ff"; // 紫
+          baseColor = "#aa00ff";
           highColor = "#ea80fc";
         } else if (damageVal >= 50) {
-          baseColor = "#ff6d00"; // オレンジ
+          baseColor = "#ff6d00";
           highColor = "#ffab40";
         } else {
-          baseColor = "#00bcd4"; // シアン
+          baseColor = "#00bcd4";
           highColor = "#84ffff";
         }
 
-        const grad = ctx.createLinearGradient(startX, currentY, startX + contentWidth, currentY + slotHeight);
+        const grad = ctx.createLinearGradient(
+          startX,
+          currentY,
+          startX + contentWidth,
+          currentY + slotHeight
+        );
         grad.addColorStop(0, highColor);
         grad.addColorStop(0.5, baseColor);
         grad.addColorStop(1, "rgba(0,0,0,0.3)");
-        
+
         ctx.fillStyle = grad;
-        
+
         ctx.shadowColor = baseColor;
         ctx.shadowBlur = 10;
         ctx.fill();
         ctx.shadowBlur = 0;
 
-        // ハイライト線
         ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
         ctx.fillRect(startX + 2, currentY + 2, contentWidth - 4, 2);
 
-        // ダメージ数値
         ctx.fillStyle = "#ffffff";
         ctx.font = "bold 12px 'Roboto Mono', monospace";
         ctx.textAlign = "right";
         ctx.textBaseline = "middle";
-        ctx.fillText(damageVal, startX + contentWidth - 5, currentY + slotHeight / 2);
-        
-        ctx.restore();
+        ctx.fillText(
+          damageVal,
+          startX + contentWidth - 5,
+          currentY + slotHeight / 2
+        );
 
+        ctx.restore();
       } else {
-        // --- 空きスロット ---
-        const emptyGrad = ctx.createLinearGradient(startX, currentY, startX + contentWidth, currentY);
+        const emptyGrad = ctx.createLinearGradient(
+          startX,
+          currentY,
+          startX + contentWidth,
+          currentY
+        );
         emptyGrad.addColorStop(0, "rgba(255, 255, 255, 0)");
         emptyGrad.addColorStop(0.2, "rgba(255, 255, 255, 0.05)");
-        emptyGrad.addColorStop(0.5, "rgba(255, 255, 255, 0.1)"); 
+        emptyGrad.addColorStop(0.5, "rgba(255, 255, 255, 0.1)");
         emptyGrad.addColorStop(0.8, "rgba(255, 255, 255, 0.05)");
         emptyGrad.addColorStop(1, "rgba(255, 255, 255, 0)");
 
@@ -620,42 +441,40 @@ export class UIManager {
       }
     }
 
-    // 3. 残弾数カウンター
     ctx.save();
     ctx.textAlign = "right";
-    ctx.textBaseline = "bottom"; // 文字の底辺を基準にする
-    
+    ctx.textBaseline = "bottom";
+
     const countText = stockedBullets.length.toString();
     const countX = canvasWidth - 10;
-    // 下端から10px上の位置に描画
+
     const countY = canvasHeight - 10;
 
     ctx.font = "italic 900 64px 'Verdana', sans-serif";
-    
+
     ctx.strokeStyle = "rgba(0, 255, 255, 0.2)";
     ctx.lineWidth = 2;
     ctx.strokeText(countText, countX, countY);
-    
+
     ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
     ctx.fillText(countText, countX, countY);
-    
+
     ctx.restore();
 
-    // 4. FULL CHARGE インジケーター
     if (stockedBullets.length === maxStock) {
       ctx.save();
-      // paddingYが増えたので、それに合わせて少し調整
+
       ctx.translate(canvasWidth / 2, paddingY - 20);
-      
+
       const alpha = 0.5 + Math.sin(Date.now() / 200) * 0.5;
-      
+
       ctx.fillStyle = `rgba(0, 255, 0, ${alpha})`;
       ctx.shadowColor = "#00ff00";
       ctx.shadowBlur = 10;
       ctx.font = "bold 12px 'Courier New', monospace";
       ctx.textAlign = "center";
       ctx.fillText(">> SYSTEM READY <<", 0, 0);
-      
+
       ctx.restore();
     }
 

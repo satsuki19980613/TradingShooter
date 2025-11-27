@@ -31,7 +31,6 @@ export class ServerGame {
   constructor(roomId, firestore, onRoomEmptyCallback) {
     this.roomId = roomId;
     this.firestore = firestore;
-    this.accountManager = new ServerAccountManager(firestore);
     this.persistenceManager = new ServerPersistenceManager(firestore);
     this.onRoomEmptyCallback = onRoomEmptyCallback;
     this.players = new Map();
@@ -182,6 +181,14 @@ export class ServerGame {
     this.networkSystem.broadcastGameState(this.players, this.frameEvents);
 
     this.frameEvents = [];
+  }
+  updatePlayerName(userId, newName) {
+    const player = this.players.get(userId);
+    if (player) {
+      player.name = newName;
+      player.isDirty = true; // クライアントへ変更を通知するため
+      console.log(`[ServerGame] プレイヤー名を更新: ID=${userId} -> ${newName}`);
+    }
   }
 
   stopLoops() {

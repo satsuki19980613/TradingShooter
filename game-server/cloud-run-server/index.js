@@ -7,6 +7,7 @@ import { WebSocketServer } from "ws";
 import { ServerGame } from "./game-logic/ServerGame.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import { ServerAccountManager } from "./game-logic/ServerAccountManager.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,6 +28,7 @@ initializeApp({
 });
 
 const firestore = getFirestore();
+const accountManager = new ServerAccountManager(firestore);
 console.log("Firebase Admin SDK (Firestore) が初期化されました。");
 const app = express();
 
@@ -112,8 +114,49 @@ wss.on("connection", (ws, req) => {
     ws.close(1011, "Server error during connection");
     return;
   }
+  async function handleAccountRequest(actionPayload) {
+    const type = actionPayload.subtype;
 
-  ws.on("message", (message) => {
+    if (type === "register_name") {
+      const requestedName = actionPayload.name;
+      const result = await accountManager.registerName(userId, requestedName);
+      
+      ws.send(JSON.stringify({
+        type: "account_response",
+        subtype: "register_name",
+        success: result.success,
+        message: result.message,
+        name: result.name,
+      }));
+
+      // 成功した場合、現在参加中のゲームにも反映させる
+      if (result.success && game) {
+        game.updatePlayerName(userId, result.name); // 後でServerGameに追加するメソッド
+      }
+
+    } else if (type === "issue_code") {
+      const code = await accountManager.issueTransferCode(userId);
+      ws.send(JSON.stringify({
+        type: "account_response",
+        subtype: "issue_code",
+        success: true,
+        code: code,
+      }));
+
+    } else if (type === "recover") {
+      const inputCode = actionPayload.code;
+      const result = await accountManager.recoverAccount(inputCode);
+      ws.send(JSON.stringify({
+        type: "account_response",
+        subtype: "recover",
+        success: result.success,
+        message: result.message,
+        token: result.token,
+        name: result.name,
+      }));
+    }
+  }
+  ws.on("message", async (message) => {
     try {
       const isBinary =
         Buffer.isBuffer(message) || message instanceof ArrayBuffer;
@@ -159,16 +202,17 @@ wss.on("connection", (ws, req) => {
       }
 
       const data = JSON.parse(message.toString());
-
+      if (data.type === "account_action" && userId) {
+        await handleAccountRequest(data.payload);
+        return;
+      }
       if (data.type === "input" && game && userId) {
         game.handlePlayerInput(userId, data.payload);
       } else if (data.type === "pause" && game && userId) {
         game.pausePlayer(userId);
       } else if (data.type === "resume" && game && userId) {
         game.resumePlayer(userId);
-      } else if (data.type === "account_action" && game && userId) {
-        game.handleAccountAction(ws, data.payload, userId);
-      }
+      } 
     } catch (e) {
       console.warn("[WebSocket] 不正なメッセージ形式:", e.message);
     }
