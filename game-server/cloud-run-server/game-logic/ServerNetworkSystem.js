@@ -2,6 +2,7 @@ import { WebSocket } from "ws";
 import { ServerPlayer } from "./ServerPlayer.js";
 import { ServerEnemy } from "./ServerEnemy.js";
 import { ServerBullet } from "./ServerBullet.js";
+import { PacketWriter } from "./PacketWriter.js";
 
 const R = (val) => Math.round(val * 100) / 100;
 const R1 = (val) => Math.round(val * 10) / 10;
