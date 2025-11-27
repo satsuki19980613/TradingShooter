@@ -21,7 +21,6 @@ window.addEventListener("load", () => {
   networkManager.init(game);
   game.setupEventListeners();
   appFlowManager.init();
-  uiManager.initShell(game, inputManager, firebaseManager, networkManager);
   const bgVideo = document.getElementById('bg-video');
   if (bgVideo) {
     bgVideo.muted = true;

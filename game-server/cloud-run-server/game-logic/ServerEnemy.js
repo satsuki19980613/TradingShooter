@@ -48,8 +48,8 @@ export class ServerEnemy extends ServerGameObject {
       this.moveTimer = 60;
     }
 
-    this.x += Math.cos(this.targetAngle) * this.speed;
-    this.y += Math.sin(this.targetAngle) * this.speed;
+    this.vx = Math.cos(this.targetAngle) * this.speed;
+    this.vy = Math.sin(this.targetAngle) * this.speed;
     this.isDirty = true;
 
     this.x = Math.max(

@@ -13,7 +13,102 @@ export class ServerPhysicsSystem {
     this.worldWidth = worldWidth;
     this.worldHeight = worldHeight;
   }
+update(game) {
+    // 1. プレイヤーの移動
+    game.players.forEach(player => {
+      this.moveEntity(player, game.obstacles);
+    });
 
+    // 2. 敵の移動
+    game.enemies.forEach(enemy => {
+      this.moveEntity(enemy, game.obstacles);
+    });
+
+    // 3. エンティティ同士の衝突（押し合い）
+    // 既存の handleObstacleCollisions を呼びますが、
+    // 後述の通り handleObstacleCollisions から壁判定を削除するのがベストです
+    this.handleEntityCollisions(game); 
+    
+    // 4. 弾の判定（既存）
+    this.checkCollisions(game);
+    
+    // 5. ゾーン効果（既存）
+    this.applyZoneEffects(game);
+  }
+
+  /**
+   * ★追加: 壁判定を行いながら移動させる (Move & Slide)
+   */
+  moveEntity(entity, obstacles) {
+    if (entity.vx === 0 && entity.vy === 0) return;
+
+    // --- X軸の移動 ---
+    entity.x += entity.vx;
+    
+    // 壁との衝突チェック (X)
+    for (const obs of obstacles) {
+      // 既存の checkCollisionWithCircle は判定のみを行うメソッドとして使用
+      if (obs.checkCollisionWithCircle(entity)) {
+        // 衝突したら、障害物が押し出してくれる (resolveCollision) か、
+        // 単純に移動をキャンセルする
+        
+        // ここでは既存の優秀な resolveCollision を使って「押し出し」てもらいます
+        const hit = obs.resolveCollision(entity, true); 
+        // もし resolveCollision が座標を直接直してくれるならこれでOK
+        // 単純なキャンセルにするなら: entity.x -= entity.vx;
+      }
+    }
+
+    // --- Y軸の移動 ---
+    entity.y += entity.vy;
+    
+    // 壁との衝突チェック (Y)
+    for (const obs of obstacles) {
+       if (obs.checkCollisionWithCircle(entity)) {
+         obs.resolveCollision(entity, true);
+       }
+    }
+
+    // 画面端の制限
+    this.clampPosition(entity);
+
+    // 動きがあったらフラグを立てる
+    if (entity.vx !== 0 || entity.vy !== 0) {
+       entity.isDirty = true;
+    }
+  }
+
+  /**
+   * 既存の handleObstacleCollisions をリネームまたは修正推奨
+   * 壁判定は moveEntity でやったので、ここは「キャラ同士」の処理にします
+   */
+  handleEntityCollisions(game) {
+    const checkedPairs = new Set();
+    
+    // プレイヤー vs プレイヤー / 敵
+    game.players.forEach((player1) => {
+       if (player1.isDead) return;
+       const nearby = game.grid.getNearbyEntities(player1);
+       
+       for (const entity of nearby) {
+         // ★変更: 壁(ServerObstacle)との判定は moveEntity で終わってるのでスキップ
+         if (entity instanceof ServerObstacle) continue; 
+
+         // 以下、PvP, PvE の押し合いロジックはそのまま維持
+         // [cite: 384-392] のロジック
+         if (entity instanceof ServerPlayer) {
+            // ... (既存のPvP判定コード) ...
+            this.resolveOverlap(player1, entity); // 共通化したメソッドがあればそれを使う
+         }
+         else if (entity instanceof ServerEnemy) {
+            // ... (既存のPvE判定コード) ...
+             this.resolveOverlap(player1, entity);
+         }
+       }
+    });
+    
+    // 敵同士の重なり解消が必要ならここに追加
+  }
   /**
    * 弾とエンティティ/障害物の衝突判定
    * @param {ServerGame} game

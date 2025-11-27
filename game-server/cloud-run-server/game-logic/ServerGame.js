@@ -277,7 +277,7 @@ export class ServerGame {
     this.checkIdlePlayers();
 
     this.players.forEach((player) => {
-      player.update(this);
+      player.update(this); 
     });
     this.enemies.forEach((enemy) => {
       enemy.update(this);
@@ -299,9 +299,7 @@ export class ServerGame {
     this.enemies.forEach((e) => this.grid.insert(e));
     this.bullets.forEach((b) => this.grid.insert(b));
     this.maintainEpItems();
-    this.physicsSystem.applyZoneEffects(this);
-    this.physicsSystem.handleObstacleCollisions(this);
-    this.physicsSystem.checkCollisions(this);
+    this.physicsSystem.update(this);
 
     if (this.debugPlayerCount > 0) {
       const endTime = process.hrtime.bigint();
@@ -614,64 +612,5 @@ export class ServerGame {
     );
   }
 
-  /**
-   * アカウント関連のメッセージを処理する
-   * @param {WebSocket} ws - 送信元のソケット
-   * @param {Object} actionPayload - { type: "register_name", name: "..." } など
-   * @param {string} userId - 現在の一時的なユーザーID (認証済みの場合)
-   */
-  async handleAccountAction(ws, actionPayload, userId) {
-    const type = actionPayload.subtype;
 
-    if (type === "register_name") {
-      const requestedName = actionPayload.name;
-      const result = await this.accountManager.registerName(
-        userId,
-        requestedName
-      );
-
-      ws.send(
-        JSON.stringify({
-          type: "account_response",
-          subtype: "register_name",
-          success: result.success,
-          message: result.message,
-          name: result.name,
-        })
-      );
-
-      if (result.success) {
-        const player = this.players.get(userId);
-        if (player) {
-          player.name = result.name;
-          player.isDirty = true;
-        }
-      }
-    } else if (type === "issue_code") {
-      const code = await this.accountManager.issueTransferCode(userId);
-
-      ws.send(
-        JSON.stringify({
-          type: "account_response",
-          subtype: "issue_code",
-          success: true,
-          code: code,
-        })
-      );
-    } else if (type === "recover") {
-      const inputCode = actionPayload.code;
-      const result = await this.accountManager.recoverAccount(inputCode);
-
-      ws.send(
-        JSON.stringify({
-          type: "account_response",
-          subtype: "recover",
-          success: result.success,
-          message: result.message,
-          token: result.token,
-          name: result.name,
-        })
-      );
-    }
-  }
 }

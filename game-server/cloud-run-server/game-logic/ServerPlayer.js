@@ -7,6 +7,8 @@ import { ServerBullet } from "./ServerBullet.js";
 export class ServerPlayer extends ServerGameObject {
   constructor(id, name, x, y, ws, isDebug = false) {
     super(x, y, 45);
+    this.vx = 0;
+    this.vy = 0;
     this.ws = ws;
     this.id = id;
     this.name = name;
@@ -57,9 +59,16 @@ export class ServerPlayer extends ServerGameObject {
    */
 
   update(game) {
-    if (this.isDead) return;
+    if (this.isDead) {
+      this.vx = 0;
+      this.vy = 0;
+      return;
+    }
+
+    this.vx = 0;
+    this.vy = 0;
+
     this.speed = this.defaultSpeed;
-    let moved = false;
 
     let dx = 0;
     let dy = 0;
@@ -71,25 +80,11 @@ export class ServerPlayer extends ServerGameObject {
 
     if (dx !== 0 || dy !== 0) {
       const length = Math.sqrt(dx * dx + dy * dy);
-
       dx /= length;
       dy /= length;
 
-      this.x += dx * this.speed;
-      this.y += dy * this.speed;
-      moved = true;
-    }
-
-    if (moved) {
-      this.isDirty = true;
-      this.x = Math.max(
-        this.radius,
-        Math.min(game.WORLD_WIDTH - this.radius, this.x)
-      );
-      this.y = Math.max(
-        this.radius,
-        Math.min(game.WORLD_HEIGHT - this.radius, this.y)
-      );
+      this.vx = dx * this.speed;
+      this.vy = dy * this.speed;
     }
 
     if (this.shootCooldown > 0) this.shootCooldown--;
