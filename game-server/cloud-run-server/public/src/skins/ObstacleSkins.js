@@ -19,8 +19,9 @@ export const ObstacleSkins = {
   "obs-ushape-hangar": (progress) => UShapeHangarSkin(progress),
   "obs-long-cross": (progress) => LongCrossSkin(progress),
   "obs-standard-cyber": (progress) => StandardCyberSkin(progress),
-  "obs-road-curve": (progress) => NeonRoadCurveSkin(),
-"obs-road-straight": (progress) => NeonRoadStraightSkin(),
+  "obs-road-curve": (progress) => NeonRoadCurveSkin(false),
+  "obs-road-curve-flipped": (progress) => NeonRoadCurveSkin(true),
+  "obs-road-straight": (progress) => NeonRoadStraightSkin(),
   default: (ctx, w, h) => {
     ctx.fillStyle = "#333";
     ctx.fillRect(0, 0, w, h);

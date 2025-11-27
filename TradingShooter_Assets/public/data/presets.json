@@ -306,23 +306,34 @@
     }
   ]
 },
+
 {
-  "id": "obs-cyberpunk-road",
-  "name": "obs-cyberpunk-road",
+  "id": "obs-road-curve-flipped",
+  "name": "obs-road-curve-flipped",
   "type": "obstacle_wall",
-  "className": "obs-cyberpunk-road",
-  "width": 300,
-  "height": 400,
+  "className": "obs-road-curve-flipped",
+  "width": 400,
+  "height": 800,
   "borderRadius": 0,
   "colliders": []
 },
 {
-  "id": "obs-cyberpunk-road-curve",
-  "name": "obs-cyberpunk-road-curve",
+  "id": "obs-road-curve",
+  "name": "obs-road-curve",
   "type": "obstacle_wall",
-  "className": "obs-cyberpunk-road-curve",
+  "className": "obs-road-curve",
   "width": 400,
-  "height": 300,
+  "height": 800,
+  "borderRadius": 0,
+  "colliders": []
+},
+{
+  "id": "obs-road-straight",
+  "name": "obs-road-straight",
+  "type": "obstacle_wall",
+  "className": "obs-road-straight",
+  "width": 400,
+  "height": 800,
   "borderRadius": 0,
   "colliders": []
 }
