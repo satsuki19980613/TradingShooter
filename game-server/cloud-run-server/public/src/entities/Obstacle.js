@@ -28,13 +28,13 @@ export class Obstacle {
     const LOOP_DURATION = 4000;
     const isAnimated =
       this.styleType === "obs-hexagon-fortress-animated" ||
-      this.styleType === "obs-cyberpunk-road" ||
       this.styleType === "obs-long-corner" ||
       this.styleType === "obs-wide-neon" ||
       this.styleType === "obs-ushape-hangar" ||
       this.styleType === "obs-long-cross" ||
-      this.styleType === "obs-cyberpunk-road-curve" ||
-      this.styleType === "obs-standard-cyber";
+      this.styleType === "obs-Road-Curve" ||
+      this.styleType === "obs-long-cross" ||
+      this.styleType === "obs-Road-Straight";
     let skinKey;
     let drawFunc;
     if (isAnimated) {
