@@ -34,7 +34,7 @@ export class Game {
     this.gameCanvas = document.getElementById(canvasId);
     this.gameCtx = this.gameCanvas.getContext("2d");
     this.uiCanvas = document.getElementById("ui-field");
-
+    this.uiCtx = this.uiCanvas.getContext("2d");
     this.uiManager = null;
     this.firebaseManager = null;
     this.networkManager = null;
@@ -164,32 +164,45 @@ export class Game {
 
     if (fieldWrapper && fieldContainer) {
       const rect = fieldWrapper.getBoundingClientRect();
-      fieldContainer.style.width = `${rect.width}px`;
-      fieldContainer.style.height = `${rect.height}px`;
+      if (rect.width > 0 && rect.height > 0) {
+          fieldContainer.style.width = `${rect.width}px`;
+          fieldContainer.style.height = `${rect.height}px`;
 
-      this.gameCanvas.width = rect.width;
-      this.gameCanvas.height = rect.height;
-
-      if (this.uiCanvas) {
-        this.uiCanvas.width = rect.width;
-        this.uiCanvas.height = rect.height;
+          this.gameCanvas.width = rect.width;
+          this.gameCanvas.height = rect.height;
+          
+          if (this.uiCanvas) {
+            this.uiCanvas.width = rect.width;
+            this.uiCanvas.height = rect.height;
+          }
       }
     }
 
     if (this.chartCanvas && this.chartCanvas.parentElement) {
-      this.chartCanvas.width = this.chartCanvas.parentElement.clientWidth;
-      this.chartCanvas.height = this.chartCanvas.parentElement.clientHeight;
+      const w = this.chartCanvas.parentElement.clientWidth;
+      const h = this.chartCanvas.parentElement.clientHeight;
+      if (w > 0 && h > 0) {
+          this.chartCanvas.width = w;
+          this.chartCanvas.height = h;
+      }
     }
 
     if (this.radarCanvas && this.radarCanvas.parentElement) {
-      this.radarCanvas.width = this.radarCanvas.parentElement.clientWidth;
-      this.radarCanvas.height = this.radarCanvas.parentElement.clientHeight;
+      const w = this.radarCanvas.parentElement.clientWidth;
+      const h = this.radarCanvas.parentElement.clientHeight;
+      if (w > 0 && h > 0) {
+          this.radarCanvas.width = w;
+          this.radarCanvas.height = h;
+      }
     }
 
     if (this.magazineCanvas && this.magazineCanvas.parentElement) {
-      this.magazineCanvas.width = this.magazineCanvas.parentElement.clientWidth;
-      this.magazineCanvas.height =
-        this.magazineCanvas.parentElement.clientHeight;
+      const w = this.magazineCanvas.parentElement.clientWidth;
+      const h = this.magazineCanvas.parentElement.clientHeight;
+      if (w > 0 && h > 0) {
+          this.magazineCanvas.width = w;
+          this.magazineCanvas.height = h;
+      }
     }
   }
   /**
@@ -240,7 +253,9 @@ export class Game {
 
   renderLoop() {
     this.renderLoopId = requestAnimationFrame(this.renderLoop.bind(this));
-
+    if (this.gameCanvas.width === 0 || this.chartCanvas.width === 0) {
+        this.resizeCanvas();
+    }
     this.particles = this.particles.filter((p) => {
       p.update();
       return p.alpha > 0;
