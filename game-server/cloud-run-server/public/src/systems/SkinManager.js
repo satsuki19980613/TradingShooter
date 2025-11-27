@@ -1,3 +1,12 @@
+/**
+ * 【SkinManager の役割: 画像リソース管理】
+ * ゲーム内で使用する画像（スキン）を動的に生成・キャッシュし、提供します。
+ * * ■ 担当する責務 (Do):
+ * - Canvas API を使ったテクスチャの動的生成
+ * - 生成した画像のキャッシュ管理 (メモ化)
+ * * ■ 担当しない責務 (Don't):
+ * - メイン画面への描画 (RenderSystem に画像データだけ渡す)
+ */
 export class SkinManager {
   constructor() {
     this.cache = new Map();

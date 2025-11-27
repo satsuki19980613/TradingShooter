@@ -1,3 +1,15 @@
+/**
+ * 【Game (Client) の役割: クライアント状態保持・レンダリングループ】
+ * サーバーから送られてきた状態を保持し、描画ループを回す「ダム端末（Dumb Client）」としてのコンテナです。
+ * * ■ 担当する責務 (Do):
+ * - 描画ループ (requestAnimationFrame) の管理
+ * - サーバー座標への補間（Lerp）処理
+ * - 各マネージャー (Input, UI, Network) の保持と初期化
+ * * ■ 担当しない責務 (Don't):
+ * - ゲームの勝敗判定や衝突判定（サーバー権威）
+ * - UIの直接操作 (UIManager へ)
+ * - 通信パケットの解析 (NetworkManager/PacketReader へ)
+ */
 import { PacketReader } from "../utils/PacketReader.js";
 const INPUT_BIT_MAP = {
   move_up: 1 << 0,
@@ -171,37 +183,32 @@ export class NetworkManager {
     });
   }
 
- handleBinaryMessage(arrayBuffer) {
+  handleBinaryMessage(arrayBuffer) {
     const reader = new PacketReader(arrayBuffer);
 
-    // 1. メッセージタイプ
     const msgType = reader.u8();
 
-    if (msgType === 1) { // MSG_TYPE_DELTA
+    if (msgType === 1) {
       const delta = {
         updated: { players: [], enemies: [], bullets: [] },
         removed: { players: [], enemies: [], bullets: [] },
       };
 
-      // 2. 削除されたプレイヤー
       const remPlayerCount = reader.u8();
       for (let i = 0; i < remPlayerCount; i++) {
         delta.removed.players.push(reader.string());
       }
 
-      // 3. 削除された敵
       const remEnemyCount = reader.u8();
       for (let i = 0; i < remEnemyCount; i++) {
         delta.removed.enemies.push(reader.string());
       }
 
-      // 4. 削除された弾
       const remBulletCount = reader.u16();
       for (let i = 0; i < remBulletCount; i++) {
         delta.removed.bullets.push(reader.string());
       }
 
-      // 5. プレイヤー更新
       const playerCount = reader.u8();
       for (let i = 0; i < playerCount; i++) {
         const p = {};
@@ -233,7 +240,6 @@ export class NetworkManager {
         delta.updated.players.push(p);
       }
 
-      // 6. 敵更新
       const enemyCount = reader.u8();
       for (let i = 0; i < enemyCount; i++) {
         const e = {};
@@ -245,7 +251,6 @@ export class NetworkManager {
         delta.updated.enemies.push(e);
       }
 
-      // 7. 弾更新
       const bulletCount = reader.u16();
       for (let i = 0; i < bulletCount; i++) {
         const b = {};
@@ -253,7 +258,7 @@ export class NetworkManager {
         b.x = reader.f32();
         b.y = reader.f32();
         b.a = reader.f32();
-        
+
         const typeId = reader.u8();
         let type = "player";
         if (typeId === 1) type = "enemy";

@@ -1,3 +1,12 @@
+/**
+ * 【ServerPersistenceManager の役割: 永続化】
+ * ゲームロジックとデータベース(Firestore)の境界を分離します。
+ * * ■ 担当する責務 (Do):
+ * - スコアの保存、ランキングの取得
+ * - プレイヤーデータの読み書き
+ * * ■ 担当しない責務 (Don't):
+ * - ゲームループ内での同期処理 (DB操作は必ず非同期で行う)
+ */
 import { FieldValue } from "firebase-admin/firestore";
 
 /**

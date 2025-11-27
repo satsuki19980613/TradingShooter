@@ -1,3 +1,15 @@
+/**
+ * 【ServerPlayer / ServerEnemy の役割: データモデルと意思決定】
+ * 自身のステータス（HP, EP）を管理し、「どう動きたいか」という意図（速度）を決定します。
+ * * ■ 担当する責務 (Do):
+ * - ステータス管理 (HP, EP, 名前, スコア)
+ * - 入力またはAIに基づく「移動の意思決定」 (vx, vy の設定)
+ * - 攻撃の意思決定 (弾の生成リクエスト)
+ * * ■ 担当しない責務 (Don't):
+ * - 自身の座標 (x, y) の直接更新 (物理演算は PhysicsSystem に任せる)
+ * - 壁や他キャラとの衝突判定
+ * - 通信ソケットの直接操作 (ws.send は NetworkSystem 経由で行う)
+ */
 import { ServerGameObject } from "./ServerGameObject.js";
 import { ServerBullet } from "./ServerBullet.js";
 

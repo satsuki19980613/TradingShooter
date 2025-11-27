@@ -1,6 +1,16 @@
 /**
- * UIのDOM操作とCanvas描画を管理するクラス
- * (NetworkManager と連携)
+ * 【UIManager の役割: ビュー (View)】
+ * ユーザーインターフェースの描画と、DOMイベントの仲介を行います。
+ * ロジックを持たず、受動的に振る舞います。
+ * * ■ 担当する責務 (Do):
+ * - DOM要素の表示・非表示切り替え (Show/Hide)
+ * - HUD (HPバー、スコアなど) の描画更新
+ * - ボタンクリックイベントの検知と、外部アクション(bindActions)の呼び出し
+ * * ■ 担当しない責務 (Don't):
+ * - アプリケーションのフロー制御 (ゲーム開始手順など)
+ * - 通信処理やサーバーへの接続 (NetworkManager へ)
+ * - 認証処理 (FirebaseManager へ)
+ * - ゲームの描画ループ管理 (Game クラスへ)
  */
 export class UIManager {
   constructor() {
@@ -667,15 +677,7 @@ export class UIManager {
         } = entity.individualRadii;
         el.style.borderRadius = `${borderTopLeftRadius}px ${borderTopRightRadius}px ${borderBottomRightRadius}px ${borderBottomLeftRadius}px`;
       }
-    } else if (entity.type === "SLOW_ZONE") {
-      el = document.createElement("div");
-      el.className = "slow-zone";
-      const radius = entity.radius || 75;
-      el.style.width = `${radius * 2}px`;
-      el.style.height = `${radius * 2}px`;
-      el.style.left = `${entity.x - radius}px`;
-      el.style.top = `${entity.y - radius}px`;
-    }
+    } 
     if (el) {
       entity.domElement = el;
       this.obstacleLayerEl.appendChild(el);

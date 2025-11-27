@@ -1,9 +1,21 @@
+/**
+ * 【ServerPhysicsSystem の役割: 物理演算】
+ * すべてのエンティティの移動と、物体同士の衝突解決を一括で管理します。
+ * * ■ 担当する責務 (Do):
+ * - 速度ベクトル (vx, vy) に基づく座標更新 (Move)
+ * - 障害物との衝突判定と押し出し処理 (Slide)
+ * - エンティティ同士の重なり解消
+ * - 弾の当たり判定と削除フラグの管理
+ * * ■ 担当しない責務 (Don't):
+ * - ゲームの進行管理（ループを回すこと）
+ * - プレイヤーの入力処理（入力から速度を決めるのは Player の仕事）
+ * - 死亡時のスコア計算やDB保存などの「ゲームルール」
+ */
 import { getDistance } from "./ServerUtils.js";
 import { ServerPlayer } from "./ServerPlayer.js";
 import { ServerEnemy } from "./ServerEnemy.js";
 import { ServerBullet } from "./ServerBullet.js";
 import { ServerObstacle } from "./ServerObstacle.js";
-import { ServerSlowZone } from "./ServerSlowZone.js";
 
 /**
  * 物理演算と衝突判定を担当するシステムクラス
@@ -22,7 +34,6 @@ export class ServerPhysicsSystem {
 
     this.updateBullets(game);
 
-    this.applyZoneEffects(game);
   }
   updateBullets(game) {
     for (let i = game.bullets.length - 1; i >= 0; i--) {
@@ -435,33 +446,7 @@ export class ServerPhysicsSystem {
     }
   }
 
-  /**
-   * スローゾーン等の特殊エリア効果の適用
-   * @param {ServerGame} game
-   */
-  applyZoneEffects(game) {
-    const slowZones = game.obstacles.filter(
-      (obs) => obs instanceof ServerSlowZone
-    );
-    if (slowZones.length === 0) return;
-
-    game.players.forEach((player) => {
-      if (player.isDead) return;
-
-      let isInSlowZone = false;
-      for (const zone of slowZones) {
-        if (zone.checkCollisionWithCircle(player)) {
-          isInSlowZone = true;
-          break;
-        }
-      }
-
-      if (isInSlowZone) {
-        player.speed = player.defaultSpeed * 0.5;
-        player.isDirty = true;
-      }
-    });
-  }
+  
 
   /**
    * ヘルパー: キャラクターがワールド外に出ないように補正

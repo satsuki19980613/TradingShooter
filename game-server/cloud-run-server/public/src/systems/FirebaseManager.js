@@ -1,4 +1,14 @@
-
+/**
+ * 【FirebaseManager の役割: 外部サービス連携】
+ * Firebase Authentication (認証) および Firestore (DB) との通信をカプセル化します。
+ * * ■ 担当する責務 (Do):
+ * - 匿名ログインやトークン認証の実行
+ * - ユーザープロファイル（名前など）の更新
+ * - ランキングデータの取得
+ * * ■ 担当しない責務 (Don't):
+ * - ゲーム画面の切り替え (AppFlowManager/UIManager へ)
+ * - ゲーム内データの保持 (Game クラスへ)
+ */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
 import {
   getAuth,

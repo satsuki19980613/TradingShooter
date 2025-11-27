@@ -1,3 +1,15 @@
+/**
+ * 【ServerPlayer / ServerEnemy の役割: データモデルと意思決定】
+ * 自身のステータス（HP, EP）を管理し、「どう動きたいか」という意図（速度）を決定します。
+ * * ■ 担当する責務 (Do):
+ * - ステータス管理 (HP, EP, 名前, スコア)
+ * - 入力またはAIに基づく「移動の意思決定」 (vx, vy の設定)
+ * - 攻撃の意思決定 (弾の生成リクエスト)
+ * * ■ 担当しない責務 (Don't):
+ * - 自身の座標 (x, y) の直接更新 (物理演算は PhysicsSystem に任せる)
+ * - 壁や他キャラとの衝突判定
+ * - 通信ソケットの直接操作 (ws.send は NetworkSystem 経由で行う)
+ */
 import { ServerGameObject } from "./ServerGameObject.js";
 import { ServerBullet } from "./ServerBullet.js";
 import { getDistance } from "./ServerUtils.js";
@@ -34,17 +46,20 @@ export class ServerEnemy extends ServerGameObject {
 
     const player = this.findClosestPlayer(nearbyPlayers);
 
-    if (!player) return;
-
     this.moveTimer--;
-    if (this.moveTimer <= 0) {
-      const distToPlayer = getDistance(this.x, this.y, player.x, player.y);
 
-      if (distToPlayer < 500) {
-        this.targetAngle = Math.atan2(player.y - this.y, player.x - this.x);
+    if (this.moveTimer <= 0) {
+      if (player) {
+        const distToPlayer = getDistance(this.x, this.y, player.x, player.y);
+        if (distToPlayer < 500) {
+          this.targetAngle = Math.atan2(player.y - this.y, player.x - this.x);
+        } else {
+          this.targetAngle += (Math.random() - 0.5) * 0.5;
+        }
       } else {
-        this.targetAngle += (Math.random() - 0.5) * 0.5;
+        this.targetAngle += (Math.random() - 0.5) * 1.0;
       }
+
       this.moveTimer = 60;
     }
 
@@ -52,19 +67,11 @@ export class ServerEnemy extends ServerGameObject {
     this.vy = Math.sin(this.targetAngle) * this.speed;
     this.isDirty = true;
 
-    this.x = Math.max(
-      this.radius,
-      Math.min(this.WORLD_WIDTH - this.radius, this.x)
-    );
-    this.y = Math.max(
-      this.radius,
-      Math.min(this.WORLD_HEIGHT - this.radius, this.y)
-    );
-
     this.shootCooldown--;
-    if (this.shootCooldown <= 0) {
+
+    if (player && this.shootCooldown <= 0) {
       const distToPlayer = getDistance(this.x, this.y, player.x, player.y);
-      if (distToPlayer < 500000) {
+      if (distToPlayer < 500) {
         const angle = Math.atan2(player.y - this.y, player.x - this.x);
         game.addBullet(
           new ServerBullet(this.x, this.y, 6, angle, 5, "enemy", 10, this.id)
@@ -75,7 +82,6 @@ export class ServerEnemy extends ServerGameObject {
       }
     }
   }
-
   findClosestPlayer(nearbyPlayers) {
     let closestPlayer = null;
     let minDistance = Infinity;

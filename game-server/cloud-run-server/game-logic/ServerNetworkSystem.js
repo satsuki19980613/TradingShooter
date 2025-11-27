@@ -1,3 +1,16 @@
+/**
+ * 【ServerNetworkSystem の役割: 通信・シリアライズ】
+ * ゲームの状態をクライアントが理解できる形式（JSON/バイナリ）に変換し、配信します。
+ * * ■ 担当する責務 (Do):
+ * - ゲーム状態の軽量化・圧縮 (Delta Compression)
+ * - バイナリパケットの生成
+ * - クライアントへのブロードキャスト (Broadcast)
+ * - 特定プレイヤーへのスナップショット送信
+ * * ■ 担当しない責務 (Don't):
+ * - ゲーム状態の変更 (Read Only であるべき)
+ * - 物理演算やゲームロジックの実行
+ * - データベース操作
+ */
 import { WebSocket } from "ws";
 import { ServerPlayer } from "./ServerPlayer.js";
 import { ServerEnemy } from "./ServerEnemy.js";

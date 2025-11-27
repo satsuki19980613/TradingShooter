@@ -1,3 +1,15 @@
+/**
+ * 【Game (Client) の役割: クライアント状態保持・レンダリングループ】
+ * サーバーから送られてきた状態を保持し、描画ループを回す「ダム端末（Dumb Client）」としてのコンテナです。
+ * * ■ 担当する責務 (Do):
+ * - 描画ループ (requestAnimationFrame) の管理
+ * - サーバー座標への補間（Lerp）処理
+ * - 各マネージャー (Input, UI, Network) の保持と初期化
+ * * ■ 担当しない責務 (Don't):
+ * - ゲームの勝敗判定や衝突判定（サーバー権威）
+ * - UIの直接操作 (UIManager へ)
+ * - 通信パケットの解析 (NetworkManager/PacketReader へ)
+ */
 import { Player } from "./entities/Player.js";
 import { Enemy } from "./entities/Enemy.js";
 import { Bullet } from "./entities/Bullet.js";
@@ -22,7 +34,7 @@ export class Game {
     this.gameCanvas = document.getElementById(canvasId);
     this.gameCtx = this.gameCanvas.getContext("2d");
     this.uiCanvas = document.getElementById("ui-field");
-    this.uiCtx = this.uiCanvas.getContext("2d");
+
     this.uiManager = null;
     this.firebaseManager = null;
     this.networkManager = null;
@@ -229,35 +241,28 @@ export class Game {
   renderLoop() {
     this.renderLoopId = requestAnimationFrame(this.renderLoop.bind(this));
 
-    // --- 1. エンティティの更新 (Update) ---
-    // パーティクルの更新と寿命切れの削除
     this.particles = this.particles.filter((p) => {
       p.update();
       return p.alpha > 0;
     });
 
-    // 各エンティティの座標更新
     this.playerEntities.forEach((p) => p.update());
     this.enemyEntities.forEach((e) => e.update());
     this.bulletEntities.forEach((b) => b.update());
 
-    // カメラと入力座標の更新
     this.updateCamera();
     this.inputManager.updateMouseWorldPos(
       this.mouseWorldPos.x,
       this.mouseWorldPos.y
     );
 
-    // --- 2. 描画 (Render) ---
     const ctx = this.gameCtx;
-    
-    // 背景描画
+
     this.drawBackground(ctx);
 
     ctx.save();
     ctx.translate(-this.cameraX, -this.cameraY);
 
-    // 障害物の描画 (画面内のみ描画するカリング処理付き)
     this.obstacleEntities.forEach((obs) => {
       if (
         obs.x + obs.width > this.cameraX &&
@@ -265,52 +270,35 @@ export class Game {
         obs.y + obs.height > this.cameraY &&
         obs.y < this.cameraY + this.gameCanvas.height
       ) {
-        // 将来的には this.renderSystem.renderObstacle(ctx, obs); に移行推奨
         obs.draw(ctx);
       }
     });
 
-    // パーティクルの描画
     this.particles.forEach((p) => {
-        // 将来的には this.renderSystem.renderParticle(ctx, p); に移行推奨
-        p.draw(ctx);
+      p.draw(ctx);
     });
 
-    // 弾の描画
     this.bulletEntities.forEach((b) => {
-        // 将来的には this.renderSystem.renderBullet(ctx, b); に移行推奨
-        b.draw(ctx);
+      b.draw(ctx);
     });
 
-    // ▼▼▼ 変更箇所: RenderSystem を使用して描画 ▼▼▼
-
-    // プレイヤーの描画
     this.playerEntities.forEach((p) => {
-        // 旧: p.draw(ctx);
-        this.renderSystem.renderPlayer(ctx, p);
+      this.renderSystem.renderPlayer(ctx, p);
     });
 
-    // 敵の描画
     this.enemyEntities.forEach((e) => {
-        // 旧: e.draw(ctx);
-        this.renderSystem.renderEnemy(ctx, e);
+      this.renderSystem.renderEnemy(ctx, e);
     });
-
-    // ▲▲▲ 変更ここまで ▲▲▲
 
     ctx.restore();
 
-    // --- 3. UI (HUD) の更新 ---
     this.uiCtx.clearRect(0, 0, this.uiCanvas.width, this.uiCanvas.height);
 
-    // DOM要素（障害物など）の位置同期
     this.uiManager.syncDomElements(this.cameraX, this.cameraY);
 
-    // 自分のステータスを取得してHUD更新
     const myPlayerState = this.playerEntities.get(this.userId);
     this.uiManager.syncHUD(myPlayerState, this.trading.tradeState);
 
-    // チャートの描画
     if (this.chartCtx) {
       this.chartCtx.clearRect(
         0,
@@ -326,7 +314,6 @@ export class Game {
       );
     }
 
-    // マガジン（弾倉）UIの描画
     if (this.magazineCtx) {
       this.magazineCtx.clearRect(
         0,
@@ -342,7 +329,6 @@ export class Game {
       );
     }
 
-    // レーダーの描画
     if (this.radarCtx) {
       this.radarCtx.clearRect(
         0,
@@ -371,7 +357,6 @@ export class Game {
       );
     }
 
-    // デバッグ情報の更新
     if (this.uiManager.isDebugMode) {
       const stats = this.networkManager.getStats();
       const simStats = this.networkManager.getSimulationStats();

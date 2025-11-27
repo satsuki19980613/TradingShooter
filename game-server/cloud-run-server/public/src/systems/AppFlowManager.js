@@ -1,6 +1,13 @@
 /**
- * アプリケーション全体のフロー（状態遷移）を管理するクラス
- * UI、ネットワーク、ゲームロジックの調整役
+ * 【AppFlowManager の役割: コントローラー (Controller)】
+ * アプリケーション全体の状態遷移（フロー）を管理し、各マネージャーを調整します。
+ * * ■ 担当する責務 (Do):
+ * - アプリの起動シーケンス (認証 → 接続 → ゲーム開始)
+ * - UIイベント(ボタン押下)に対するロジックの実行
+ * - 外部システム (Firebase, Network, Game) の連携
+ * * ■ 担当しない責務 (Don't):
+ * - 描画処理 (UI / Canvas)
+ * - ゲーム内の物理演算やエンティティ更新
  */
 export class AppFlowManager {
   constructor(game, uiManager, firebaseManager, networkManager) {
