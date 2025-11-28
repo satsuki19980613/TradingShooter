@@ -266,10 +266,26 @@
           <div id="bottom-chart-panel" class="panel-module">
             
             <div id="bottom-chart-left">
-              <h3 class="chart-label-badge">MARKET CHART</h3>
+               <h3 class="chart-label-badge">MARKET CHART</h3>
               <div class="canvas-wrapper" style="height: 100%">
                 <canvas id="chart-canvas"></canvas>
               </div>
+            </div>
+
+            <div id="ma-selection-panel">
+                <h4 class="control-header">MA</h4>
+                <div class="ma-option">
+                    <input type="checkbox" id="ma-short" name="ma-select" value="short">
+                    <label for="ma-short" style="color:#00ffff;">S (20)</label>
+                </div>
+                <div class="ma-option">
+                    <input type="checkbox" id="ma-medium" name="ma-select" value="medium" checked>
+                    <label for="ma-medium" style="color:#ffff00;">M (50)</label>
+                </div>
+                <div class="ma-option">
+                    <input type="checkbox" id="ma-long" name="ma-select" value="long">
+                    <label for="ma-long" style="color:#ff00ff;">L (100)</label>
+                </div>
             </div>
 
             <div id="control-area-right">

@@ -26,5 +26,13 @@ window.addEventListener("load", () => {
     bgVideo.muted = true;
     bgVideo.volume = 0; 
   }
+  document.querySelectorAll('input[name="ma-select"]').forEach(checkbox => {
+      checkbox.addEventListener('change', (e) => {
+          if (game && game.trading) {
+              // toggleMaType(タイプ, ON/OFFの状態) を呼び出す
+              game.trading.toggleMaType(e.target.value, e.target.checked);
+          }
+      });
+  });
 });
 // KB

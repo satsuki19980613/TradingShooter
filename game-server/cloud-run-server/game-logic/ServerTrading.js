@@ -13,12 +13,12 @@ export class ServerTrading {
   constructor() {
     this.MIN_BET = 10;
     this.MAX_CHART_POINTS = 300;
-    this.MA_PERIOD = 20;
+    this.MA_PERIODS = { short: 20, medium: 50, long: 100 };
     this.chartData = [];
     this.currentPrice = 1000;
     this.minPrice = 1000;
     this.maxPrice = 1000;
-    this.maData = [];
+    this.maData = { short: [], medium: [], long: [] };
   }
 
   /**
@@ -51,6 +51,7 @@ export class ServerTrading {
       this.chartData.shift();
     }
 
+    // 全再計算を行う（データ量は少ないので負荷は問題ありません）
     this.calculateMetrics();
 
     return {
@@ -58,7 +59,12 @@ export class ServerTrading {
       minPrice: this.minPrice,
       maxPrice: this.maxPrice,
       newChartPoint: this.chartData[this.chartData.length - 1],
-      newMaPoint: this.maData[this.maData.length - 1],
+      // 最新のMAポイントだけをクライアントに送る
+      newMaPoint: {
+        short: this.maData.short[this.maData.short.length - 1],
+        medium: this.maData.medium[this.maData.medium.length - 1],
+        long: this.maData.long[this.maData.long.length - 1]
+      }
     };
   }
 
@@ -99,9 +105,16 @@ updatePrice() {
   /**
    * 最小/最大値と移動平均を計算する
    */
+ /**
+   * 最小/最大値と移動平均を計算する (全計算)
+   */
+  /**
+   * 最小/最大値と移動平均を計算する (全計算)
+   */
   calculateMetrics() {
     if (this.chartData.length < 1) return;
 
+    // 1. Min/Max の計算
     this.minPrice = this.chartData[0];
     this.maxPrice = this.chartData[0];
     for (let i = 1; i < this.chartData.length; i++) {
@@ -109,21 +122,30 @@ updatePrice() {
       if (this.chartData[i] > this.maxPrice) this.maxPrice = this.chartData[i];
     }
 
-    const newMaData = [];
-    for (let i = 0; i < this.chartData.length; i++) {
-      if (i < this.MA_PERIOD - 1) {
-        newMaData.push(null);
-      } else {
-        let sum = 0;
-        for (let j = 0; j < this.MA_PERIOD; j++) {
-          sum += this.chartData[i - j];
-        }
-        newMaData.push(sum / this.MA_PERIOD);
-      }
-    }
-    this.maData = newMaData;
-  }
+    // 2. MA (移動平均) の全再計算
+    // これにより、init()で作られた過去データに対してもMAが生成されます
+    const types = ['short', 'medium', 'long'];
+    
+    types.forEach(type => {
+      const period = this.MA_PERIODS[type];
+      // 配列をリセットして作り直す
+      this.maData[type] = [];
 
+      for (let i = 0; i < this.chartData.length; i++) {
+        // データ数が期間に満たない場合は null
+        if (i < period - 1) {
+          this.maData[type].push(null);
+        } else {
+          // 過去 period 分の平均を計算
+          let sum = 0;
+          for (let j = 0; j < period; j++) {
+            sum += this.chartData[i - j];
+          }
+          this.maData[type].push(sum / period);
+        }
+      }
+    });
+  }
   /**
    * サーバー側でBET額の調整 (ServerGame から呼ばれる)
    */
@@ -229,8 +251,7 @@ updatePrice() {
   getState() {
     return {
       chartData: this.chartData,
-      maData: this.maData,
-
+      maData: this.maData, // ★オブジェクトとして返す
       currentPrice: this.currentPrice,
       minPrice: this.minPrice,
       maxPrice: this.maxPrice,

@@ -206,13 +206,16 @@ canvas#ui-field {
 
 /* --- チャートエリア (下部ワイド表示) --- */
 #bottom-chart-panel {
-    height: 180px; /* 高さを固定 */
+    height: 210px;
     width: 100%;
     flex-shrink: 0;
     position: relative;
-    padding: 0; /* 余白なしでCanvas最大化 */
+    padding: 0;
     background: rgba(10, 20, 30, 0.9);
     border: 1px solid rgba(0, 255, 255, 0.2);
+    /* フレックスボックスで横並び */
+    display: flex; 
+    flex-direction: row !important;
 }
 #bottom-chart-panel h3 {
     position: absolute;
@@ -474,11 +477,22 @@ canvas#ui-field {
 
 #bottom-chart-left {
     position: relative;
-    width: 50%;
+    width: 50%; /* 左半分はチャート */
     height: 100%;
     border-right: 1px solid rgba(0, 255, 255, 0.2);
 }
-
+#ma-selection-panel {
+    width: 15%; /* ここに新設 */
+    height: 100%;
+    border-right: 1px solid rgba(0, 255, 255, 0.2);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start; /* 左寄せ */
+    padding-left: 15px;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.2);
+}
 .chart-label-badge {
     position: absolute;
     top: 0;
@@ -492,9 +506,24 @@ canvas#ui-field {
     letter-spacing: 1px;
     border-bottom-right-radius: 4px;
 }
-
+.ma-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+}
+.ma-option input {
+    cursor: pointer;
+    accent-color: #00bcd4; /* ラジオボタンの色 */
+}
+.ma-option label {
+    cursor: pointer;
+    text-shadow: 0 0 2px rgba(255,255,255,0.5);
+}
 #control-area-right {
-    width: 50%;
+    width: 35%; /* 50% -> 35% に圧縮 */
     height: 100%;
     position: relative;
     overflow: hidden;
@@ -511,17 +540,19 @@ canvas#ui-field {
 }
 
 .control-content {
+    /* gap: 12px; <-- これを削除または0にする */
+    gap: 0; 
+    
+    /* 以下は変更なし */
     position: relative;
     z-index: 1;
-    padding: 10px 20px; /* 余白を広めに */
+    padding: 10px 20px;
     height: 100%;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 12px; /* 行間を広げる */
 }
-
 .control-header {
     margin: 0 0 5px 0;
     color: #888;
@@ -535,9 +566,18 @@ canvas#ui-field {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: 14px; /* 大きく */
+    font-size: 14px;
     color: #ddd;
     font-weight: bold;
+
+    /* ▼ 線と余白の設定（ここを調整） */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 6px 0; /* 8pxだと少し大きいので6pxくらいが丁度良いです */
+}
+
+/* 一番下の行の線は消す */
+.control-row:last-child {
+    border-bottom: none;
 }
 
 /* キーキャップ共通 */
