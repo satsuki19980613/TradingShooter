@@ -31,10 +31,11 @@ export class Obstacle {
       this.styleType === "obs-long-corner" ||
       this.styleType === "obs-wide-neon" ||
       this.styleType === "obs-ushape-hangar" ||
+      this.styleType === "obs-ushape-hangar" ||
       this.styleType === "obs-long-cross" ||
-      this.styleType === "obs-Road-Curve" ||
-      this.styleType === "obs-long-cross" ||
-      this.styleType === "obs-Road-Straight";
+      this.styleType === "obs-road-curve" ||          
+      this.styleType === "obs-road-curve-flipped" ||  
+      this.styleType === "obs-road-straight";
     let skinKey;
     let drawFunc;
     if (isAnimated) {

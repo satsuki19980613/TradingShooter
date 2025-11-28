@@ -46,27 +46,22 @@ export class EditorCore {
     const snapX = Math.floor(x / 25) * 25;
     const snapY = Math.floor(y / 25) * 25;
 
-    // ★修正: プリセットのサイズ（見た目のサイズ）を正とする
     let w = preset.width;
     let h = preset.height;
 
     let calculatedColliders = [];
 
     if (preset.colliders) {
-      // プリセット内のコライダー座標は「中心からの相対座標（オフセット）」としてそのまま扱う
-      // （以前のようにバウンディングボックスを再計算して w, h を上書きしない）
       const rawColliders = JSON.parse(JSON.stringify(preset.colliders));
 
       calculatedColliders = rawColliders.map((c) => ({
         ...c,
-        // プリセットの時点で中心相対になっている前提 (例: Hexagon Fortressは -18.5 など)
-        // もしプリセットが絶対座標なら調整が必要ですが、現状のpresets.jsonは相対座標です
+
         offsetX: c.x,
         offsetY: c.y,
       }));
     }
 
-    // 2. オブジェクト生成
     const obj = {
       id: this.nextId++,
       type: preset.type || "obstacle_wall",
@@ -78,17 +73,15 @@ export class EditorCore {
       domElement: null,
 
       isComposite: !!preset.colliders,
-      colliders: calculatedColliders, 
+      colliders: calculatedColliders,
 
       w: w,
       h: h,
       borderRadius: preset.borderRadius || 0,
 
-      // ▼▼▼ スケーリング計算用に「元のサイズとコライダー」を保存 ▼▼▼
       originalW: w,
       originalH: h,
       originalColliders: JSON.parse(JSON.stringify(calculatedColliders)),
-      // ▲▲▲
     };
 
     this.objects.push(obj);
@@ -104,65 +97,56 @@ export class EditorCore {
    * 現在のオブジェクトリストから、サーバー用JSONデータを生成する
    * ★修正点: 拡大縮小に加え、「回転」に合わせてコライダー座標と角度を再計算します。
    */
+
+  /**
+   * パレット形式（definitions + placements）でJSONデータを生成する
+   */
   getExportData() {
-    return this.objects.map((obj) => {
-      // 基本データのコピー
-      const exportObj = {
-        id: obj.styleType,
-        type: obj.type,
-        x: obj.x - obj.w / 2,
-        y: obj.y - obj.h / 2,
-        width: obj.w,
-        height: obj.h,
-        rotation: obj.rotation,
-        className: obj.className,
-        borderRadius: obj.borderRadius,
-      };
+    const definitions = {};
+    const placements = [];
 
-      // コライダーがある場合、現在のサイズと「回転」に合わせて再計算
-      if (
-        obj.isComposite &&
-        obj.originalColliders &&
-        obj.originalW > 0 &&
-        obj.originalH > 0
-      ) {
-        // 1. 拡大率を計算
-        const scaleX = obj.w / obj.originalW;
-        const scaleY = obj.h / obj.originalH;
+    this.objects.forEach((obj) => {
+      const w = obj.w;
+      const h = obj.h;
+      const baseName = obj.className || obj.styleType || `obj_${obj.id}`;
+      const defId = `${baseName}`;
 
-        // 2. 回転の準備 (度 -> ラジアン)
-        const rad = (obj.rotation || 0) * (Math.PI / 180);
-        const cos = Math.cos(rad);
-        const sin = Math.sin(rad);
+      if (!definitions[defId]) {
+        definitions[defId] = {
+          type: obj.type || "obstacle_wall",
+          width: w,
+          height: h,
+          className: obj.className,
+          borderRadius: obj.borderRadius || 0,
 
-        exportObj.colliders = obj.originalColliders.map((c) => {
-          // まず拡大縮小を適用（中心相対座標）
-          const scaledX = c.offsetX * scaleX;
-          const scaledY = c.offsetY * scaleY;
-
-          // 次に回転行列を適用して座標を変換
-          // x' = x cosθ - y sinθ
-          // y' = x sinθ + y cosθ
-          const rotatedX = scaledX * cos - scaledY * sin;
-          const rotatedY = scaledX * sin + scaledY * cos;
-
-          return {
-            type: "rect",
-            x: rotatedX, 
-            y: rotatedY,
-            w: c.w * scaleX,
-            h: c.h * scaleY,
-            // ★コライダー自体の角度に、親オブジェクトの回転を加算
-            angle: (c.angle || 0) + obj.rotation, 
-          };
-        });
+          colliders: obj.originalColliders
+            ? JSON.parse(JSON.stringify(obj.originalColliders))
+            : [],
+        };
       }
 
-      return exportObj;
+      placements.push({
+        defId: defId,
+        x: obj.x - w / 2,
+        y: obj.y - h / 2,
+        rotation: obj.rotation || 0,
+      });
     });
-  }
 
- createObjectDOM(obj) {
+    return {
+      worldSize: {
+        width: this.WORLD_SIZE,
+        height: this.WORLD_SIZE,
+      },
+      definitions: definitions,
+      placements: placements,
+
+      obstacles: [],
+      playerSpawns: [{ x: 500, y: 500 }],
+      enemySpawns: [{ x: 1500, y: 1500 }],
+    };
+  }
+  createObjectDOM(obj) {
     const container = document.createElement("div");
     container.className = `obs-base ${obj.className || ""}`;
     container.style.position = "absolute";
@@ -173,7 +157,6 @@ export class EditorCore {
         ? rawFunc(0.0)
         : rawFunc || ObstacleSkins["default"];
 
-    // キャッシュされた元画像を取得
     const cachedSkin = skinManager.getSkin(
       `editor_${obj.className}_${obj.w}_${obj.h}`,
       obj.w,
@@ -181,18 +164,15 @@ export class EditorCore {
       skinFunc
     );
 
-    // ★修正: このオブジェクト専用のCanvasを作成してコピーする
     const objCanvas = document.createElement("canvas");
     objCanvas.width = obj.w;
     objCanvas.height = obj.h;
     const ctx = objCanvas.getContext("2d");
-    
-    // キャッシュ画像をここに描画（コピー）
+
     ctx.drawImage(cachedSkin, 0, 0);
 
-    // 専用のCanvasを追加する
     container.appendChild(objCanvas);
-    
+
     this.domLayer.appendChild(container);
     obj.domElement = container;
     this.updateObjectDOM(obj);
@@ -204,8 +184,7 @@ export class EditorCore {
     const screenPos = this.worldToScreen(obj.x, obj.y);
     const screenW = obj.w * this.camera.zoom;
     const screenH = obj.h * this.camera.zoom;
-    
-    // DOMは左上基準なので、中心座標からサイズ半分を引く
+
     const left = screenPos.x - screenW / 2;
     const top = screenPos.y - screenH / 2;
 
@@ -215,17 +194,16 @@ export class EditorCore {
     el.style.height = `${screenH}px`;
 
     if (obj.isComposite) {
-      // 子要素（コライダー可視化用）があれば更新
       Array.from(el.children).forEach((child, index) => {
         if (child.tagName === "CANVAS") return;
-        
+
         const c = obj.colliders[index];
-        if(c) {
-            child.style.width = `${c.w * this.camera.zoom}px`;
-            child.style.height = `${c.h * this.camera.zoom}px`;
-            // offsetX/Y は中心からの相対位置なので、width/2 を足して左上基準に直す
-            child.style.left = `${(obj.w / 2 + c.offsetX) * this.camera.zoom}px`;
-            child.style.top = `${(obj.h / 2 + c.offsetY) * this.camera.zoom}px`;
+        if (c) {
+          child.style.width = `${c.w * this.camera.zoom}px`;
+          child.style.height = `${c.h * this.camera.zoom}px`;
+
+          child.style.left = `${(obj.w / 2 + c.offsetX) * this.camera.zoom}px`;
+          child.style.top = `${(obj.h / 2 + c.offsetY) * this.camera.zoom}px`;
         }
       });
     }
@@ -366,7 +344,6 @@ export class EditorCore {
     const sw = obj.w * this.camera.zoom;
     const sh = obj.h * this.camera.zoom;
 
-    // ★修正: 中心座標をそのまま使う (以前はここで +sw/2 してズレていました)
     const cx = screenPos.x;
     const cy = screenPos.y;
 
@@ -377,8 +354,7 @@ export class EditorCore {
     ctx.strokeStyle = "#00ffff";
     ctx.lineWidth = 2;
     ctx.strokeRect(localLeft, localTop, sw, sh);
-    
-    // ハンドル（四隅）
+
     ctx.fillStyle = "#00ff00";
     const handleSize = 8;
     const handles = [
@@ -415,8 +391,7 @@ export class EditorCore {
     const sw = obj.w * this.camera.zoom;
     const sh = obj.h * this.camera.zoom;
     const hitSize = 16;
-    
-    // ★修正: 中心座標をそのまま使う
+
     const cx = screenPos.x;
     const cy = screenPos.y;
 
@@ -451,7 +426,6 @@ export class EditorCore {
       const sw = obj.w * this.camera.zoom;
       const sh = obj.h * this.camera.zoom;
 
-      // ★修正: 中心座標をそのまま使う
       const cx = screenPos.x;
       const cy = screenPos.y;
 

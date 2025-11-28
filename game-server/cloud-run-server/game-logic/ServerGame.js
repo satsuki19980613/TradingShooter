@@ -84,6 +84,9 @@ export class ServerGame {
   /**
    * ワールドの初期化 (障害物と敵の配置)
    */
+  /**
+   * ワールドの初期化 (障害物と敵の配置)
+   */
   initWorld() {
     const mapFileName = "map_default.json";
     const mapPath = path.join(__dirname, "..", "maps", mapFileName);
@@ -96,10 +99,11 @@ export class ServerGame {
       console.warn(
         `[ServerGame] マップファイル ${mapFileName} が見つからないか不正です。デフォルトマップで起動します。`
       );
-
       mapData = {
         worldSize: { width: WORLD_WIDTH, height: WORLD_HEIGHT },
         obstacles: [],
+        placements: [],
+        definitions: {},
         playerSpawns: [{ x: 500, y: 500 }],
         enemySpawns: [{ x: 1500, y: 1500 }],
       };
@@ -110,7 +114,35 @@ export class ServerGame {
     this.WORLD_HEIGHT =
       (mapData.worldSize && mapData.worldSize.height) || WORLD_HEIGHT;
 
-    this.obstacles = mapData.obstacles
+    let obstacleConfigs = [];
+
+    if (mapData.definitions && mapData.placements) {
+      console.log(`[ServerGame] パレット形式のマップデータを読み込みます。`);
+      obstacleConfigs = mapData.placements
+        .map((placement) => {
+          const def = mapData.definitions[placement.defId];
+          if (!def) {
+            console.warn(
+              `[MapError] 定義ID '${placement.defId}' が見つかりません。`
+            );
+            return null;
+          }
+
+          return {
+            ...def,
+            x: placement.x,
+            y: placement.y,
+            rotation: placement.rotation || 0,
+            id: placement.id,
+          };
+        })
+        .filter(Boolean);
+    } else if (mapData.obstacles) {
+      console.log(`[ServerGame] 従来形式のマップデータを読み込みます。`);
+      obstacleConfigs = mapData.obstacles;
+    }
+
+    this.obstacles = obstacleConfigs
       .map((obsData) => {
         if (obsData.type === "obstacle_wall" || obsData.type === "WALL") {
           const obs = new ServerObstacle(
@@ -128,7 +160,6 @@ export class ServerGame {
           if (obsData.colliders) {
             obs.setColliders(obsData.colliders);
           }
-
           return obs;
         }
         return null;
@@ -161,7 +192,6 @@ export class ServerGame {
     }
     this.trading.init();
   }
-
   startLoop() {
     if (this.isRunning) return;
 
@@ -201,8 +231,10 @@ export class ServerGame {
     const player = this.players.get(userId);
     if (player) {
       player.name = newName;
-      player.isDirty = true; // クライアントへ変更を通知するためよふかしうた2
-      console.log(`[ServerGame] プレイヤー名を更新: ID=${userId} -> ${newName}`);
+      player.isDirty = true;
+      console.log(
+        `[ServerGame] プレイヤー名を更新: ID=${userId} -> ${newName}`
+      );
     }
   }
 
@@ -292,7 +324,7 @@ export class ServerGame {
     this.checkIdlePlayers();
 
     this.players.forEach((player) => {
-      player.update(this); 
+      player.update(this);
     });
     this.enemies.forEach((enemy) => {
       enemy.update(this);
@@ -553,8 +585,6 @@ export class ServerGame {
     }, 0);
   }
 
- 
-
   spawnEnemy() {
     const enemyRadius = 45;
     const pos = this.findRandomValidPosition(enemyRadius);
@@ -615,6 +645,4 @@ export class ServerGame {
       serverStatsPayload
     );
   }
-
-
 }

@@ -65,21 +65,37 @@ export class ServerTrading {
   /**
    * 価格をランダムに更新
    */
-  updatePrice() {
+updatePrice() {
     let change;
 
-    if (Math.random() < 0.01) {
-      change = (Math.random() - 0.5) * 15;
-    } else {
-      change = (Math.random() - 0.5) * 2.5;
+    // ① 大嵐（スパイク）判定：0.5%
+    if (Math.random() < 0.005) {
+      // ドカンと動く
+      change = (Math.random() - 0.5) * 18; 
+    } 
+    // ② 通常時のゆらぎ判定：99.5%
+    else {
+      // 確率判定用のサイコロを振る (0.0 〜 1.0)
+      const r = Math.random();
+
+      if (r < 0.6) {
+        // 【A】 60% : 凪（なぎ）... ほとんど動かない
+        change = (Math.random() - 0.5) * 0.23;
+      } else if (r < 0.8) {
+        // 【B】 20% : さざ波 ... 少し動く
+        change = (Math.random() - 0.5) * 1;
+      } else {
+        // 【C】 20% : 小波 ... まあまあ動く
+        change = (Math.random() - 0.5) * 2;
+      }
     }
 
     this.currentPrice += change;
 
+    // リミッター
     if (this.currentPrice < 200) this.currentPrice = 200;
     if (this.currentPrice > 3000) this.currentPrice = 3000;
   }
-
   /**
    * 最小/最大値と移動平均を計算する
    */

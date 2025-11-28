@@ -327,6 +327,25 @@ document.getElementById("btn-export").addEventListener("click", () => {
   a.download = "map_default.json";
   a.click();
 });
+// MapEditor_Standalone/src/main.js の該当箇所をイメージ
+
+document.getElementById("btn-export").onclick = () => {
+    // 新しい getExportData() を呼び出す
+    const data = editor.getExportData();
+    
+    // JSON文字列に変換
+    const json = JSON.stringify(data, null, 2);
+    
+    // クリップボードにコピー
+    navigator.clipboard.writeText(json).then(() => {
+        alert("パレット形式のJSONをクリップボードにコピーしました！");
+    }).catch(err => {
+        console.error("コピーに失敗しました:", err);
+        // コピー失敗時はコンソールに出す
+        console.log(json);
+        alert("コピーに失敗しました。コンソールを確認してください。");
+    });
+};
 window.addEventListener("keydown", (e) => {
   if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
   if (e.key === "Delete" || e.key === "Backspace") {
