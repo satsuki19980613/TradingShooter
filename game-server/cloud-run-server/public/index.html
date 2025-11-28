@@ -264,21 +264,52 @@
           </div>
 
           <div id="bottom-chart-panel" class="panel-module">
-            <h3
-              style="
-                position: absolute;
-                top: 5px;
-                left: 10px;
-                z-index: 10;
-                background: rgba(0, 0, 0, 0.5);
-                padding: 2px 5px;
-              "
-            >
-              MARKET CHART
-            </h3>
-            <div class="canvas-wrapper" style="height: 100%">
-              <canvas id="chart-canvas"></canvas>
+            
+            <div id="bottom-chart-left">
+              <h3 class="chart-label-badge">MARKET CHART</h3>
+              <div class="canvas-wrapper" style="height: 100%">
+                <canvas id="chart-canvas"></canvas>
+              </div>
             </div>
+
+            <div id="control-area-right">
+              <div class="control-bg-deco"></div>
+
+              <div class="control-content">
+                <h4 class="control-header">SYSTEM CONTROLS</h4>
+
+                <div class="control-row">
+                  <span>MOVE</span>
+                  <div>
+                    <span class="key-cap key-cyan">W</span>
+                    <span class="key-cap key-cyan">A</span>
+                    <span class="key-cap key-cyan">S</span>
+                    <span class="key-cap key-cyan">D</span>
+                  </div>
+                </div>
+
+                <div class="control-row">
+                  <span>SHOT</span>
+                  <span class="key-cap key-red">CLICK</span>
+                </div>
+
+                <div class="control-row">
+                  <span class="key-green-text">TRADE</span>
+                  <span class="key-cap key-green">SPACE</span>
+                </div>
+
+                <div class="control-row">
+                  <span>BET</span>
+                  <div>
+                    <span class="key-cap key-gray">E</span>
+                    <span class="sub-text">(UP)</span>
+                    <span class="key-cap key-gray">R</span>
+                    <span class="sub-text">(DWN)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
 

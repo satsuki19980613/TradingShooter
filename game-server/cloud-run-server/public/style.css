@@ -462,3 +462,147 @@ canvas#ui-field {
     margin-top: 10px;
 }
 #debug-panel h4 { margin: 0 0 5px 0; color: #ff9800; }
+
+/* ========================================
+ * 下部パネル (チャート & 操作説明) のレイアウト
+ * ======================================== */
+
+#bottom-chart-panel {
+    flex-direction: row !important;
+    padding: 0 !important;
+}
+
+#bottom-chart-left {
+    position: relative;
+    width: 50%;
+    height: 100%;
+    border-right: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.chart-label-badge {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 10;
+    margin: 0;
+    background: rgba(0, 255, 255, 0.1);
+    color: #00ffff;
+    font-size: 11px; /* 少し大きく */
+    padding: 3px 10px;
+    letter-spacing: 1px;
+    border-bottom-right-radius: 4px;
+}
+
+#control-area-right {
+    width: 50%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.control-bg-deco {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 20, 30, 0.5);
+    z-index: 0;
+}
+
+.control-content {
+    position: relative;
+    z-index: 1;
+    padding: 10px 20px; /* 余白を広めに */
+    height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px; /* 行間を広げる */
+}
+
+.control-header {
+    margin: 0 0 5px 0;
+    color: #888;
+    font-size: 12px; /* 大きく */
+    letter-spacing: 3px;
+    border-bottom: 1px solid #444;
+    text-align: center; /* 中央揃え */
+}
+
+.control-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 14px; /* 大きく */
+    color: #ddd;
+    font-weight: bold;
+}
+
+/* キーキャップ共通 */
+.key-cap {
+    display: inline-block;
+    padding: 4px 8px; /* 大きく */
+    border-radius: 4px;
+    border: 1px solid #aaa;
+    font-family: 'Roboto Mono', monospace;
+    font-weight: bold;
+    min-width: 24px; /* 幅を確保 */
+    text-align: center;
+    font-size: 14px; /* 文字サイズアップ */
+    box-shadow: 0 2px 0 rgba(0,0,0,0.5); /* 立体感 */
+    text-shadow: 0 0 2px rgba(255,255,255,0.3);
+}
+
+/* WASD用の特殊レイアウト */
+.wasd-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+.wasd-row {
+    display: flex;
+    gap: 4px;
+}
+
+/* 色バリエーション */
+.key-cyan {
+    border-color: #00ffff;
+    color: #00ffff;
+    background: rgba(0, 255, 255, 0.15);
+    box-shadow: 0 0 5px rgba(0,255,255,0.2), 0 2px 0 rgba(0,0,0,0.5);
+}
+
+.key-red {
+    border-color: #ff5252;
+    color: #ff5252;
+    background: rgba(255, 82, 82, 0.15);
+    padding: 4px 12px;
+}
+
+.key-green {
+    border-color: #00e676;
+    color: #00e676;
+    background: rgba(0, 230, 118, 0.15);
+    padding: 4px 20px;
+}
+
+.key-green-text {
+    color: #00e676;
+    font-weight: bold;
+    text-shadow: 0 0 5px rgba(0, 230, 118, 0.4);
+}
+
+.key-gray {
+    border-color: #888;
+    color: #eee;
+    background: rgba(255,255,255,0.1);
+}
+
+.sub-text {
+    font-size: 10px;
+    color: #888;
+    margin: 0 4px;
+}

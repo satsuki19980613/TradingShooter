@@ -83,7 +83,7 @@ updatePrice() {
         change = (Math.random() - 0.5) * 0.23;
       } else if (r < 0.8) {
         // 【B】 20% : さざ波 ... 少し動く
-        change = (Math.random() - 0.5) * 1;
+        change = (Math.random() - 0.5) * 0.6;
       } else {
         // 【C】 20% : 小波 ... まあまあ動く
         change = (Math.random() - 0.5) * 2;
@@ -94,7 +94,7 @@ updatePrice() {
 
     // リミッター
     if (this.currentPrice < 200) this.currentPrice = 200;
-    if (this.currentPrice > 3000) this.currentPrice = 3000;
+    if (this.currentPrice > 5000) this.currentPrice = 5000;
   }
   /**
    * 最小/最大値と移動平均を計算する
