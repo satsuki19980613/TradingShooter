@@ -279,14 +279,24 @@ export class UIManager {
       this.sizeValueEl.textContent = betText;
       this.sizeValueEl.style.color = betColor;
     }
-    if (this.powerValueEl && this.powerLabelEl) {
+   if (this.powerValueEl && this.powerLabelEl) {
       const chargePosition = playerState.chargePosition || null;
-
       const currentPrice = tradeState ? tradeState.currentPrice : 1000;
       let level = 0;
 
       if (chargePosition) {
-        const priceDiff = currentPrice - chargePosition.entryPrice;
+        // ★修正: ポジションタイプを確認して計算式を変える
+        const type = chargePosition.type || "long";
+        let priceDiff;
+
+        if (type === "short") {
+            // ショートの場合: (エントリー価格 - 現在価格) が利益
+            priceDiff = chargePosition.entryPrice - currentPrice;
+        } else {
+            // ロングの場合: (現在価格 - エントリー価格) が利益
+            priceDiff = currentPrice - chargePosition.entryPrice;
+        }
+
         const betAmount = chargePosition.amount;
         level = priceDiff * betAmount;
       }

@@ -86,7 +86,8 @@ export class ServerPhysicsSystem {
           }
 
           if (
-            (bullet.type === "player" || bullet.type === "player_special") &&
+            (bullet.type === "player" ||
+              bullet.type.startsWith("player_special")) &&
             entity instanceof ServerEnemy
           ) {
             const attackerPlayer = game.players.get(bullet.ownerId);
@@ -103,21 +104,28 @@ export class ServerPhysicsSystem {
             break;
           }
 
-          if (bullet.type === "enemy" && entity instanceof ServerPlayer) {
-            if (entity.isDead) continue;
-            entity.takeDamage(bullet.damage, game, null);
+          if (
+            (bullet.type === "player" ||
+              bullet.type.startsWith("player_special")) &&
+            entity instanceof ServerPlayer
+          ) {
+            if (entity.id === bullet.ownerId || entity.isDead) {
+              continue;
+            }
+
+            const attackerPlayer = game.players.get(bullet.ownerId);
+            entity.takeDamage(bullet.damage, game, attackerPlayer);
 
             game.frameEvents.push({
               type: "hit",
               x: bullet.x,
               y: bullet.y,
-              color: "#f44336",
+              color: "#00ffff",
             });
             game.removeBullet(bullet, i);
             bulletRemoved = true;
             break;
           }
-
           if (
             (bullet.type === "player" || bullet.type === "player_special") &&
             entity instanceof ServerPlayer
