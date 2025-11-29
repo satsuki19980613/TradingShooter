@@ -270,10 +270,13 @@ export class NetworkManager {
         const typeId = reader.u8();
         let type = "player";
         if (typeId === 1) type = "enemy";
-        else if (typeId === 2) type = "player_special";
+        else if (typeId === 2) type = "player_special_1"; // Tier 1
         else if (typeId === 3) type = "item_ep";
-        b.t = type;
+        else if (typeId === 4) type = "player_special_2"; // ★Tier 2
+        else if (typeId === 5) type = "player_special_3"; // ★Tier 3
+        else if (typeId === 6) type = "player_special_4"; // ★Tier 4
 
+        b.t = type;
         delta.updated.bullets.push(b);
       }
 

@@ -24,7 +24,7 @@ const MSG_TYPE_DELTA = 1;
 export class ServerNetworkSystem {
   constructor(game) {
     this.game = game;
-    
+    this.playerWriters = new WeakMap();
   }
 
   broadcastGameState(players, frameEvents) {
@@ -40,10 +40,19 @@ export class ServerNetworkSystem {
       const relevantEntityMaps = this.getRelevantEntityMapsFor(player);
 
       if (useBinary) {
+        let writer = this.playerWriters.get(player);
+        if (!writer) {
+          writer = new PacketWriter();
+          this.playerWriters.set(player, writer);
+        }
+        writer.reset();
+
         const binaryData = this.createBinaryDelta(
           player.lastBroadcastState,
-          relevantEntityMaps
+          relevantEntityMaps,
+          writer
         );
+
         if (binaryData.length > 0) {
           this.safeSend(player.ws, binaryData);
         }
@@ -117,13 +126,10 @@ export class ServerNetworkSystem {
   /**
    * バイナリデータの生成（削除情報とトレード情報を含む完全版）
    */
-createBinaryDelta(oldEntityMaps, newEntityMaps) {
-    const writer = new PacketWriter();
+  createBinaryDelta(oldEntityMaps, newEntityMaps, writer) {
 
-    // 1. メッセージタイプ
     writer.u8(MSG_TYPE_DELTA);
 
-    // 2. 削除されたプレイヤーID
     const removedPlayers = [];
     if (oldEntityMaps && oldEntityMaps.players) {
       for (const id of oldEntityMaps.players.keys()) {
@@ -133,7 +139,6 @@ createBinaryDelta(oldEntityMaps, newEntityMaps) {
     writer.u8(Math.min(removedPlayers.length, 255));
     for (const id of removedPlayers) writer.string(id);
 
-    // 3. 削除された敵ID
     const removedEnemies = [];
     if (oldEntityMaps && oldEntityMaps.enemies) {
       for (const id of oldEntityMaps.enemies.keys()) {
@@ -143,7 +148,6 @@ createBinaryDelta(oldEntityMaps, newEntityMaps) {
     writer.u8(Math.min(removedEnemies.length, 255));
     for (const id of removedEnemies) writer.string(id);
 
-    // 4. 削除された弾ID
     const removedBullets = [];
     if (oldEntityMaps && oldEntityMaps.bullets) {
       for (const id of oldEntityMaps.bullets.keys()) {
@@ -153,7 +157,6 @@ createBinaryDelta(oldEntityMaps, newEntityMaps) {
     writer.u16(Math.min(removedBullets.length, 65535));
     for (const id of removedBullets) writer.string(id);
 
-    // 5. プレイヤー更新情報
     const players = Array.from(newEntityMaps.players.values());
     writer.u8(Math.min(players.length, 255));
     for (const p of players) {
@@ -184,7 +187,6 @@ createBinaryDelta(oldEntityMaps, newEntityMaps) {
       }
     }
 
-    // 6. 敵更新情報
     const enemies = Array.from(newEntityMaps.enemies.values());
     writer.u8(Math.min(enemies.length, 255));
     for (const e of enemies) {
@@ -196,7 +198,6 @@ createBinaryDelta(oldEntityMaps, newEntityMaps) {
       writer.f32(R1(s.targetAngle || 0));
     }
 
-    // 7. 弾更新情報
     const bullets = Array.from(newEntityMaps.bullets.values());
     writer.u16(Math.min(bullets.length, 65535));
     for (const b of bullets) {
@@ -206,11 +207,23 @@ createBinaryDelta(oldEntityMaps, newEntityMaps) {
       writer.f32(R(s.y));
       writer.f32(R1(s.angle));
 
-      let typeId = 0;
-      if (s.type === "enemy") typeId = 1;
-      else if (s.type === "player_special") typeId = 2;
-      else if (s.type === 'item_ep') typeId = 3;
-      writer.u8(typeId);
+    let typeId = 0; // デフォルト (player normal)
+
+    if (s.type === "enemy") {
+        typeId = 1;
+    } else if (s.type === "player_special" || s.type === "player_special_1") {
+        typeId = 2; // Tier 1
+    } else if (s.type === "item_ep") {
+        typeId = 3;
+    } else if (s.type === "player_special_2") {
+        typeId = 4; // ★Tier 2
+    } else if (s.type === "player_special_3") {
+        typeId = 5; // ★Tier 3
+    } else if (s.type === "player_special_4") {
+        typeId = 6; // ★Tier 4
+    }
+
+    writer.u8(typeId);
     }
 
     return writer.getData();
@@ -234,9 +247,11 @@ createBinaryDelta(oldEntityMaps, newEntityMaps) {
       n: s.name,
       ba: s.chargeBetAmount,
       cp: s.chargePosition
-        ? {ep: s.chargePosition.entryPrice, 
+        ? {
+            ep: s.chargePosition.entryPrice,
             a: s.chargePosition.amount,
-            t: s.chargePosition.type }
+            t: s.chargePosition.type,
+          }
         : null,
       sb: s.stockedBullets,
       d: s.isDead ? 1 : 0,

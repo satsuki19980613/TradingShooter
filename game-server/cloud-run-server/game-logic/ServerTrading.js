@@ -28,16 +28,15 @@ export class ServerTrading {
     this.chartData = [];
     this.currentPrice = 800;
     this.maData = { short: [], medium: [], long: [] };
+
     for (let i = 0; i < this.MAX_CHART_POINTS; i++) {
       this.updatePrice();
       this.chartData.push(this.currentPrice);
-      if (i === 0) {
-        this.minPrice = this.currentPrice;
-        this.maxPrice = this.currentPrice;
-      }
+
+      this.calculateLatestMA();
     }
 
-    this.calculateMetrics();
+    this.calculateMinMax();
   }
 
   /**
@@ -50,14 +49,14 @@ export class ServerTrading {
       this.chartData.shift();
     }
 
-    this.calculateMetrics();
+    this.calculateLatestMA();
+    this.calculateMinMax();
 
     return {
       currentPrice: this.currentPrice,
       minPrice: this.minPrice,
       maxPrice: this.maxPrice,
       newChartPoint: this.chartData[this.chartData.length - 1],
-
       newMaPoint: {
         short: this.maData.short[this.maData.short.length - 1],
         medium: this.maData.medium[this.maData.medium.length - 1],
@@ -65,7 +64,6 @@ export class ServerTrading {
       },
     };
   }
-
   /**
    * 価格をランダムに更新
    */
@@ -100,35 +98,42 @@ export class ServerTrading {
   /**
    * 最小/最大値と移動平均を計算する (全計算)
    */
-  calculateMetrics() {
-    if (this.chartData.length < 1) return;
-
-    this.minPrice = this.chartData[0];
-    this.maxPrice = this.chartData[0];
-    for (let i = 1; i < this.chartData.length; i++) {
-      if (this.chartData[i] < this.minPrice) this.minPrice = this.chartData[i];
-      if (this.chartData[i] > this.maxPrice) this.maxPrice = this.chartData[i];
-    }
-
+  calculateLatestMA() {
     const types = ["short", "medium", "long"];
+    const currentIndex = this.chartData.length - 1;
 
     types.forEach((type) => {
       const period = this.MA_PERIODS[type];
 
-      this.maData[type] = [];
-
-      for (let i = 0; i < this.chartData.length; i++) {
-        if (i < period - 1) {
-          this.maData[type].push(null);
-        } else {
-          let sum = 0;
-          for (let j = 0; j < period; j++) {
-            sum += this.chartData[i - j];
-          }
-          this.maData[type].push(sum / period);
+      if (this.chartData.length < period) {
+        this.maData[type].push(null);
+      } else {
+        let sum = 0;
+        for (let j = 0; j < period; j++) {
+          sum += this.chartData[currentIndex - j];
         }
+        this.maData[type].push(sum / period);
+      }
+
+      if (this.maData[type].length > this.MAX_CHART_POINTS) {
+        this.maData[type].shift();
       }
     });
+  }
+
+  /**
+   * 最小/最大値の計算
+   */
+  calculateMinMax() {
+    if (this.chartData.length < 1) return;
+
+    this.minPrice = this.chartData[0];
+    this.maxPrice = this.chartData[0];
+
+    for (let i = 1; i < this.chartData.length; i++) {
+      if (this.chartData[i] < this.minPrice) this.minPrice = this.chartData[i];
+      if (this.chartData[i] > this.maxPrice) this.maxPrice = this.chartData[i];
+    }
   }
   /**
    * サーバー側でBET額の調整 (ServerGame から呼ばれる)

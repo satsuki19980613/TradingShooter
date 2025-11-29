@@ -13,6 +13,9 @@ export class PacketWriter {
     this.buffer = Buffer.allocUnsafe(capacity);
     this.offset = 0;
   }
+  reset() {
+    this.offset = 0;
+  }
 
   u8(value) {
     this.buffer.writeUInt8(value, this.offset);

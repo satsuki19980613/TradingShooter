@@ -41,6 +41,25 @@ const BROADCAST_INTERVAL = ServerConfig.BROADCAST_INTERVAL;
 const WORLD_WIDTH = GameConstants.WORLD_WIDTH;
 const WORLD_HEIGHT = GameConstants.WORLD_HEIGHT;
 const GRID_CELL_SIZE = GameConstants.GRID_CELL_SIZE;
+let CACHED_MAP_DATA = null;
+try {
+  const mapFileName = "map_default.json";
+  const mapPath = path.join(__dirname, "..", "maps", mapFileName);
+  const mapJson = fs.readFileSync(mapPath, "utf8");
+  CACHED_MAP_DATA = JSON.parse(mapJson);
+  console.log(`[Server] マップデータをキャッシュしました: ${mapFileName}`);
+} catch (error) {
+  console.warn(`[Server] マップ読み込み失敗 (キャッシュなし):`, error.message);
+  // 失敗時はデフォルト値を入れておく
+  CACHED_MAP_DATA = {
+    worldSize: { width: WORLD_WIDTH, height: WORLD_HEIGHT },
+    obstacles: [],
+    placements: [],
+    definitions: {},
+    playerSpawns: [{ x: 500, y: 500 }],
+    enemySpawns: [{ x: 1500, y: 1500 }],
+  };
+}
 
 export class ServerGame {
   constructor(roomId, firestore, onRoomEmptyCallback) {
@@ -88,27 +107,7 @@ export class ServerGame {
    * ワールドの初期化 (障害物と敵の配置)
    */
   initWorld() {
-    const mapFileName = "map_default.json";
-    const mapPath = path.join(__dirname, "..", "maps", mapFileName);
-    let mapData;
-
-    try {
-      const mapJson = fs.readFileSync(mapPath, "utf8");
-      mapData = JSON.parse(mapJson);
-    } catch (error) {
-      console.warn(
-        `[ServerGame] マップファイル ${mapFileName} が見つからないか不正です。デフォルトマップで起動します。`
-      );
-      mapData = {
-        worldSize: { width: WORLD_WIDTH, height: WORLD_HEIGHT },
-        obstacles: [],
-        placements: [],
-        definitions: {},
-        playerSpawns: [{ x: 500, y: 500 }],
-        enemySpawns: [{ x: 1500, y: 1500 }],
-      };
-    }
-
+   let mapData = CACHED_MAP_DATA;
     this.WORLD_WIDTH =
       (mapData.worldSize && mapData.worldSize.width) || WORLD_WIDTH;
     this.WORLD_HEIGHT =
@@ -331,6 +330,7 @@ export class ServerGame {
     });
 
     this.grid.clear();
+    this.obstacles.forEach((obs) => this.grid.insert(obs));
     this.players.forEach((p) => this.grid.insert(p));
     this.enemies.forEach((e) => this.grid.insert(e));
     this.bullets.forEach((b) => this.grid.insert(b));
@@ -555,12 +555,29 @@ export class ServerGame {
   }
 
   // ★新規メソッド: 決済処理
+  // ★新規メソッド: 決済処理 (修正版)
   handleSettle(player) {
     if (player.isDead) return;
+    
     const result = this.trading.releaseCharge(player);
+    
     if (result) {
       if (result.type === "profit") {
-        player.specialAttack(result.profitAmount);
+        const profit = result.profitAmount;
+        let bulletType = "player_special_1"; // Tier 1 (通常)
+
+        // ★追加: 利益額(HP100基準)に応じたティア判定
+        if (profit >= 100) {
+            bulletType = "player_special_4"; // Tier 4 (即死級)
+        } else if (profit >= 50) {
+            bulletType = "player_special_3"; // Tier 3 (大ダメージ)
+        } else if (profit >= 25) {
+            bulletType = "player_special_2"; // Tier 2 (中ダメージ)
+        }
+
+        // 第2引数に bulletType を渡すように変更
+        player.specialAttack(profit, bulletType); 
+
       } else {
         player.takeDamage(result.lossAmount, this, null);
       }
@@ -568,7 +585,6 @@ export class ServerGame {
       player.isDirty = true;
     }
   }
-
   handleTrade(player, type = "long") {
     if (player.isDead) return;
 

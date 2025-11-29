@@ -26,14 +26,11 @@ export class ServerPhysicsSystem {
     this.worldHeight = worldHeight;
   }
   update(game) {
-    game.players.forEach((player) => this.moveEntity(player, game.obstacles));
-
-    game.enemies.forEach((enemy) => this.moveEntity(enemy, game.obstacles));
+    game.players.forEach((player) => this.moveEntity(player, game));
+    game.enemies.forEach((enemy) => this.moveEntity(enemy, game));
 
     this.handleEntityCollisions(game);
-
     this.updateBullets(game);
-
   }
   updateBullets(game) {
     for (let i = game.bullets.length - 1; i >= 0; i--) {
@@ -148,22 +145,28 @@ export class ServerPhysicsSystem {
   /**
    * ★追加: 壁判定を行いながら移動させる (Move & Slide)
    */
-  moveEntity(entity, obstacles) {
+  moveEntity(entity, game) {
     if (entity.vx === 0 && entity.vy === 0) return;
+
+    const nearbyEntities = game.grid.getNearbyEntities(entity);
 
     entity.x += entity.vx;
 
-    for (const obs of obstacles) {
-      if (obs.checkCollisionWithCircle(entity)) {
-        const hit = obs.resolveCollision(entity, true);
+    for (const obj of nearbyEntities) {
+      if (obj instanceof ServerObstacle) {
+        if (obj.checkCollisionWithCircle(entity)) {
+          obj.resolveCollision(entity, true);
+        }
       }
     }
 
     entity.y += entity.vy;
 
-    for (const obs of obstacles) {
-      if (obs.checkCollisionWithCircle(entity)) {
-        obs.resolveCollision(entity, true);
+    for (const obj of nearbyEntities) {
+      if (obj instanceof ServerObstacle) {
+        if (obj.checkCollisionWithCircle(entity)) {
+          obj.resolveCollision(entity, true);
+        }
       }
     }
 
@@ -445,8 +448,6 @@ export class ServerPhysicsSystem {
       entity2.isDirty = true;
     }
   }
-
-  
 
   /**
    * ヘルパー: キャラクターがワールド外に出ないように補正
