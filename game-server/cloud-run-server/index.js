@@ -22,6 +22,7 @@ const INPUT_BIT_MAP = {
   bet_down: 1 << 7,
   bet_all: 1 << 8,
   bet_min: 1 << 9,
+  trade_short: 1 << 10,
 };
 initializeApp({
   projectId: "trading-charge-shooter",
@@ -188,6 +189,7 @@ wss.on("connection", (ws, req) => {
                 bet_down: !!(mask & 128),
                 bet_all: !!(mask & 256),
                 bet_min: !!(mask & 512),
+                trade_short: !!(mask & 1024),
               },
               mouseWorldPos: {
                 x: mouseX,

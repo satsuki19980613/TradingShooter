@@ -1,6 +1,5 @@
 import { GameObject } from "./GameObject.js";
 
-
 function lerpAngle(current, target, rate) {
   let delta = target - current;
   if (delta > Math.PI) delta -= Math.PI * 2;
@@ -94,12 +93,13 @@ export class Player extends GameObject {
       this.chargePosition = {
         entryPrice: state.cp.ep,
         amount: state.cp.a,
+        type: state.cp.t || "long", // ★追加: タイプを保存
       };
     } else {
       this.chargePosition = null;
     }
+    
 
     this.stockedBullets = state.sb;
   }
-
 }

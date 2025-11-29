@@ -15,7 +15,7 @@ export class ServerTrading {
     this.MAX_CHART_POINTS = 300;
     this.MA_PERIODS = { short: 20, medium: 50, long: 100 };
     this.chartData = [];
-    this.currentPrice = 1000;
+    this.currentPrice = 2000;
     this.minPrice = 1000;
     this.maxPrice = 1000;
     this.maData = { short: [], medium: [], long: [] };
@@ -26,7 +26,7 @@ export class ServerTrading {
    */
   init() {
     this.chartData = [];
-    this.currentPrice = 1000;
+    this.currentPrice = 800;
     this.maData = { short: [], medium: [], long: [] };
     for (let i = 0; i < this.MAX_CHART_POINTS; i++) {
       this.updatePrice();
@@ -50,7 +50,6 @@ export class ServerTrading {
       this.chartData.shift();
     }
 
-    // 全再計算を行う（データ量は少ないので負荷は問題ありません）
     this.calculateMetrics();
 
     return {
@@ -58,53 +57,44 @@ export class ServerTrading {
       minPrice: this.minPrice,
       maxPrice: this.maxPrice,
       newChartPoint: this.chartData[this.chartData.length - 1],
-      // 最新のMAポイントだけをクライアントに送る
+
       newMaPoint: {
         short: this.maData.short[this.maData.short.length - 1],
         medium: this.maData.medium[this.maData.medium.length - 1],
-        long: this.maData.long[this.maData.long.length - 1]
-      }
+        long: this.maData.long[this.maData.long.length - 1],
+      },
     };
   }
 
   /**
    * 価格をランダムに更新
    */
-updatePrice() {
+  updatePrice() {
     let change;
 
-    // ① 大嵐（スパイク）判定：0.5%
     if (Math.random() < 0.005) {
-      // ドカンと動く
-      change = (Math.random() - 0.5) * 18; 
-    } 
-    // ② 通常時のゆらぎ判定：99.5%
-    else {
-      // 確率判定用のサイコロを振る (0.0 〜 1.0)
+      change = (Math.random() - 0.5) * 18;
+    } else {
       const r = Math.random();
 
       if (r < 0.6) {
-        // 【A】 60% : 凪（なぎ）... ほとんど動かない
         change = (Math.random() - 0.5) * 0.23;
       } else if (r < 0.8) {
-        // 【B】 20% : さざ波 ... 少し動く
         change = (Math.random() - 0.5) * 0.6;
       } else {
-        // 【C】 20% : 小波 ... まあまあ動く
         change = (Math.random() - 0.5) * 2;
       }
     }
 
     this.currentPrice += change;
 
-    // リミッター
     if (this.currentPrice < 200) this.currentPrice = 200;
     if (this.currentPrice > 5000) this.currentPrice = 5000;
   }
   /**
    * 最小/最大値と移動平均を計算する
    */
- /**
+  /**
    * 最小/最大値と移動平均を計算する (全計算)
    */
   /**
@@ -113,7 +103,6 @@ updatePrice() {
   calculateMetrics() {
     if (this.chartData.length < 1) return;
 
-    // 1. Min/Max の計算
     this.minPrice = this.chartData[0];
     this.maxPrice = this.chartData[0];
     for (let i = 1; i < this.chartData.length; i++) {
@@ -121,21 +110,17 @@ updatePrice() {
       if (this.chartData[i] > this.maxPrice) this.maxPrice = this.chartData[i];
     }
 
-    // 2. MA (移動平均) の全再計算
-    // これにより、init()で作られた過去データに対してもMAが生成されます
-    const types = ['short', 'medium', 'long'];
-    
-    types.forEach(type => {
+    const types = ["short", "medium", "long"];
+
+    types.forEach((type) => {
       const period = this.MA_PERIODS[type];
-      // 配列をリセットして作り直す
+
       this.maData[type] = [];
 
       for (let i = 0; i < this.chartData.length; i++) {
-        // データ数が期間に満たない場合は null
         if (i < period - 1) {
           this.maData[type].push(null);
         } else {
-          // 過去 period 分の平均を計算
           let sum = 0;
           for (let j = 0; j < period; j++) {
             sum += this.chartData[i - j];
@@ -168,7 +153,7 @@ updatePrice() {
   /**
    * トレード (チャージ) を開始 (ServerGame から呼ばれる)
    */
-  startCharge(player) {
+  startCharge(player, type) {
     const playerEp = player.ep;
     const betAmount = player.chargeBetAmount;
 
@@ -180,6 +165,7 @@ updatePrice() {
       player.chargePosition = {
         entryPrice: this.currentPrice,
         amount: betAmount,
+        type: type,
       };
       return betAmount;
     }
@@ -195,8 +181,14 @@ updatePrice() {
     if (!player.chargePosition) return null;
 
     const betAmount = player.chargePosition.amount;
+    const type = player.chargePosition.type || "long";
 
-    const priceDiff = this.currentPrice - player.chargePosition.entryPrice;
+    let priceDiff;
+    if (type === "short") {
+      priceDiff = player.chargePosition.entryPrice - this.currentPrice;
+    } else {
+      priceDiff = this.currentPrice - player.chargePosition.entryPrice;
+    }
 
     const powerValue = priceDiff * betAmount;
 
@@ -236,9 +228,18 @@ updatePrice() {
   calculateChargeLevel(chargePosition) {
     if (!chargePosition) return { level: 0, rawLevel: 0 };
 
-    const priceDiff = this.currentPrice - chargePosition.entryPrice;
+    const type = chargePosition.type || "long";
+    let priceDiff;
+
+    if (type === "short") {
+      priceDiff = chargePosition.entryPrice - this.currentPrice;
+    } else {
+      priceDiff = this.currentPrice - chargePosition.entryPrice;
+    }
+
     let rawLevel =
       priceDiff * (chargePosition.amount / chargePosition.entryPrice);
+
     const level = Math.max(-chargePosition.amount, rawLevel);
 
     return { level, rawLevel };
@@ -250,7 +251,7 @@ updatePrice() {
   getState() {
     return {
       chartData: this.chartData,
-      maData: this.maData, // ★オブジェクトとして返す
+      maData: this.maData,
       currentPrice: this.currentPrice,
       minPrice: this.minPrice,
       maxPrice: this.maxPrice,

@@ -22,6 +22,7 @@ const INPUT_BIT_MAP = {
   bet_down: 1 << 7,
   bet_all: 1 << 8,
   bet_min: 1 << 9,
+  trade_short: 1 << 10,
 };
 export class NetworkManager {
   constructor() {
@@ -223,9 +224,15 @@ export class NetworkManager {
 
         const hasCharge = reader.u8();
         if (hasCharge === 1) {
+          const ep = reader.f32();
+          const amt = reader.f32();
+
+          const typeId = reader.u8();
+
           p.cp = {
-            ep: reader.f32(),
-            a: reader.f32(),
+            ep: ep,
+            a: amt,
+            t: typeId === 1 ? "short" : "long",
           };
         } else {
           p.cp = null;
@@ -311,6 +318,7 @@ export class NetworkManager {
       if (inputActions.wasPressed.bet_down) mask |= 128;
       if (inputActions.wasPressed.bet_all) mask |= 256;
       if (inputActions.wasPressed.bet_min) mask |= 512;
+      if (inputActions.wasPressed.trade_short) mask |= 1024;
     }
 
     const buffer = new ArrayBuffer(11);

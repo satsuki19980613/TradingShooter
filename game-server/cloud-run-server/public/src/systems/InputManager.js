@@ -12,21 +12,21 @@
 export class InputManager {
   constructor() {
     this.defaultKeyMap = {
-      w: "move_up",
+      r: "move_up",
       ArrowUp: "move_up",
-      s: "move_down",
+      f: "move_down",
       ArrowDown: "move_down",
-      a: "move_left",
+      d: "move_left",
       ArrowLeft: "move_left",
-      d: "move_right",
+      g: "move_right",
       ArrowRight: "move_right",
       " ": "trade",
+      z: "trade_short",
       e: "bet_up",
-      r: "bet_down",
+      w: "bet_down",
       y: "bet_all",
       t: "bet_min",
     };
-
     this.keyMap = { ...this.defaultKeyMap };
 
     this.actionStates = {};
@@ -38,6 +38,7 @@ export class InputManager {
       "move_left",
       "move_right",
       "trade",
+      "trade_short",
       "bet_up",
       "bet_down",
       "bet_all",
@@ -77,8 +78,8 @@ export class InputManager {
 
   handleKeyDown(e) {
     const target = e.target;
-    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
-        return;
+    if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
+      return;
     }
     const key = e.key;
     const action = this.keyMap[key];

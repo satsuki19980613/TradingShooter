@@ -522,8 +522,13 @@ export class ServerGame {
         }
 
         if (action === "trade") {
-          this.handleTrade(player);
+          this.handleTrade(player, "long");
         }
+
+        if (action === "trade_short") {
+          this.handleTrade(player, "short");
+        }
+
         if (action.startsWith("bet_")) {
           this.trading.handleBetInput(player, action);
         }
@@ -531,10 +536,11 @@ export class ServerGame {
     }
   }
 
-  handleTrade(player) {
+  handleTrade(player, type = "long") {
     if (player.isDead) return;
+
     if (!player.chargePosition) {
-      const cost = this.trading.startCharge(player);
+      const cost = this.trading.startCharge(player, type);
       if (cost > 0) {
         player.ep -= cost;
         player.isDirty = true;

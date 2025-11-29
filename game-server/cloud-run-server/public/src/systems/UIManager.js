@@ -136,19 +136,20 @@ export class UIManager {
       });
   }
   hideInitialModal() {
-    if(this.modalInitial) this.modalInitial.classList.add("hidden");
+    if (this.modalInitial) this.modalInitial.classList.add("hidden");
   }
 
   showInitialModal() {
-    if(this.modalInitial) this.modalInitial.classList.remove("hidden");
+    if (this.modalInitial) this.modalInitial.classList.remove("hidden");
   }
 
   hideRegisterModal() {
-    if(this.modalRegister) this.modalRegister.classList.add("hidden");
+    if (this.modalRegister) this.modalRegister.classList.add("hidden");
   }
 
   clearRankingList() {
-    if(this.rankingListEl) this.rankingListEl.innerHTML = "<p>読み込み中...</p>";
+    if (this.rankingListEl)
+      this.rankingListEl.innerHTML = "<p>読み込み中...</p>";
   }
 
   async openTemporaryConnection(game, firebaseManager, networkManager) {
@@ -261,8 +262,17 @@ export class UIManager {
       let betText = Math.ceil(chargeBetAmount);
       let betColor = "white";
       if (chargePosition) {
-        betText = Math.ceil(chargePosition.amount);
-        betColor = "#aaaaaa";
+        const type = chargePosition.type || "long";
+        let priceDiff;
+
+        if (type === "short") {
+          priceDiff = chargePosition.entryPrice - currentPrice;
+        } else {
+          priceDiff = currentPrice - chargePosition.entryPrice;
+        }
+
+        const betAmount = chargePosition.amount;
+        level = priceDiff * betAmount;
       } else if (playerState.ep < chargeBetAmount) {
         betColor = "#f44336";
       }
@@ -677,7 +687,7 @@ export class UIManager {
         } = entity.individualRadii;
         el.style.borderRadius = `${borderTopLeftRadius}px ${borderTopRightRadius}px ${borderBottomRightRadius}px ${borderBottomLeftRadius}px`;
       }
-    } 
+    }
     if (el) {
       entity.domElement = el;
       this.obstacleLayerEl.appendChild(el);

@@ -171,6 +171,8 @@ createBinaryDelta(oldEntityMaps, newEntityMaps) {
         writer.u8(1);
         writer.f32(s.chargePosition.entryPrice);
         writer.f32(s.chargePosition.amount);
+        const typeId = s.chargePosition.type === "short" ? 1 : 0;
+        writer.u8(typeId);
       } else {
         writer.u8(0);
       }
@@ -232,7 +234,9 @@ createBinaryDelta(oldEntityMaps, newEntityMaps) {
       n: s.name,
       ba: s.chargeBetAmount,
       cp: s.chargePosition
-        ? { ep: s.chargePosition.entryPrice, a: s.chargePosition.amount }
+        ? {ep: s.chargePosition.entryPrice, 
+            a: s.chargePosition.amount,
+            t: s.chargePosition.type }
         : null,
       sb: s.stockedBullets,
       d: s.isDead ? 1 : 0,

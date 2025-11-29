@@ -264,28 +264,43 @@
           </div>
 
           <div id="bottom-chart-panel" class="panel-module">
-            
             <div id="bottom-chart-left">
-               <h3 class="chart-label-badge">MARKET CHART</h3>
+              <h3 class="chart-label-badge">MARKET CHART</h3>
               <div class="canvas-wrapper" style="height: 100%">
                 <canvas id="chart-canvas"></canvas>
               </div>
             </div>
 
             <div id="ma-selection-panel">
-                <h4 class="control-header">MA</h4>
-                <div class="ma-option">
-                    <input type="checkbox" id="ma-short" name="ma-select" value="short">
-                    <label for="ma-short" style="color:#00ffff;">S (20)</label>
-                </div>
-                <div class="ma-option">
-                    <input type="checkbox" id="ma-medium" name="ma-select" value="medium" checked>
-                    <label for="ma-medium" style="color:#ffff00;">M (50)</label>
-                </div>
-                <div class="ma-option">
-                    <input type="checkbox" id="ma-long" name="ma-select" value="long">
-                    <label for="ma-long" style="color:#ff00ff;">L (100)</label>
-                </div>
+              <h4 class="control-header">MA</h4>
+              <div class="ma-option">
+                <input
+                  type="checkbox"
+                  id="ma-short"
+                  name="ma-select"
+                  value="short"
+                />
+                <label for="ma-short" style="color: #00ffff">S (20)</label>
+              </div>
+              <div class="ma-option">
+                <input
+                  type="checkbox"
+                  id="ma-medium"
+                  name="ma-select"
+                  value="medium"
+                  checked
+                />
+                <label for="ma-medium" style="color: #ffff00">M (50)</label>
+              </div>
+              <div class="ma-option">
+                <input
+                  type="checkbox"
+                  id="ma-long"
+                  name="ma-select"
+                  value="long"
+                />
+                <label for="ma-long" style="color: #ff00ff">L (100)</label>
+              </div>
             </div>
 
             <div id="control-area-right">
@@ -297,10 +312,10 @@
                 <div class="control-row">
                   <span>MOVE</span>
                   <div>
-                    <span class="key-cap key-cyan">W</span>
-                    <span class="key-cap key-cyan">A</span>
-                    <span class="key-cap key-cyan">S</span>
+                    <span class="key-cap key-cyan">R</span>
                     <span class="key-cap key-cyan">D</span>
+                    <span class="key-cap key-cyan">F</span>
+                    <span class="key-cap key-cyan">G</span>
                   </div>
                 </div>
 
@@ -310,8 +325,20 @@
                 </div>
 
                 <div class="control-row">
-                  <span class="key-green-text">TRADE</span>
+                  <span class="key-green-text">LONG (BUY)</span>
                   <span class="key-cap key-green">SPACE</span>
+                </div>
+
+                <div class="control-row">
+                  <span
+                    style="
+                      color: #ff5252;
+                      font-weight: bold;
+                      text-shadow: 0 0 5px rgba(255, 82, 82, 0.4);
+                    "
+                    >SHORT (SELL)</span
+                  >
+                  <span class="key-cap key-red">Z</span>
                 </div>
 
                 <div class="control-row">
@@ -319,13 +346,12 @@
                   <div>
                     <span class="key-cap key-gray">E</span>
                     <span class="sub-text">(UP)</span>
-                    <span class="key-cap key-gray">R</span>
+                    <span class="key-cap key-gray">W</span>
                     <span class="sub-text">(DWN)</span>
                   </div>
                 </div>
               </div>
             </div>
-
           </div>
         </div>
 
