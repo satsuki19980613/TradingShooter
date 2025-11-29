@@ -477,19 +477,19 @@ canvas#ui-field {
 
 #bottom-chart-left {
     position: relative;
-    width: 50%; /* 左半分はチャート */
+    width: 57%;  /* ★変更: 50% -> 57% (チャートを広く) */
     height: 100%;
     border-right: 1px solid rgba(0, 255, 255, 0.2);
 }
 #ma-selection-panel {
-    width: 15%; /* ここに新設 */
+    width: 8%;   /* ★変更: 15% -> 8% (余白を削減) */
     height: 100%;
     border-right: 1px solid rgba(0, 255, 255, 0.2);
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: flex-start; /* 左寄せ */
-    padding-left: 15px;
+    padding-left: 8px; /* ★変更: 15px -> 8px (内部余白も調整) */
     gap: 10px;
     background: rgba(0, 0, 0, 0.2);
 }

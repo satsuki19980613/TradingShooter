@@ -27,8 +27,7 @@ export class ServerTrading {
   init() {
     this.chartData = [];
     this.currentPrice = 1000;
-    this.maData = [];
-
+    this.maData = { short: [], medium: [], long: [] };
     for (let i = 0; i < this.MAX_CHART_POINTS; i++) {
       this.updatePrice();
       this.chartData.push(this.currentPrice);
