@@ -17,12 +17,13 @@ const INPUT_BIT_MAP = {
   move_left: 1 << 2,
   move_right: 1 << 3,
   shoot: 1 << 4,
-  trade: 1 << 5,
+  trade_long: 1 << 5,
   bet_up: 1 << 6,
   bet_down: 1 << 7,
   bet_all: 1 << 8,
   bet_min: 1 << 9,
   trade_short: 1 << 10,
+  trade_settle: 1 << 11,
 };
 initializeApp({
   projectId: "trading-charge-shooter",
@@ -121,40 +122,43 @@ wss.on("connection", (ws, req) => {
     if (type === "register_name") {
       const requestedName = actionPayload.name;
       const result = await accountManager.registerName(userId, requestedName);
-      
-      ws.send(JSON.stringify({
-        type: "account_response",
-        subtype: "register_name",
-        success: result.success,
-        message: result.message,
-        name: result.name,
-      }));
 
-      // 成功した場合、現在参加中のゲームにも反映させる
+      ws.send(
+        JSON.stringify({
+          type: "account_response",
+          subtype: "register_name",
+          success: result.success,
+          message: result.message,
+          name: result.name,
+        })
+      );
+
       if (result.success && game) {
-        game.updatePlayerName(userId, result.name); // 後でServerGameに追加するメソッド
+        game.updatePlayerName(userId, result.name);
       }
-
     } else if (type === "issue_code") {
       const code = await accountManager.issueTransferCode(userId);
-      ws.send(JSON.stringify({
-        type: "account_response",
-        subtype: "issue_code",
-        success: true,
-        code: code,
-      }));
-
+      ws.send(
+        JSON.stringify({
+          type: "account_response",
+          subtype: "issue_code",
+          success: true,
+          code: code,
+        })
+      );
     } else if (type === "recover") {
       const inputCode = actionPayload.code;
       const result = await accountManager.recoverAccount(inputCode);
-      ws.send(JSON.stringify({
-        type: "account_response",
-        subtype: "recover",
-        success: result.success,
-        message: result.message,
-        token: result.token,
-        name: result.name,
-      }));
+      ws.send(
+        JSON.stringify({
+          type: "account_response",
+          subtype: "recover",
+          success: result.success,
+          message: result.message,
+          token: result.token,
+          name: result.name,
+        })
+      );
     }
   }
   ws.on("message", async (message) => {
@@ -180,16 +184,16 @@ wss.on("connection", (ws, req) => {
                 move_down: !!(mask & 2),
                 move_left: !!(mask & 4),
                 move_right: !!(mask & 8),
-
               },
               wasPressed: {
                 shoot: !!(mask & 16),
-                trade: !!(mask & 32),
+                trade_long: !!(mask & 32),
                 bet_up: !!(mask & 64),
                 bet_down: !!(mask & 128),
                 bet_all: !!(mask & 256),
                 bet_min: !!(mask & 512),
                 trade_short: !!(mask & 1024),
+                trade_settle: !!(mask & 2048),
               },
               mouseWorldPos: {
                 x: mouseX,
@@ -214,7 +218,7 @@ wss.on("connection", (ws, req) => {
         game.pausePlayer(userId);
       } else if (data.type === "resume" && game && userId) {
         game.resumePlayer(userId);
-      } 
+      }
     } catch (e) {
       console.warn("[WebSocket] 不正なメッセージ形式:", e.message);
     }

@@ -206,7 +206,7 @@ canvas#ui-field {
 
 /* --- チャートエリア (下部ワイド表示) --- */
 #bottom-chart-panel {
-    height: 210px;
+    height: 260px;
     width: 100%;
     flex-shrink: 0;
     position: relative;

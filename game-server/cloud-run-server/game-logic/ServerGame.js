@@ -521,18 +521,51 @@ export class ServerGame {
           player.shoot(player.mouseWorldPos.x, player.mouseWorldPos.y, this);
         }
 
-        if (action === "trade") {
-          this.handleTrade(player, "long");
+        if (action === "trade_long") {
+          if (!player.chargePosition) {
+            this.handleEntry(player, "long");
+          }
         }
 
         if (action === "trade_short") {
-          this.handleTrade(player, "short");
+          if (!player.chargePosition) {
+            this.handleEntry(player, "short");
+          }
+        }
+
+        if (action === "trade_settle") {
+          if (player.chargePosition) {
+            this.handleSettle(player);
+          }
         }
 
         if (action.startsWith("bet_")) {
           this.trading.handleBetInput(player, action);
         }
       }
+    }
+  }
+  handleEntry(player, type) {
+    if (player.isDead) return;
+    const cost = this.trading.startCharge(player, type);
+    if (cost > 0) {
+      player.ep -= cost;
+      player.isDirty = true;
+    }
+  }
+
+  // ★新規メソッド: 決済処理
+  handleSettle(player) {
+    if (player.isDead) return;
+    const result = this.trading.releaseCharge(player);
+    if (result) {
+      if (result.type === "profit") {
+        player.specialAttack(result.profitAmount);
+      } else {
+        player.takeDamage(result.lossAmount, this, null);
+      }
+      this.trading.resetBetAmount(player);
+      player.isDirty = true;
     }
   }
 

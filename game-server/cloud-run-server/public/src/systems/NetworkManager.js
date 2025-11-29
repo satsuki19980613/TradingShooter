@@ -17,12 +17,13 @@ const INPUT_BIT_MAP = {
   move_left: 1 << 2,
   move_right: 1 << 3,
   shoot: 1 << 4,
-  trade: 1 << 5,
+  trade_long: 1 << 5,
   bet_up: 1 << 6,
   bet_down: 1 << 7,
   bet_all: 1 << 8,
   bet_min: 1 << 9,
   trade_short: 1 << 10,
+  trade_settle: 1 << 11,
 };
 export class NetworkManager {
   constructor() {
@@ -312,13 +313,13 @@ export class NetworkManager {
 
     if (inputActions.wasPressed) {
       if (inputActions.wasPressed.shoot) mask |= 16;
-      if (inputActions.wasPressed.trade) mask |= 32;
-
+      if (inputActions.wasPressed.trade_long) mask |= 32;
+      if (inputActions.wasPressed.trade_short) mask |= 1024;
+      if (inputActions.wasPressed.trade_settle) mask |= 2048;
       if (inputActions.wasPressed.bet_up) mask |= 64;
       if (inputActions.wasPressed.bet_down) mask |= 128;
       if (inputActions.wasPressed.bet_all) mask |= 256;
       if (inputActions.wasPressed.bet_min) mask |= 512;
-      if (inputActions.wasPressed.trade_short) mask |= 1024;
     }
 
     const buffer = new ArrayBuffer(11);

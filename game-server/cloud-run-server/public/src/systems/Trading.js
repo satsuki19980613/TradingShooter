@@ -162,28 +162,34 @@ export class Trading {
 
     if (playerState && playerState.chargePosition) {
       const entryPrice = playerState.chargePosition.entryPrice;
+      const type = playerState.chargePosition.type || "long";
+      const isShort = type === "short";
+
       const entryY = getY(entryPrice);
-      let isProfit = false;
-      if (type === "short") {
-        isProfit = currentPrice < entryPrice;
-      } else {
-        isProfit = currentPrice > entryPrice;
-      }
+
       ctx.beginPath();
-      if (type === "short") {
-        ctx.strokeStyle = "#ff0055";
-      } else {
-        ctx.strokeStyle = "#00ff00";
-      }
+
+      const color = isShort ? "#ff0055" : "#00ff00";
+      const mark = isShort ? "▼" : "▲";
+
+      ctx.strokeStyle = color;
       ctx.lineWidth = 2;
       ctx.setLineDash([4, 4]);
+
       ctx.moveTo(chartX, entryY);
       ctx.lineTo(chartX + chartWidth, entryY);
       ctx.stroke();
       ctx.setLineDash([]);
-      ctx.fillStyle = ctx.strokeStyle;
-      ctx.font = "10px sans-serif";
-      ctx.fillText(type === "short" ? "SHORT ENTRY" : "LONG ENTRY", chartX + 5, entryY - 5);
+
+      ctx.fillStyle = color;
+      ctx.font = "bold 12px sans-serif";
+
+      const labelText = `${mark} ${isShort ? "SHORT ENTRY" : "LONG ENTRY"}`;
+      ctx.fillText(labelText, chartX + 5, entryY - 5);
+
+      ctx.textAlign = "right";
+      ctx.fillText(mark, chartX + chartWidth - 5, entryY - 5);
+      ctx.textAlign = "left";
     }
 
     ctx.font = "bold 14px 'Roboto Mono', monospace";

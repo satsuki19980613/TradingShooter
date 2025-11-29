@@ -20,8 +20,9 @@ export class InputManager {
       ArrowLeft: "move_left",
       g: "move_right",
       ArrowRight: "move_right",
-      " ": "trade",
+      a: "trade_long",
       z: "trade_short",
+      " ": "trade_settle",
       e: "bet_up",
       w: "bet_down",
       y: "bet_all",
@@ -37,14 +38,14 @@ export class InputManager {
       "move_down",
       "move_left",
       "move_right",
-      "trade",
+      "trade_long",
       "trade_short",
+      "trade_settle",
       "bet_up",
       "bet_down",
       "bet_all",
       "bet_min",
     ];
-
     this.mouseWorldPos = { x: 0, y: 0 };
 
     this.shootPressed = false;

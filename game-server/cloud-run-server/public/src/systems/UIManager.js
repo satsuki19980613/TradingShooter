@@ -243,6 +243,7 @@ export class UIManager {
 
   syncHUD(playerState, tradeState) {
     if (!playerState || !this.hpBarInnerEl) return;
+    const currentPrice = tradeState ? tradeState.currentPrice : 1000;
     if (playerState.hp !== undefined) {
       const hpPercent = (playerState.hp / 100) * 100;
       this.hpBarInnerEl.style.width = `${hpPercent}%`;
@@ -272,7 +273,6 @@ export class UIManager {
         }
 
         const betAmount = chargePosition.amount;
-        level = priceDiff * betAmount;
       } else if (playerState.ep < chargeBetAmount) {
         betColor = "#f44336";
       }
