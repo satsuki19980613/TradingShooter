@@ -145,6 +145,25 @@ export class ServerPhysicsSystem {
             bulletRemoved = true;
             break;
           }
+          if (bullet.type === "enemy" && entity instanceof ServerPlayer) {
+            if (entity.isDead) continue; // 死んでいるプレイヤーには当たらない
+            
+            // ダメージ処理 (第3引数はattackerPlayerだが、敵なのでnull)
+            entity.takeDamage(bullet.damage, game, null);
+
+            // ヒットエフェクト (赤色)
+            game.frameEvents.push({
+              type: "hit",
+              x: bullet.x,
+              y: bullet.y,
+              color: "#f44336",
+            });
+
+            // 弾を削除
+            game.removeBullet(bullet, i);
+            bulletRemoved = true;
+            break;
+          }
         }
       }
     }

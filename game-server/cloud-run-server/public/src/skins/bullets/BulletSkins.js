@@ -202,12 +202,17 @@ export const BulletSkins = {
   },
 
   // Tier 4: Gamma (完全再現レーザー)
-  player_special_4: () => {
-    return (ctx, w, h) => {
-      const cx = w / 2;
-      const cy = h / 2;
-      ctx.translate(cx, cy);
+  // Tier 4: Gamma (完全再現レーザー) - 修正版
+  // ... (他のスキン定義) ...
 
+  // Tier 4: Gamma (一本の線 + 稲妻)
+  // Tier 4: Gamma (修正版: 長さを動的に反映)
+  // 引数に currentLength を追加 (デフォルトは十分な長さ)
+  player_special_4: (currentLength = 3000) => {
+    return (ctx, w, h) => {
+      // 弾の先端(0,0)が現在の弾丸位置。
+      // そこから -currentLength 分だけ後ろ（発射位置）まで線を引く。
+      
       const color = '#b300ff'; // Purple
       const secColor = '#ccff00'; // Lime
       
@@ -215,62 +220,57 @@ export const BulletSkins = {
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
 
-      // 弾丸の中心(0,0)から前後へ長く伸ばしてビームに見せる
-      // 長さ: 3000px (画面外まで届くように)
-      const beamLen = 1500; 
-      
-      // 1. コアビーム (白くて太い芯)
-      const jitter = Math.random() * 4;
-      ctx.shadowBlur = 30;
+      // 1. コアビーム
+      const jitter = Math.random() * 1;
+      ctx.shadowBlur = 20;
       ctx.shadowColor = color;
       ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 10 + jitter;
+      ctx.lineWidth = 3 + jitter; 
       
       ctx.beginPath();
-      ctx.moveTo(-beamLen, 0); 
-      ctx.lineTo(beamLen, 0); 
+      ctx.moveTo(-currentLength, 0); // 発射位置から
+      ctx.lineTo(0, 0);              // 先端まで
       ctx.stroke();
 
-      // 2. ヘイズ (色のついた外光)
-      ctx.shadowBlur = 60;
+      // 2. ヘイズ
+      ctx.shadowBlur = 40;
       ctx.strokeStyle = color;
-      ctx.lineWidth = 30;
-      ctx.globalAlpha = 0.5;
+      ctx.lineWidth = 8;
+      ctx.globalAlpha *= 0.8;
       ctx.beginPath();
-      ctx.moveTo(-beamLen, 0);
-      ctx.lineTo(beamLen, 0);
+      ctx.moveTo(-currentLength, 0);
+      ctx.lineTo(0, 0);
       ctx.stroke();
-      ctx.globalAlpha = 1.0;
+      ctx.globalAlpha /= 0.8;
 
-      // 3. 稲妻エフェクト (Baribari)
-      const lightningCount = 3;
-      const segments = 20; // 分割数
-      const amplitude = 30; // 振幅
+      // 3. 稲妻エフェクト
+      // 長さに応じて分割数を調整 (100pxあたり1セグメントなど)
+      const segments = Math.max(5, Math.floor(currentLength / 50));
+      const amplitude = 8;
+      const lightningCount = 2;
 
       for (let i = 0; i < lightningCount; i++) {
           const isSecondary = i % 2 === 0;
           ctx.strokeStyle = isSecondary ? secColor : '#fff'; 
-          ctx.lineWidth = Math.random() * 3 + 1;
-          ctx.shadowBlur = 15;
+          ctx.lineWidth = Math.random() * 1.5 + 0.5;
+          ctx.shadowBlur = 10;
           ctx.shadowColor = secColor;
 
           ctx.beginPath();
-          // ビームに沿ってランダムな稲妻を描く
-          // 長すぎるので、現在の視界範囲付近だけ描画するなど最適化しても良いが、
-          // 見た目重視で簡易的に描く
           
-          let currX = -beamLen;
+          let currX = -currentLength;
           let currY = 0;
           ctx.moveTo(currX, currY);
 
-          // セグメント分割してジグザグさせる
-          const step = (beamLen * 2) / segments;
-          
+          const step = currentLength / segments;
           for (let s = 0; s <= segments; s++) {
               currX += step;
-              // Y軸方向にランダムオフセット
+              // 先端(0)付近以外でランダムに揺らす
+              // (先端は弾の当たり判定と一致させたいので揺らさない)
               const offset = (Math.random() - 0.5) * amplitude * 2;
-              ctx.lineTo(currX, offset);
+              const taper = Math.min(1.0, Math.abs(currX) / 200); 
+
+              ctx.lineTo(currX, offset * taper);
           }
           ctx.stroke();
       }

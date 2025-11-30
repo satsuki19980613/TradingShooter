@@ -30,10 +30,14 @@ export class Bullet extends GameObject {
     // エフェクト方向計算用
     this.vx = Math.cos(angle) * 10;
     this.vy = Math.sin(angle) * 10;
+    this.age = 0;
+    this.initialX = x;
+    this.initialY = y;
   }
 
   update(gameInstance) {
     super.update();
+    this.age += 16;
 
     // --- パーティクルエフェクト (軌跡) ---
     if (!gameInstance) return;
@@ -49,6 +53,9 @@ export class Bullet extends GameObject {
    */
   spawnTrailParticles(gameInstance) {
     // Tier 1: Standard (青い火花)
+    if (this.type === "player_special_4") {
+        return;
+    }
     if (this.type === "player_special_1" || this.type === "player") {
       if (Math.random() < 0.3) {
         gameInstance.particles.push(
@@ -129,6 +136,8 @@ export class Bullet extends GameObject {
     if (!this.isInitialized) {
       this.x = state.x;
       this.y = state.y;
+      this.initialX = state.x;
+      this.initialY = state.y;
       this.isInitialized = true;
     }
     this.targetX = state.x;
@@ -146,17 +155,41 @@ export class Bullet extends GameObject {
       this.drawEnemyBullet(ctx);
       return;
     }
+    let alpha = 1.0;
+    if (this.type === "player_special_4") {
+        if (this.age < 100) {
+            alpha = this.age / 100; 
+        } else if (this.age > 800) {
+            alpha = Math.max(0, 1 - (this.age - 800) / 200); 
+        }
+    }
+
     if (BulletSkins[this.type]) {
       ctx.save();
       ctx.translate(this.x, this.y);
       ctx.rotate(this.angle);
-      const drawFunc = BulletSkins[this.type]();
-      drawFunc(ctx, 0, 0);
+      ctx.globalAlpha = alpha;
+
+      // ★修正: Tier 4 の場合だけ、発射位置からの距離を計算して渡す
+      if (this.type === "player_special_4") {
+          // 現在位置(this.x, this.y) と 初期位置(this.initialX, this.initialY) の距離
+          const dist = getDistance(this.x, this.y, this.initialX, this.initialY);
+          
+          // 距離(dist)を引数として渡す
+          const drawFunc = BulletSkins[this.type](dist);
+          drawFunc(ctx, 0, 0);
+      } else {
+          // 他の弾は通常通り
+          const drawFunc = BulletSkins[this.type]();
+          drawFunc(ctx, 0, 0);
+      }
+
       ctx.restore();
       return;
     }
     this.drawNormalBullet(ctx);
   }
+
 
   drawItemEp(ctx) {
     const baseSize = 64;
