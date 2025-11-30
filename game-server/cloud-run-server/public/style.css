@@ -221,7 +221,7 @@ canvas#ui-field {
 /* --- チャートエリア (下部ワイド表示) --- */
 #bottom-chart-panel {
     height: 25vh;      /* 画面の高さ(Viewport Height)の25%にする */
-    min-height: 150px;
+    min-height: 220px;
     width: 100%;
     flex-shrink: 0;
     position: relative;
@@ -554,62 +554,78 @@ canvas#ui-field {
     z-index: 0;
 }
 
+/* --- 修正箇所：コントロールパネル内部 --- */
+
+/* 外枠の余白をpxからvhへ */
 .control-content {
-    /* gap: 12px; <-- これを削除または0にする */
-    gap: 0; 
-    
-    /* 以下は変更なし */
-    position: relative;
-    z-index: 1;
-    padding: 10px 20px;
+    /* padding: 10px 20px;  <-- 元の指定 */
+    padding: 1vh 1vw;    /* 画面サイズに合わせて伸縮 */
     height: 100%;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-}
-.control-header {
-    margin: 0 0 5px 0;
-    color: #888;
-    font-size: 12px; /* 大きく */
-    letter-spacing: 3px;
-    border-bottom: 1px solid #444;
-    text-align: center; /* 中央揃え */
+    justify-content: center; /* 中央寄せ */
+    gap: 0;
 }
 
+/* ヘッダー文字サイズ */
+.control-header {
+    /* font-size: 12px; */
+    font-size: 1.5vh;    /* 画面高さの1.5% */
+    margin: 0 0 0.5vh 0; /* 余白もvhに */
+    letter-spacing: 2px;
+    border-bottom: 1px solid #444;
+    text-align: center;
+}
+
+/* 各行の高さと文字サイズ */
 .control-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: 14px;
-    color: #ddd;
-    font-weight: bold;
-
-    /* ▼ 線と余白の設定（ここを調整） */
+    
+    /* font-size: 14px; */
+    font-size: 1.8vh;    /* 画面高さの1.8% (重要) */
+    
+    /* padding: 6px 0; */
+    padding: 0.6vh 0;    /* 行間も画面高さに合わせて狭くする */
+    
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 6px 0; /* 8pxだと少し大きいので6pxくらいが丁度良いです */
 }
 
-/* 一番下の行の線は消す */
-.control-row:last-child {
-    border-bottom: none;
-}
-
-/* キーキャップ共通 */
+/* キーキャップ（四角い枠）のサイズ調整 */
 .key-cap {
     display: inline-block;
-    padding: 4px 8px; /* 大きく */
+    
+    /* padding: 4px 8px; */
+    padding: 0.4vh 0.8vh; 
+    
     border-radius: 4px;
     border: 1px solid #aaa;
     font-family: 'Roboto Mono', monospace;
     font-weight: bold;
-    min-width: 24px; /* 幅を確保 */
+    min-width: 20px;
     text-align: center;
-    font-size: 14px; /* 文字サイズアップ */
-    box-shadow: 0 2px 0 rgba(0,0,0,0.5); /* 立体感 */
+    
+    /* font-size: 14px; */
+    font-size: 1.6vh;     /* ここもvhにする */
+    
+    box-shadow: 0 2px 0 rgba(0,0,0,0.5);
     text-shadow: 0 0 2px rgba(255,255,255,0.3);
 }
 
+/* --- 追加：スマホや極端に縦が狭い時用の微調整 --- */
+/* 画面高さが600px以下の時はさらに詰める */
+@media (max-height: 600px) {
+    .control-row {
+        font-size: 2.2vh; /* 少し大きくして視認性確保しつつ */
+        padding: 0.2vh 0; /* 余白は極限まで削る */
+        border-bottom: none; /* 線も消してスペース節約 */
+    }
+    .control-header {
+        display: none; /* ヘッダー("SYSTEM CONTROLS")を非表示にしてスペース確保 */
+    }
+}
 /* WASD用の特殊レイアウト */
 .wasd-container {
     display: flex;
@@ -660,5 +676,8 @@ canvas#ui-field {
     font-size: 10px;
     color: #888;
     margin: 0 4px;
+}
+#panel-right .panel-module:nth-child(2) {
+    min-height: 250px; /* マガジンが最低限きれいに見える高さ */
 }
 
