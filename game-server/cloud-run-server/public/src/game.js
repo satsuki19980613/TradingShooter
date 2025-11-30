@@ -449,10 +449,7 @@ export class Game {
               20,
               "explosion"
             );
-          } else if (pState.h < player.hp) {
-            this.createHitEffect(player.x, player.y, "#00e5ff", 5, "hit");
           }
-
           player.setState(pState);
         });
       }
@@ -463,18 +460,6 @@ export class Game {
           if (!enemy) {
             enemy = new Enemy(eState.x, eState.y);
             this.enemyEntities.set(eState.i, enemy);
-          }
-
-          if (eState.h < enemy.hp) {
-            const offsetX = (Math.random() - 0.5) * 30;
-            const offsetY = (Math.random() - 0.5) * 30;
-            this.createHitEffect(
-              enemy.x + offsetX,
-              enemy.y + offsetY,
-              "#ff9800",
-              5,
-              "hit"
-            );
           }
 
           enemy.setState(eState);
