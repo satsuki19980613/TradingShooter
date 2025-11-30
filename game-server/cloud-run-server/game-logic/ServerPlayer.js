@@ -103,27 +103,35 @@ export class ServerPlayer extends ServerGameObject {
     this.score = Math.floor(this.ep - 100);
   }
 
- shoot(targetX, targetY, game) {
+  shoot(targetX, targetY, game) {
     if (this.shootCooldown > 0 || this.stockedBullets.length === 0) {
       return;
     }
-    
-    // ストックからデータを取り出す
+
     const bulletData = this.stockedBullets.pop();
-    
-    // データがオブジェクトか数値（旧データ）かで処理を分ける
-    const damage = typeof bulletData === 'object' ? bulletData.damage : bulletData;
-    const type = typeof bulletData === 'object' ? bulletData.type : "player_special_1";
+
+    const damage =
+      typeof bulletData === "object" ? bulletData.damage : bulletData;
+    const type =
+      typeof bulletData === "object" ? bulletData.type : "player_special_1";
 
     this.isDirty = true;
     const angle = Math.atan2(targetY - this.y, targetX - this.x);
-    const speed = 8;
-    
-    // ★変更: 弾のランク(Tier)に応じて、当たり判定のサイズを変える
-    let radius = 8;  // Tier 1 (Default)
-    if (type === "player_special_2") radius = 12; // Tier 2
-    if (type === "player_special_3") radius = 18; // Tier 3
-    if (type === "player_special_4") radius = 25; // Tier 4 (特大)
+    let speed = 9;
+    let radius = 6;
+
+    if (type === "player_special_2") {
+      speed = 10;
+      radius = 12;
+    }
+    if (type === "player_special_3") {
+      speed = 11;
+      radius = 18;
+    }
+    if (type === "player_special_4") {
+      speed = 16;
+      radius = 45;
+    }
 
     game.addBullet(
       new ServerBullet(
@@ -132,7 +140,7 @@ export class ServerPlayer extends ServerGameObject {
         radius,
         angle,
         speed,
-        type, // 決定したタイプを渡す
+        type,
         damage,
         this.id
       )
@@ -142,7 +150,6 @@ export class ServerPlayer extends ServerGameObject {
 
   specialAttack(totalDamage, type = "player_special_1") {
     if (this.stockedBullets.length < this.maxStock) {
-      // 数値ではなくオブジェクトとして保存 { damage: 100, type: "player_special_4" }
       this.stockedBullets.push({ damage: totalDamage, type: type });
       this.isDirty = true;
     }
@@ -179,11 +186,9 @@ export class ServerPlayer extends ServerGameObject {
 
       chargeBetAmount: this.chargeBetAmount,
       chargePosition: this.chargePosition,
-      
-      // ★修正: 通信システムはまだオブジェクトに対応していないため、
-      // ここで「ダメージ数値の配列」に変換して渡すことでクラッシュを防ぐ
-      stockedBullets: this.stockedBullets.map(b => 
-        (typeof b === 'object' ? b.damage : b)
+
+      stockedBullets: this.stockedBullets.map((b) =>
+        typeof b === "object" ? b.damage : b
       ),
 
       isDead: this.isDead,

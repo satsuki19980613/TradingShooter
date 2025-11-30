@@ -140,137 +140,144 @@ export const BulletSkins = {
     };
   },
 // -----------------------------------------------------------
-  // ▼▼▼ ここから追加: 利益レベル別スキン (Tier 1〜4) ▼▼▼
+  // ▼▼▼ 新エフェクト: Tier 1〜4 ▼▼▼
   // -----------------------------------------------------------
 
-  // Tier 1: Tick Shot (〜24 dmg) - 堅実な緑の弾
+  // Tier 1: Standard (Blue/Cyan) - 高速連射弾
   player_special_1: () => {
     return (ctx, w, h) => {
-      const cx = w / 2; const cy = h / 2;
+      const cx = w / 2;
+      const cy = h / 2;
       ctx.translate(cx, cy);
 
-      // 緑系の発光
-      ctx.shadowColor = "#00ffaa";
-      ctx.shadowBlur = 10;
-      ctx.fillStyle = "#e0f7fa"; // 白っぽいシアン
+      const color = '#00aaff';
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = color;
+      ctx.fillStyle = '#fff';
 
+      // 少し細長い形状
       ctx.beginPath();
-      ctx.ellipse(0, 0, 8, 4, 0, 0, Math.PI * 2); // 少し横長
-      ctx.fill();
-      
-      // コア
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = "#00bfa5";
-      ctx.beginPath();
-      ctx.ellipse(0, 0, 4, 2, 0, 0, Math.PI * 2);
+      ctx.moveTo(12, 0); // 先端
+      ctx.lineTo(-4, -4);
+      ctx.lineTo(-4, 4);
       ctx.fill();
     };
   },
 
-  // Tier 2: Trade Hit (25〜49 dmg) - リッチな黄金の回転弾
+  // Tier 2: Plasma (Pink/Purple) - 揺らぐ球体
   player_special_2: () => {
     return (ctx, w, h) => {
-      const cx = w / 2; const cy = h / 2;
+      const cx = w / 2;
+      const cy = h / 2;
       ctx.translate(cx, cy);
 
-      // 黄金の輝き
-      ctx.shadowColor = "#ffd700";
-      ctx.shadowBlur = 15;
+      const color = '#ff00ff';
+      const time = Date.now();
+      const wobble = Math.sin(time * 0.02) * 2;
+
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.shadowBlur = 20;
+      ctx.shadowColor = color;
       
-      // 回転アニメーション
-      const time = Date.now() / 150;
-      ctx.rotate(time);
+      // 外側のグロー
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(0, 0, 8 + wobble, 0, Math.PI * 2);
+      ctx.fill();
 
-      // ダイヤ形状（外枠）
-      ctx.strokeStyle = "#ffab00"; // 濃いオレンジ金
-      ctx.lineWidth = 2;
-      ctx.strokeRect(-6, -6, 12, 12);
-
-      // 中身
-      ctx.fillStyle = "#fff8e1"; // 白っぽい金
-      ctx.fillRect(-4, -4, 8, 8);
+      // 白いコア
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(0, 0, 5, 0, Math.PI * 2);
+      ctx.fill();
     };
   },
 
-  // Tier 3: Market Crash (50〜99 dmg) - 攻撃的な赤オレンジのスパイク弾
+  // Tier 3: Nova (Yellow/Orange) - 脈動する高エネルギー弾
   player_special_3: () => {
     return (ctx, w, h) => {
-      const cx = w / 2; const cy = h / 2;
+      const cx = w / 2;
+      const cy = h / 2;
       ctx.translate(cx, cy);
 
-      // 激しいオレンジの発光
-      ctx.shadowColor = "#ff3d00";
-      ctx.shadowBlur = 20;
-      
-      // 回転（逆回転で不安感を演出）
-      ctx.rotate(-Date.now() / 100);
+      const mainColor = '#ffeb3b';
+      const subColor = '#ff5722';
+      const time = Date.now();
+      const pulse = Math.sin(time * 0.05) * 3;
 
-      ctx.fillStyle = "#ffccbc";
+      ctx.globalCompositeOperation = 'lighter';
+
+      // 大きなオレンジのハロー
+      ctx.shadowBlur = 40;
+      ctx.shadowColor = subColor;
+      ctx.fillStyle = mainColor;
       ctx.beginPath();
-      const spikes = 6;
-      const outerRadius = 16;
-      const innerRadius = 6;
-      
-      // ギザギザを描画
-      for (let i = 0; i < spikes * 2; i++) {
-          const r = i % 2 === 0 ? outerRadius : innerRadius;
-          const a = (Math.PI * i) / spikes;
-          ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
-      }
-      ctx.closePath();
+      ctx.arc(0, 0, 10 + pulse, 0, Math.PI * 2);
       ctx.fill();
-      
-      // 赤い芯
-      ctx.strokeStyle = "#d50000";
-      ctx.lineWidth = 2;
-      ctx.stroke();
+
+      // コア
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = '#fff';
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(0, 0, 6, 0, Math.PI * 2);
+      ctx.fill();
     };
   },
 
-  // Tier 4: Liquidation (100〜 dmg) - 一撃必殺のブラックホール/極太レーザー
+  // Tier 4: Gamma (Purple/Lime) - 極太レーザー/稲妻弾
+  // 当たり判定が大きいので、描画も大きく派手にする
   player_special_4: () => {
     return (ctx, w, h) => {
-      const cx = w / 2; const cy = h / 2;
+      const cx = w / 2;
+      const cy = h / 2;
       ctx.translate(cx, cy);
-      
+
+      const color = '#b300ff'; // Purple
+      const secColor = '#ccff00'; // Lime
       const time = Date.now();
-
-      // 禍々しい紫のオーラ（明滅する）
-      const pulse = 20 + Math.sin(time / 50) * 10;
-      ctx.shadowColor = "#d500f9"; 
-      ctx.shadowBlur = pulse;
       
-      // 漆黒のコア (ブラックホール的表現)
-      ctx.fillStyle = "#000000";
-      ctx.beginPath();
-      ctx.arc(0, 0, 14, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
 
-      // 周囲を取り巻くエネルギーリング
-      ctx.strokeStyle = "#ff00ff"; // マゼンタ
-      ctx.lineWidth = 3;
+      // 1. コアビーム (横に長い)
+      const jitter = Math.random() * 4;
+      ctx.shadowBlur = 30;
+      ctx.shadowColor = color;
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 10 + jitter;
+      
       ctx.beginPath();
-      ctx.arc(0, 0, 20, 0, Math.PI * 2);
+      ctx.moveTo(-20, 0); // 後ろ
+      ctx.lineTo(20, 0);  // 前
       ctx.stroke();
 
-      // バチバチするスパーク (稲妻)
-      ctx.strokeStyle = "#00ffff"; // シアンでコントラスト
-      ctx.lineWidth = 2;
-      ctx.shadowBlur = 5;
-      ctx.beginPath();
-      
-      // ランダムなスパークを4方向に飛ばす
-      for(let i=0; i<4; i++) {
-          // 角度を少しずつずらして回転させる
-          const angle = (Math.PI/2) * i + time/150; 
-          ctx.moveTo(Math.cos(angle)*14, Math.sin(angle)*14);
-          // ジグザグさせる
-          const midX = Math.cos(angle + 0.2) * 22;
-          const midY = Math.sin(angle + 0.2) * 22;
-          ctx.lineTo(midX, midY);
-          ctx.lineTo(Math.cos(angle)*30, Math.sin(angle)*30);
+      // 2. ヘイズ (光の帯)
+      ctx.shadowBlur = 60;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 30;
+      ctx.globalAlpha = 0.5;
+      ctx.stroke();
+      ctx.globalAlpha = 1.0;
+
+      // 3. 稲妻エフェクト (周囲にバチバチさせる)
+      const lightningCount = 3;
+      for (let i = 0; i < lightningCount; i++) {
+          ctx.beginPath();
+          // 弾を中心にランダムな稲妻を描く
+          let lx = (Math.random() - 0.5) * 40;
+          let ly = (Math.random() - 0.5) * 10;
+          ctx.moveTo(lx, ly);
+          
+          ctx.strokeStyle = i % 2 === 0 ? secColor : '#fff';
+          ctx.lineWidth = Math.random() * 3;
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = secColor;
+
+          ctx.lineTo(lx + (Math.random()-0.5)*20, ly + (Math.random()-0.5)*30);
+          ctx.stroke();
       }
-      ctx.stroke();
     };
   },
 };

@@ -263,8 +263,7 @@ export class Game {
 
     this.playerEntities.forEach((p) => p.update());
     this.enemyEntities.forEach((e) => e.update());
-    this.bulletEntities.forEach((b) => b.update());
-
+    this.bulletEntities.forEach((b) => b.update(this));
     this.updateCamera();
     this.inputManager.updateMouseWorldPos(
       this.mouseWorldPos.x,
