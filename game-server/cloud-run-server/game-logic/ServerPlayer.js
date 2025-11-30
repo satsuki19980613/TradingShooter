@@ -120,17 +120,17 @@ export class ServerPlayer extends ServerGameObject {
     let speed = 9;
     let radius = 6;
 
-    if (type === "player_special_2") {
+    if (type === "player_special_2") { // Plasma
       speed = 10;
       radius = 12;
     }
-    if (type === "player_special_3") {
+    if (type === "player_special_3") { // Nova (サイズアップ)
       speed = 11;
-      radius = 18;
+      radius = 30; // 18 -> 30 へ拡大
     }
-    if (type === "player_special_4") {
-      speed = 16;
-      radius = 45;
+    if (type === "player_special_4") { // Gamma (レーザー)
+      speed = 24;  // 16 -> 24 (超高速)
+      radius = 45; // 極太判定
     }
 
     game.addBullet(
