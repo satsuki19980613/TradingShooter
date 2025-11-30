@@ -115,18 +115,23 @@ body {
 }
 
 /* ========================================
- * コックピット・レイアウト (ゲーム画面)
+ * コックピット・レイアウト (修正版)
  * ======================================== */
 
-/* 全体コンテナ：左右3カラム構成 */
+/* 全体コンテナ */
 #cockpit-container {
     display: flex;
-    width: 100%;
-    height: 100vh;
+    /* 幅と高さはJS(ScreenScaler)で制御するため、CSSでは指定しないか、初期値にしておく */
+    /* width: 100%;  <-- 削除またはコメントアウト */
+    /* height: 100vh; <-- 削除またはコメントアウト */
+    
     background-color: #050a10;
     padding: 10px;
     box-sizing: border-box;
     gap: 10px; /* パネル間の隙間 */
+    
+    /* 画面中央に配置されるように */
+    margin: 0 auto;
 }
 
 /* パネル共通設定 */
@@ -134,31 +139,37 @@ body {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    min-width: 0;
+    /* min-width: 0; <-- 削除 (これが縮む原因の一つ) */
 }
 
 /* サイドパネル (左右) */
 .side-panel {
-    /* width: 280px;  <-- 削除 */
-    flex-shrink: 0;
+    /* ★重要: これで縮小を防ぐ */
+    flex: 0 0 auto; 
     z-index: 20;
 }
+
+/* 左パネル */
 #panel-left {
-    width: 300px; /* 340px -> 400px へ拡大 */
+    width: 300px;
+    min-width: 300px; /* ★重要: 絶対に300pxより小さくしない */
 }
 
-/* 【追加】右パネル：余白を削ってスリムにする */
+/* 右パネル */
 #panel-right {
-    width: 220px; /* 340px -> 220px へ縮小 */
+    width: 220px;
+    min-width: 220px; /* ★重要: 絶対に220pxより小さくしない */
 }
-/* 中央パネル (ゲーム画面 + 下部チャート) */
+
+/* 中央パネル */
 #panel-center {
-    flex-grow: 1;
+    flex: 1 1 auto; /* 余ったスペースを埋める */
     position: relative;
     display: flex;
-    flex-direction: column; /* 縦並び */
+    flex-direction: column;
     gap: 10px;
     overflow: hidden;
+    min-width: 400px; /* ゲーム画面が潰れすぎないように最低幅を保証 */
 }
 
 /* --- ゲーム画面エリア (上部) --- */
@@ -646,3 +657,4 @@ canvas#ui-field {
     color: #888;
     margin: 0 4px;
 }
+

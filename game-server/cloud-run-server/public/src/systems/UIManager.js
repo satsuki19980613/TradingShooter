@@ -26,6 +26,7 @@ export class UIManager {
       idleWarning: document.getElementById("screen-idle-warning"),
       mobileBlock: document.getElementById("screen-mobile-block"),
     };
+    this.bgVideo = document.getElementById('bg-video');
     this.activeScreen = this.screens.home;
     this.modalInitial = document.getElementById("modal-initial");
     this.modalTransfer = document.getElementById("modal-transfer");
@@ -227,12 +228,31 @@ export class UIManager {
   }
 
   showScreen(screenId) {
+    // すべてのスクリーンを非表示
     for (const key in this.screens) {
       if (this.screens[key]) this.screens[key].classList.remove("active");
     }
+
+    // 指定されたスクリーンを表示
     const s = this.screens[screenId];
     if (s) s.classList.add("active");
     this.activeScreen = s;
+
+    // ★追加: ゲーム画面の時だけ、背景動画を隠して停止する（省エネ＆背景透け防止）
+    if (screenId === "game") {
+        if (this.bgVideo) {
+            this.bgVideo.style.display = 'none'; // 非表示
+            this.bgVideo.pause();                // 再生停止
+        }
+        // ゲーム画面の背景を確実に黒にする
+        document.body.style.backgroundColor = '#000';
+    } else {
+        // メニュー画面などに戻ったら動画を再開
+        if (this.bgVideo) {
+            this.bgVideo.style.display = 'block';
+            this.bgVideo.play().catch(() => {}); // 再生再開
+        }
+    }
   }
 
   showGameOverScreen(score) {

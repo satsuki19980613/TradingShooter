@@ -4,10 +4,13 @@ import { InputManager } from "./systems/InputManager.js";
 import { FirebaseManager } from "./systems/FirebaseManager.js";
 import { NetworkManager } from "./systems/NetworkManager.js";
 import { AppFlowManager } from "./systems/AppFlowManager.js";
+import { ScreenScaler } from "./systems/ScreenScaler.js";
 /**
  * ゲームの起動
  */
 window.addEventListener("load", () => {
+  const screenScaler = new ScreenScaler();
+  screenScaler.init();
   const uiManager = new UIManager();
   const game = new Game("game-field");
   const inputManager = game.inputManager;
