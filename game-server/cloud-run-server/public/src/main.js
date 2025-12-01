@@ -13,6 +13,7 @@ window.addEventListener("load", () => {
   screenScaler.init();
   const uiManager = new UIManager();
   const game = new Game("game-field");
+  window.gameInput = game.inputManager;
   const inputManager = game.inputManager;
   const firebaseManager = new FirebaseManager();
   const networkManager = new NetworkManager();

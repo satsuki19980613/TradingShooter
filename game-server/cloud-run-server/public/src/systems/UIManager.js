@@ -452,11 +452,7 @@ export class UIManager {
         ctx.font = "bold 12px 'Roboto Mono', monospace";
         ctx.textAlign = "right";
         ctx.textBaseline = "middle";
-        ctx.fillText(
-          damageVal,
-          startX + contentWidth - 5,
-          currentY + slotHeight / 2
-        );
+
 
         ctx.restore();
       } else {

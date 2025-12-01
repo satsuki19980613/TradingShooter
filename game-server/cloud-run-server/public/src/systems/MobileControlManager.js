@@ -73,6 +73,7 @@ export class MobileControlManager {
     addInputListener(document.getElementById("mc-btn-fire"), "shoot");
     addInputListener(document.getElementById("mc-btn-short"), "trade_short");
     addInputListener(document.getElementById("mc-btn-long"), "trade_long");
+    addInputListener(document.getElementById("mc-btn-settle"), "trade_settle");
 
     // ロット調整 (クリックした瞬間だけON)
     const setupTrigger = (id, action) => {
