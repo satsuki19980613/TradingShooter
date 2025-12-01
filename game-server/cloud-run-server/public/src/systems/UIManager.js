@@ -369,145 +369,80 @@ export class UIManager {
     const stockedBullets = playerState.stockedBullets || [];
     const maxStock = playerState.maxStock || 10;
 
-    const paddingY = 100;
-
+    // 上下のパディング
+    const paddingY = 10;
     const availableHeight = canvasHeight - paddingY * 2;
-    const gap = 4;
+    
+    // バーの設定
+    const gap = 6; // 隙間を少し広げて独立感を出す
     const slotHeight = Math.floor(availableHeight / maxStock - gap);
-
-    const contentWidth = canvasWidth * 0.9;
-    const startX = (canvasWidth - contentWidth) / 2;
+    
+    // 幅設定（CSSで小さくしているので、Canvas内では幅を使い切る）
+    const contentWidth = canvasWidth * 0.7; 
+    const startX = (canvasWidth - contentWidth) / 2 + 10; // 斜めにする分、少し右へ
     const bottomY = canvasHeight - paddingY;
 
-    const slant = 0;
-
     ctx.save();
 
-    const totalStackHeight = maxStock * (slotHeight + gap) - gap;
-    const stackTopY = bottomY - totalStackHeight;
-
-    const framePadding = 8;
-    const frameX = startX - framePadding;
-    const frameY = stackTopY - framePadding;
-    const frameW = contentWidth + framePadding * 2;
-    const frameH = totalStackHeight + framePadding * 2;
-
-    ctx.save();
-
-    ctx.strokeStyle = "rgba(255, 97, 208, 0.4)";
-    ctx.lineWidth = 2;
-
-    ctx.strokeRect(frameX, frameY, frameW, frameH);
-
-    ctx.fillStyle = "rgba(0, 10, 20, 0.3)";
-    ctx.fillRect(frameX, frameY, frameW, frameH);
-    ctx.restore();
+    // ★デザイン変更: 全体を斜めに傾ける (Skew)
+    // 水平方向に -0.3 の傾斜をつける
+    ctx.transform(1, 0, -0.3, 1, 0, 0);
 
     for (let i = 0; i < maxStock; i++) {
       const currentY = bottomY - (i + 1) * (slotHeight + gap) + gap;
-
       const hasBullet = i < stockedBullets.length;
       const damageVal = hasBullet ? Math.ceil(stockedBullets[i]) : 0;
 
       ctx.beginPath();
-      ctx.rect(startX, currentY, contentWidth, slotHeight);
-      ctx.closePath();
-
+      // 角を少し削ったような矩形にするなどのパス操作も可能ですが、
+      // transformで傾けているのでfillRectで平行四辺形になります。
+      
       if (hasBullet) {
+        // --- 弾がある場合 (発光グラデーション) ---
         ctx.save();
 
         let baseColor, highColor;
-        if (damageVal >= 100) {
-          baseColor = "#aa00ff";
+        // 威力に応じた色分け
+        if (damageVal >= 100) {       // Tier 4
+          baseColor = "#aa00ff";      // 紫
           highColor = "#ea80fc";
-        } else if (damageVal >= 50) {
-          baseColor = "#ff6d00";
+        } else if (damageVal >= 50) { // Tier 3
+          baseColor = "#ff6d00";      // オレンジ
           highColor = "#ffab40";
-        } else {
-          baseColor = "#00bcd4";
+        } else {                      // Tier 1-2
+          baseColor = "#00bcd4";      // シアン
           highColor = "#84ffff";
         }
 
-        const grad = ctx.createLinearGradient(
-          startX,
-          currentY,
-          startX + contentWidth,
-          currentY + slotHeight
-        );
-        grad.addColorStop(0, highColor);
-        grad.addColorStop(0.5, baseColor);
-        grad.addColorStop(1, "rgba(0,0,0,0.3)");
+        // グラデーション作成 (左から右へ)
+        const grad = ctx.createLinearGradient(startX, currentY, startX + contentWidth, currentY);
+        grad.addColorStop(0, baseColor);
+        grad.addColorStop(0.6, highColor);
+        grad.addColorStop(1, "rgba(255, 255, 255, 0.8)"); // 先端を光らせる
 
         ctx.fillStyle = grad;
-
+        
+        // 強い発光エフェクト
         ctx.shadowColor = baseColor;
-        ctx.shadowBlur = 10;
-        ctx.fill();
-        ctx.shadowBlur = 0;
-
-        ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
-        ctx.fillRect(startX + 2, currentY + 2, contentWidth - 4, 2);
-
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 12px 'Roboto Mono', monospace";
-        ctx.textAlign = "right";
-        ctx.textBaseline = "middle";
-
+        ctx.shadowBlur = 15;
+        
+        ctx.fillRect(startX, currentY, contentWidth, slotHeight);
+        
+        // ハイライト線を入れる
+        ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+        ctx.fillRect(startX, currentY, contentWidth, 2); // 上端のハイライト
 
         ctx.restore();
       } else {
-        const emptyGrad = ctx.createLinearGradient(
-          startX,
-          currentY,
-          startX + contentWidth,
-          currentY
-        );
-        emptyGrad.addColorStop(0, "rgba(255, 255, 255, 0)");
-        emptyGrad.addColorStop(0.2, "rgba(255, 255, 255, 0.05)");
-        emptyGrad.addColorStop(0.5, "rgba(255, 255, 255, 0.1)");
-        emptyGrad.addColorStop(0.8, "rgba(255, 255, 255, 0.05)");
-        emptyGrad.addColorStop(1, "rgba(255, 255, 255, 0)");
-
-        ctx.fillStyle = emptyGrad;
-        ctx.fill();
+        // --- 空スロットの場合 (薄い背景) ---
+        ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+        ctx.fillRect(startX, currentY, contentWidth, slotHeight);
+        
+        // 枠線だけ薄く描画して「空き」を強調
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(startX, currentY, contentWidth, slotHeight);
       }
-    }
-
-    ctx.save();
-    ctx.textAlign = "right";
-    ctx.textBaseline = "bottom";
-
-    const countText = stockedBullets.length.toString();
-    const countX = canvasWidth - 10;
-
-    const countY = canvasHeight - 10;
-
-    ctx.font = "italic 900 64px 'Verdana', sans-serif";
-
-    ctx.strokeStyle = "rgba(0, 255, 255, 0.2)";
-    ctx.lineWidth = 2;
-    ctx.strokeText(countText, countX, countY);
-
-    ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
-    ctx.fillText(countText, countX, countY);
-
-    ctx.restore();
-
-    if (stockedBullets.length === maxStock) {
-      ctx.save();
-
-      ctx.translate(canvasWidth / 2, paddingY - 20);
-
-      const alpha = 0.5 + Math.sin(Date.now() / 200) * 0.5;
-
-      ctx.fillStyle = `rgba(0, 255, 0, ${alpha})`;
-      ctx.shadowColor = "#00ff00";
-      ctx.shadowBlur = 10;
-      ctx.font = "bold 12px 'Courier New', monospace";
-      ctx.textAlign = "center";
-      ctx.fillText(">> SYSTEM READY <<", 0, 0);
-
-      ctx.restore();
     }
 
     ctx.restore();
@@ -528,25 +463,27 @@ export class UIManager {
 
     const centerX = canvasWidth / 2;
     const centerY = canvasHeight / 2;
-    const viewRadiusWorld = 1500;
+    const viewRadiusWorld = 1500; // レーダーの表示範囲
     const scale = radarRadius / viewRadiusWorld;
 
     ctx.save();
 
+    // 1. 背景 (半透明の円)
     ctx.beginPath();
     ctx.arc(centerX, centerY, radarRadius, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(5, 15, 25, 0.85)";
+    ctx.fillStyle = "rgba(5, 15, 25, 0.85)"; // 濃い目の背景
     ctx.fill();
 
-    ctx.strokeStyle = "rgba(0, 255, 255, 0.8)";
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    // ★外枠の stroke() を削除しました
 
+    // 2. クリップ (ここから先は円の内側のみ描画)
     ctx.clip();
 
-    ctx.strokeStyle = "rgba(0, 255, 255, 0.3)";
+    // 3. 内部グリッド (前のデザインに戻す)
+    ctx.strokeStyle = "rgba(0, 255, 255, 0.2)"; // 薄いシアン
     ctx.lineWidth = 1;
 
+    // 同心円グリッド (33%, 66%)
     ctx.beginPath();
     ctx.arc(centerX, centerY, radarRadius * 0.33, 0, Math.PI * 2);
     ctx.stroke();
@@ -555,6 +492,7 @@ export class UIManager {
     ctx.arc(centerX, centerY, radarRadius * 0.66, 0, Math.PI * 2);
     ctx.stroke();
 
+    // 十字線
     ctx.beginPath();
     ctx.moveTo(centerX - radarRadius, centerY);
     ctx.lineTo(centerX + radarRadius, centerY);
@@ -562,6 +500,7 @@ export class UIManager {
     ctx.lineTo(centerX, centerY + radarRadius);
     ctx.stroke();
 
+    // 4. エンティティ描画
     if (!playerState) {
       ctx.restore();
       return;
@@ -576,11 +515,12 @@ export class UIManager {
       };
     };
 
+    // 敵 (赤)
     if (enemiesState && enemiesState.length > 0) {
       ctx.fillStyle = "#f44336";
       enemiesState.forEach((enemy) => {
         const pos = getRadarPos(enemy.x, enemy.y);
-
+        // レーダー範囲内かチェック
         const distSq = (pos.x - centerX) ** 2 + (pos.y - centerY) ** 2;
         if (distSq <= radarRadius ** 2) {
           ctx.beginPath();
@@ -590,6 +530,7 @@ export class UIManager {
       });
     }
 
+    // 他プレイヤー (緑)
     if (otherPlayersState && otherPlayersState.length > 0) {
       ctx.fillStyle = "#76ff03";
       otherPlayersState.forEach((p) => {
@@ -603,10 +544,14 @@ export class UIManager {
       });
     }
 
+    // 自分 (中心、シアン)
     ctx.fillStyle = "#00bbd4";
+    ctx.shadowColor = "#00bbd4";
+    ctx.shadowBlur = 10;
     ctx.beginPath();
     ctx.arc(centerX, centerY, 4, 0, Math.PI * 2);
     ctx.fill();
+    ctx.shadowBlur = 0; // 他への影響を防ぐためリセット
 
     ctx.restore();
   }
@@ -805,8 +750,9 @@ export class UIManager {
   isMobileDevice() {
     const ua = navigator.userAgent;
     // スマホ・タブレットのキーワードが含まれている場合のみ true にする
-    const isStandardMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
-    
+    const isStandardMobile =
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+
     // PCでの誤判定を防ぐため、画面サイズやタッチ判定は削除しました
     return isStandardMobile;
   }
