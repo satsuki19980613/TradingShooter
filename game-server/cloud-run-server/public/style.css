@@ -3,15 +3,20 @@
  * ======================================== */
 body {
     font-family: 'Verdana', 'Noto Sans JP', sans-serif;
-    background-color: #050a10; /* 全体の背景色をコックピットに合わせる */
+    background-color: #050a10;
     color: #f0f0f0;
     overflow: hidden;
     display: flex;
     justify-content: center;
     align-items: center;
+    /* 修正: 100vh -> 100dvh (アドレスバー対策) */
     height: 100vh;
+    height: 100dvh; 
+    width: 100vw;
     margin: 0;
     user-select: none;
+    /* 修正: ノッチ（切り欠き）対応 */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 /* ========================================
@@ -121,19 +126,18 @@ body {
 /* 全体コンテナ */
 #cockpit-container {
     display: flex;
-    /* ▼▼▼ 追加/変更 ▼▼▼ */
-    width: 100vw;   /* 画面幅いっぱい */
-    height: 100vh;  /* 画面高さいっぱい */
+    width: 100%;
+    /* 修正: 親要素(body)に合わせる */
+    height: 100%; 
     max-width: 100%;
     max-height: 100%;
-    
     background-color: #050a10;
-    padding: 10px;
+    /* 修正: paddingを削除し、絶対配置レイアウトと干渉しないようにする */
+    padding: 0; 
     box-sizing: border-box;
-    gap: 10px;
-    
-    /* 中央配置の設定は削除（画面いっぱいになるため不要） */
-    margin: 0; 
+    /* gap: 10px;  <-- レイアウト崩れの原因になるため削除推奨 */
+    margin: 0;
+    position: relative; /* 子要素の基準点 */
 }
 /* パネル共通設定 */
 .cockpit-panel {
@@ -614,115 +618,61 @@ canvas#ui-field {
     text-shadow: 0 0 2px rgba(255,255,255,0.3);
 }
 
-/* [style.css] 末尾の @media (max-height: 600px) を以下に差し替え */
-
 /* ========================================
- * モバイル・横画面用のレイアウト調整
+ * モバイル・横画面用のレイアウト調整 (修正版)
  * ======================================== */
 @media (max-height: 600px) {
-    
     /* --- 1. コントローラーエリア --- */
     #mobile-controls-layer {
-        display: block !important; /* CSS上では表示を許可 */
-        z-index: 9999 !important; /* 最前面 */
-        pointer-events: none; /* UIのない場所は操作を透過 */
+        display: block !important;
+        z-index: 9999 !important;
+        pointer-events: none;
     }
-    
-    /* 各ボタンは操作可能にする */
+
+    /* 各ボタンの操作有効化 */
     #mc-left-bottom, #mc-right-bottom, .mc-btn-entry, #mc-lot-control {
         pointer-events: auto !important;
     }
 
-    /* 左下：発射ボタン */
-    #mc-left-bottom {
-        bottom: 30px !important;
-        left: 20px !important;
-    }
-    #mc-btn-fire {
-        width: 70px !important;
-        height: 70px !important;
-    }
-
-    /* 右下：操作エリア */
-    #mc-right-bottom {
-        bottom: 10px !important;
-        right: 10px !important;
-        width: 220px !important;
-        height: 220px !important;
-    }
-    /* ジョイスティック位置 */
-    #mc-joystick-area {
-        bottom: 10px !important;
-        right: 10px !important;
-    }
-
-    /* --- 2. 各種パネルのサイズ調整 --- */
-    
-    /* 左上：ステータス (少し小さく) */
-    .hud-group.top-left {
-        top: 0 !important;
-        left: 0 !important;
-        transform: scale(0.8); /* 80%に縮小 */
-        transform-origin: top left;
-        width: 280px !important;
-    }
-
-    /* 右上：レーダー＆マガジン (横並びで小さく) */
-    .hud-group.top-right {
-        top: 0 !important;
-        right: 0 !important;
-        transform: scale(0.7); /* 70%に縮小 */
-        transform-origin: top right;
-        display: flex;
-        flex-direction: row !important;
-        align-items: flex-start;
-        gap: 5px;
-    }
-    /* パネル内の余白を詰める */
-    .hud-group.top-right .panel-module {
-        margin: 0 !important;
-        padding: 5px !important;
-    }
-    .hud-group.top-right .canvas-wrapper {
-        width: 120px !important;
-        height: 120px !important;
-    }
-
-    /* --- 3. 下部中央：チャート (潰さずにサイズ指定) --- */
+    /* --- 2. チャートパネル (重なり防止) --- */
     #bottom-chart-panel {
         display: flex !important;
         position: absolute;
-        bottom: 0px !important;
+        bottom: 0 !important;
         left: 50% !important;
-        /* scaleを使わず、位置だけ調整 */
-        transform: translateX(-50%) !important; 
+        transform: translateX(-50%) !important;
         
-        /* スマホ用固定サイズ */
-        width: 360px !important; 
-        height: 140px !important;
+        /* 修正: 固定360pxだと狭い画面ではみ出るため、最大幅を指定 */
+        width: 60vw !important; 
+        max-width: 400px;
+        height: 100px !important; /* 高さを抑える */
         
-        background: rgba(0, 0, 0, 0.7) !important;
-        padding: 0 !important;
-        z-index: 50; /* コントローラーより奥、ゲームより手前 */
-    }
-    
-    /* チャートの文字や内部要素を調整 */
-    #bottom-chart-panel h3 {
-        font-size: 10px !important;
-        padding: 2px 5px !important;
-    }
-    #ma-selection-panel {
-        padding-left: 2px !important;
-        width: 40px !important;
-    }
-    .ma-option {
-        font-size: 10px !important;
-    }
-    .ma-option input {
-        transform: scale(0.8);
+        background: rgba(0, 0, 0, 0.5) !important; /* 透け感を強める */
+        border-top: 1px solid rgba(0, 255, 255, 0.3);
+        z-index: 50;
+        pointer-events: none; /* チャート上での誤タップ防止 */
     }
 
-    /* リーダーボード非表示 */
+    /* --- 3. UIパーツの縮小 --- */
+    .hud-group.top-left {
+        transform: scale(0.65); /* さらに小さく */
+        transform-origin: top left;
+        left: 10px !important;
+        top: 10px !important;
+    }
+
+    .hud-group.top-right {
+        transform: scale(0.65);
+        transform-origin: top right;
+        right: 10px !important;
+        top: 10px !important;
+        /* 横並びにしてスペース節約 */
+        display: flex;
+        flex-direction: row !important; 
+        gap: 5px;
+    }
+    
+    /* リーダーボードはスマホでは非表示 */
     #hud-leaderboard-container {
         display: none !important;
     }
@@ -1137,5 +1087,159 @@ canvas#ui-field {
         font-size: 10px !important;
         padding: 4px 8px !important;
     }
+
+    /* 縦画面警告用のスタイル */
+#screen-rotate-device {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    z-index: 99999;
+    display: none; /* デフォルト非表示 */
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+.rotate-icon {
+    font-size: 50px;
+    color: #00ffff;
+    margin-top: 20px;
+    animation: spin 2s infinite linear;
+}
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+/* 画面の幅が高さより狭い場合（縦画面）に表示 */
+@media (orientation: portrait) {
+    #screen-rotate-device {
+        display: flex !important;
+    }
+    /* 縦画面時は他のUIを隠す */
+    #cockpit-container, #mobile-controls-layer {
+        display: none !important;
+    }
+}
+/* ========================================
+ * 【修正用】モバイルコントローラー強制表示設定
+ * ここから下を style.css の末尾に追加してください
+ * ======================================== */
+
+/* スマホと判定されたら(bodyにis-mobileがついたら)強制的に表示する */
+body.is-mobile #mobile-controls-layer {
+    display: block !important;
+    visibility: visible !important;
+    z-index: 9999 !important;
+    pointer-events: none; /* コントローラー以外の場所は操作を通す */
+}
+
+/* 各ボタン・ジョイスティックは操作可能にする */
+body.is-mobile #mc-left-bottom, 
+body.is-mobile #mc-right-bottom, 
+body.is-mobile .mc-btn-entry, 
+body.is-mobile #mc-lot-control {
+    pointer-events: auto !important;
+}
+
+/* 以下はボタンの位置や見た目の定義です（念のため再定義） */
+
+/* 左下：発射ボタン */
+#mc-left-bottom {
+    position: absolute;
+    bottom: 30px;
+    left: 30px;
+    z-index: 10000;
+}
+#mc-btn-fire {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255, 50, 50, 0.5);
+    border: 4px solid #ff5252;
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+    touch-action: manipulation; /* スマホでの操作遅延を防ぐ */
+}
+#mc-btn-fire:active {
+    background: rgba(255, 50, 50, 0.8);
+    transform: scale(0.95);
+}
+
+/* 右下エリアコンテナ */
+#mc-right-bottom {
+    position: absolute;
+    bottom: 30px;
+    right: 30px;
+    width: 250px;
+    height: 250px;
+    z-index: 10000;
+}
+
+/* ジョイスティック (青丸) */
+#mc-joystick-area {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 100px;
+    height: 100px;
+    background: rgba(0, 100, 255, 0.2);
+    border: 2px solid #00aaff;
+    border-radius: 50%;
+    touch-action: none;
+}
+#mc-joystick-knob {
+    width: 40px;
+    height: 40px;
+    background: rgba(0, 200, 255, 0.8);
+    border-radius: 50%;
+    position: relative;
+    /* JSで位置制御されるため transform は指定しない */
+}
+
+/* エントリーボタン (Short/Long) */
+#mc-btn-short {
+    position: absolute;
+    bottom: 130px;
+    right: 80px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(255, 200, 0, 0.2);
+    border: 2px solid #ffcc00;
+    color: #ffcc00;
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 10px;
+}
+#mc-btn-long {
+    position: absolute;
+    bottom: 20px;
+    right: 140px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(255, 200, 0, 0.2);
+    border: 2px solid #ffcc00;
+    color: #ffcc00;
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 10px;
+}
+
+/* ロット調整 */
+#mc-lot-control {
+    position: absolute;
+    bottom: 0px;
+    right: 220px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
 }
 

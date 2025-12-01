@@ -25,16 +25,20 @@ export class MobileControlManager {
 
   setupControls() {
     if (!this.mobileControlsLayer) {
-        console.error("Mobile Controls Layer not found!");
+        this.mobileControlsLayer = document.getElementById("mobile-controls-layer");
+    }
+    
+    if (!this.mobileControlsLayer) {
+        console.error("Mobile Controls Layer not found in DOM!");
         return;
     }
 
-    console.log("Mobile Controls Initialized"); // デバッグ用ログ
+    console.log("Mobile Controls Setup Started: Force Display");
 
-    // ★重要: style="display: none" を強制的に削除して表示させる
-    this.mobileControlsLayer.style.display = "block";
-    this.mobileControlsLayer.style.visibility = "visible";
+    // ★重要: HTML側の style="display: none" を直接上書きして消す
+    this.mobileControlsLayer.style.display = ""; 
     
+    // ★重要: CSSで制御するためのクラスをbodyに付与
     document.body.classList.add("is-mobile");
 
     // --- マウス/タッチ両対応のイベントヘルパー ---

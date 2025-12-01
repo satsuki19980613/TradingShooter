@@ -808,14 +808,12 @@ export class UIManager {
 
   isMobileDevice() {
     const ua = navigator.userAgent;
-    const isStandardMobile =
-      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
-    const isIpadDesktop =
-      navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
-
-    // ▼ 追加: 画面サイズによる判定も含める (幅か高さが小さい場合はモバイルとみなす)
+    const isStandardMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+    // タッチ可能なデバイス(MaxTouchPoints > 0) または 画面が明らかに小さい場合
+    const isTouchDevice = (navigator.maxTouchPoints && navigator.maxTouchPoints > 0);
     const isSmallScreen = window.innerWidth <= 900 || window.innerHeight <= 600;
-
-    return isStandardMobile || isIpadDesktop || isSmallScreen;
+    
+    // PCのデベロッパーツールで確認する場合も考慮し、isTouchDeviceを含める
+    return isStandardMobile || isTouchDevice || isSmallScreen;
   }
 }
