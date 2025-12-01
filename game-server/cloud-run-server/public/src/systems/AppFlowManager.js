@@ -55,6 +55,8 @@ export class AppFlowManager {
     this.ui.showScreen("loading");
 
     try {
+      const bgVideo = document.getElementById("bg-video");
+      if (bgVideo) bgVideo.style.display = "none";
       const user = await this.firebase.authenticateAnonymously(playerName);
       this.game.setAuthenticatedPlayer(user);
 
@@ -140,6 +142,8 @@ export class AppFlowManager {
   }
 
   handleRetire() {
+    const bgVideo = document.getElementById("bg-video");
+      if (bgVideo) bgVideo.style.display = "block";
       this.game.stopGameLoop();
       this.network.stopListening();
       this.ui.showScreen("home");

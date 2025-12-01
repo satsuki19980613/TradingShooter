@@ -614,16 +614,117 @@ canvas#ui-field {
     text-shadow: 0 0 2px rgba(255,255,255,0.3);
 }
 
-/* --- 追加：スマホや極端に縦が狭い時用の微調整 --- */
-/* 画面高さが600px以下の時はさらに詰める */
+/* [style.css] 末尾の @media (max-height: 600px) を以下に差し替え */
+
+/* ========================================
+ * モバイル・横画面用のレイアウト調整
+ * ======================================== */
 @media (max-height: 600px) {
-    .control-row {
-        font-size: 2.2vh; /* 少し大きくして視認性確保しつつ */
-        padding: 0.2vh 0; /* 余白は極限まで削る */
-        border-bottom: none; /* 線も消してスペース節約 */
+    
+    /* --- 1. コントローラーエリア --- */
+    #mobile-controls-layer {
+        display: block !important; /* CSS上では表示を許可 */
+        z-index: 9999 !important; /* 最前面 */
+        pointer-events: none; /* UIのない場所は操作を透過 */
     }
-    .control-header {
-        display: none; /* ヘッダー("SYSTEM CONTROLS")を非表示にしてスペース確保 */
+    
+    /* 各ボタンは操作可能にする */
+    #mc-left-bottom, #mc-right-bottom, .mc-btn-entry, #mc-lot-control {
+        pointer-events: auto !important;
+    }
+
+    /* 左下：発射ボタン */
+    #mc-left-bottom {
+        bottom: 30px !important;
+        left: 20px !important;
+    }
+    #mc-btn-fire {
+        width: 70px !important;
+        height: 70px !important;
+    }
+
+    /* 右下：操作エリア */
+    #mc-right-bottom {
+        bottom: 10px !important;
+        right: 10px !important;
+        width: 220px !important;
+        height: 220px !important;
+    }
+    /* ジョイスティック位置 */
+    #mc-joystick-area {
+        bottom: 10px !important;
+        right: 10px !important;
+    }
+
+    /* --- 2. 各種パネルのサイズ調整 --- */
+    
+    /* 左上：ステータス (少し小さく) */
+    .hud-group.top-left {
+        top: 0 !important;
+        left: 0 !important;
+        transform: scale(0.8); /* 80%に縮小 */
+        transform-origin: top left;
+        width: 280px !important;
+    }
+
+    /* 右上：レーダー＆マガジン (横並びで小さく) */
+    .hud-group.top-right {
+        top: 0 !important;
+        right: 0 !important;
+        transform: scale(0.7); /* 70%に縮小 */
+        transform-origin: top right;
+        display: flex;
+        flex-direction: row !important;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    /* パネル内の余白を詰める */
+    .hud-group.top-right .panel-module {
+        margin: 0 !important;
+        padding: 5px !important;
+    }
+    .hud-group.top-right .canvas-wrapper {
+        width: 120px !important;
+        height: 120px !important;
+    }
+
+    /* --- 3. 下部中央：チャート (潰さずにサイズ指定) --- */
+    #bottom-chart-panel {
+        display: flex !important;
+        position: absolute;
+        bottom: 0px !important;
+        left: 50% !important;
+        /* scaleを使わず、位置だけ調整 */
+        transform: translateX(-50%) !important; 
+        
+        /* スマホ用固定サイズ */
+        width: 360px !important; 
+        height: 140px !important;
+        
+        background: rgba(0, 0, 0, 0.7) !important;
+        padding: 0 !important;
+        z-index: 50; /* コントローラーより奥、ゲームより手前 */
+    }
+    
+    /* チャートの文字や内部要素を調整 */
+    #bottom-chart-panel h3 {
+        font-size: 10px !important;
+        padding: 2px 5px !important;
+    }
+    #ma-selection-panel {
+        padding-left: 2px !important;
+        width: 40px !important;
+    }
+    .ma-option {
+        font-size: 10px !important;
+    }
+    .ma-option input {
+        transform: scale(0.8);
+    }
+
+    /* リーダーボード非表示 */
+    #hud-leaderboard-container {
+        display: none !important;
     }
 }
 /* WASD用の特殊レイアウト */
@@ -961,5 +1062,80 @@ canvas#ui-field {
     border-radius: 4px;
     min-width: 30px;
     text-align: center;
+}
+/* [style.css] 末尾に追加 */
+
+/* ========================================
+ * モバイル・横画面用のレスポンシブ調整
+ * ======================================== */
+@media (max-height: 600px) {
+    /* 1. チャートパネルを小さくする */
+    #bottom-chart-panel {
+        height: 120px !important;  /* 高さを180px -> 120pxに縮小 */
+        width: 320px !important;   /* 幅を600px -> 320pxに縮小（左右のボタン用スペース確保） */
+        min-height: 0 !important;
+    }
+    
+    /* チャート内の文字や余白も調整 */
+    #bottom-chart-panel h3 {
+        font-size: 9px !important;
+        padding: 1px 5px !important;
+    }
+    #ma-selection-panel {
+        padding-left: 4px !important;
+    }
+    .ma-option {
+        font-size: 10px !important;
+        gap: 4px !important;
+    }
+
+    /* 2. 右上のレーダー・マガジンを小さくする */
+    .canvas-wrapper {
+        width: 100px !important;   /* 180px -> 100px */
+        height: 100px !important;
+        min-height: 0 !important;
+    }
+    .panel-module h3 {
+        font-size: 10px !important;
+        margin-bottom: 4px !important;
+    }
+
+    /* 3. 左上のステータス文字を小さくする */
+    #hud-status-area .stat-row {
+        font-size: 12px !important; /* 18px -> 12px */
+        margin-bottom: 4px !important;
+    }
+    #hud-status-area .stat-label {
+        width: 40px !important;
+    }
+    .stat-bar-outer {
+        height: 6px !important;
+    }
+
+    /* 4. リーダーボード（順位表）は邪魔なのでスマホでは非表示にする */
+    #hud-leaderboard-container {
+        display: none !important;
+    }
+    /* もしくは非常に小さく表示する場合
+    #hud-leaderboard-container {
+        max-height: 60px !important;
+    }
+    .leaderboard-row {
+        padding: 2px 4px !important;
+        font-size: 10px !important;
+    }
+    */
+
+    /* 5. HUD全体の配置微調整 */
+    .hud-group {
+        padding: 5px !important; /* 端の余白を詰める */
+        gap: 5px !important;
+    }
+    
+    /* 右上のボタン（RETIREなど）も小さく */
+    .ui-button.small {
+        font-size: 10px !important;
+        padding: 4px 8px !important;
+    }
 }
 

@@ -1,7 +1,5 @@
-/**
- * 【MobileControlManager】
- * スマホ用UI（ジョイスティック、ボタン）のイベントハンドリングを担当
- */
+// public/src/systems/MobileControlManager.js
+
 export class MobileControlManager {
   constructor() {
     this.mobileControlsLayer = document.getElementById("mobile-controls-layer");
@@ -15,130 +13,153 @@ export class MobileControlManager {
       startY: 0,
       currentX: 0,
       currentY: 0,
-      maxDist: 40 // スティックの可動半径
+      maxDist: 40
     };
   }
 
-  /**
-   * スマホであればコントロールを表示してイベント設定を行う
-   * @param {boolean} isMobile - スマホかどうか
-   */
   init(isMobile) {
-    if (isMobile) {
-      this.setupControls();
-    }
+    // ★修正: 引数に関わらず、要素が存在すればセットアップを試みる
+    // これによりPCでのデバッグ時も強制表示しやすくなります
+    this.setupControls();
   }
 
   setupControls() {
-    if (!this.mobileControlsLayer) return;
-
-    // 表示を有効化
-    this.mobileControlsLayer.style.display = "block";
-    document.body.classList.add("is-mobile");
-
-    // --- 1. 発射ボタン ---
-    const btnFire = document.getElementById("mc-btn-fire");
-    if (btnFire) {
-      btnFire.addEventListener("touchstart", (e) => {
-        e.preventDefault();
-        if (window.gameInput) window.gameInput.setShootPressed();
-      }, { passive: false });
+    if (!this.mobileControlsLayer) {
+        console.error("Mobile Controls Layer not found!");
+        return;
     }
 
-    // --- 2. エントリーボタン (Short / Long) ---
-    const setupBtn = (id, action) => {
-      const btn = document.getElementById(id);
-      if (!btn) return;
-      btn.addEventListener("touchstart", (e) => {
-        e.preventDefault();
-        if (window.gameInput) window.gameInput.setVirtualInput(action, true);
-      }, { passive: false });
-      btn.addEventListener("touchend", (e) => {
-        e.preventDefault();
-        if (window.gameInput) window.gameInput.setVirtualInput(action, false);
-      });
-    };
-    setupBtn("mc-btn-short", "trade_short");
-    setupBtn("mc-btn-long", "trade_long");
+    console.log("Mobile Controls Initialized"); // デバッグ用ログ
 
-    // --- 3. ロット調整 (Trigger) ---
-    const setupTriggerBtn = (id, action) => {
-      const btn = document.getElementById(id);
-      if (!btn) return;
-      btn.addEventListener("touchstart", (e) => {
-        e.preventDefault();
-        if (window.gameInput) {
-          window.gameInput.setVirtualInput(action, true);
-          // 100ms後にOFFにする（単押し動作）
-          setTimeout(() => window.gameInput.setVirtualInput(action, false), 100);
-        }
-      }, { passive: false });
-    };
-    setupTriggerBtn("mc-btn-lot-plus", "bet_up");
-    setupTriggerBtn("mc-btn-lot-minus", "bet_down");
+    // ★重要: style="display: none" を強制的に削除して表示させる
+    this.mobileControlsLayer.style.display = "block";
+    this.mobileControlsLayer.style.visibility = "visible";
+    
+    document.body.classList.add("is-mobile");
 
-    // --- 4. ジョイスティック制御 ---
+    // --- マウス/タッチ両対応のイベントヘルパー ---
+    const addInputListener = (elem, action) => {
+        if (!elem) return;
+        
+        // タッチ開始 / マウスダウン
+        const startHandler = (e) => {
+            e.preventDefault();
+            if (window.gameInput) {
+                if (action === "shoot") window.gameInput.setShootPressed();
+                else window.gameInput.setVirtualInput(action, true);
+            }
+        };
+        
+        // タッチ終了 / マウスアップ
+        const endHandler = (e) => {
+            e.preventDefault();
+            if (window.gameInput && action !== "shoot") {
+                window.gameInput.setVirtualInput(action, false);
+            }
+        };
+
+        elem.addEventListener("touchstart", startHandler, { passive: false });
+        elem.addEventListener("mousedown", startHandler);
+        
+        elem.addEventListener("touchend", endHandler);
+        elem.addEventListener("mouseup", endHandler);
+    };
+
+    // --- 1. ボタン設定 ---
+    addInputListener(document.getElementById("mc-btn-fire"), "shoot");
+    addInputListener(document.getElementById("mc-btn-short"), "trade_short");
+    addInputListener(document.getElementById("mc-btn-long"), "trade_long");
+
+    // ロット調整 (クリックした瞬間だけON)
+    const setupTrigger = (id, action) => {
+        const btn = document.getElementById(id);
+        if(!btn) return;
+        const handler = (e) => {
+            e.preventDefault();
+            if(window.gameInput) {
+                window.gameInput.setVirtualInput(action, true);
+                setTimeout(() => window.gameInput.setVirtualInput(action, false), 100);
+            }
+        };
+        btn.addEventListener("touchstart", handler, { passive: false });
+        btn.addEventListener("mousedown", handler);
+    };
+    setupTrigger("mc-btn-lot-plus", "bet_up");
+    setupTrigger("mc-btn-lot-minus", "bet_down");
+
+
+    // --- 2. ジョイスティック制御 (マウス/タッチ両対応) ---
     if (this.mcJoystickArea) {
-      this.mcJoystickArea.addEventListener("touchstart", (e) => {
-        e.preventDefault();
-        const touch = e.changedTouches[0];
-        this.joystickState.active = true;
-        this.joystickState.startX = touch.clientX;
-        this.joystickState.startY = touch.clientY;
-        this.updateJoystickVisual(0, 0);
-      }, { passive: false });
+        const startJoy = (clientX, clientY) => {
+            this.joystickState.active = true;
+            this.joystickState.startX = clientX;
+            this.joystickState.startY = clientY;
+            this.updateJoystickVisual(0, 0);
+        };
 
-      this.mcJoystickArea.addEventListener("touchmove", (e) => {
-        e.preventDefault();
-        if (!this.joystickState.active) return;
-        const touch = e.changedTouches[0];
+        const moveJoy = (clientX, clientY) => {
+            if (!this.joystickState.active) return;
+            
+            let dx = clientX - this.joystickState.startX;
+            let dy = clientY - this.joystickState.startY;
+            
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            const max = this.joystickState.maxDist;
+            
+            if (dist > max) {
+                dx = (dx / dist) * max;
+                dy = (dy / dist) * max;
+            }
+            
+            this.updateJoystickVisual(dx, dy);
 
-        let dx = touch.clientX - this.joystickState.startX;
-        let dy = touch.clientY - this.joystickState.startY;
+            if(window.gameInput) {
+                window.gameInput.setJoystickVector(dx / max, dy / max);
+            }
+        };
 
-        // 距離制限
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const max = this.joystickState.maxDist;
-        if (dist > max) {
-          dx = (dx / dist) * max;
-          dy = (dy / dist) * max;
-        }
+        const endJoy = () => {
+            this.joystickState.active = false;
+            this.updateJoystickVisual(0, 0);
+            if(window.gameInput) {
+                window.gameInput.setJoystickVector(0, 0);
+            }
+        };
 
-        this.updateJoystickVisual(dx, dy);
+        // Touch Events
+        this.mcJoystickArea.addEventListener("touchstart", (e) => {
+            e.preventDefault();
+            startJoy(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+        }, {passive: false});
 
-        // 入力送信 (正規化 -1.0 ~ 1.0)
-        if (window.gameInput) {
-          window.gameInput.setJoystickVector(dx / max, dy / max);
-        }
+        this.mcJoystickArea.addEventListener("touchmove", (e) => {
+            e.preventDefault();
+            moveJoy(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+        }, {passive: false});
 
-      }, { passive: false });
-
-      const endJoystick = (e) => {
-        e.preventDefault();
-        this.joystickState.active = false;
-        this.updateJoystickVisual(0, 0);
-        if (window.gameInput) {
-          window.gameInput.setJoystickVector(0, 0);
-        }
-      };
-      this.mcJoystickArea.addEventListener("touchend", endJoystick);
-      this.mcJoystickArea.addEventListener("touchcancel", endJoystick);
+        this.mcJoystickArea.addEventListener("touchend", (e) => { e.preventDefault(); endJoy(); });
+        
+        // Mouse Events (PCデバッグ用)
+        this.mcJoystickArea.addEventListener("mousedown", (e) => {
+            startJoy(e.clientX, e.clientY);
+        });
+        window.addEventListener("mousemove", (e) => {
+            if(this.joystickState.active) moveJoy(e.clientX, e.clientY);
+        });
+        window.addEventListener("mouseup", endJoy);
     }
   }
 
   updateJoystickVisual(x, y) {
     if (this.mcJoystickKnob) {
-      this.mcJoystickKnob.style.transform = `translate(${x}px, ${y}px)`;
+        this.mcJoystickKnob.style.transform = `translate(${x}px, ${y}px)`;
     }
   }
 
-  /**
-   * HUD更新時に呼ばれる（ロット表示の更新など）
-   */
   updateDisplay(playerState) {
     if (this.mcLotDisplay && playerState) {
-      const bet = Math.ceil(playerState.chargeBetAmount || 10);
-      this.mcLotDisplay.textContent = bet;
+        const bet = Math.ceil(playerState.chargeBetAmount || 10);
+        this.mcLotDisplay.textContent = bet;
     }
   }
 }

@@ -12,6 +12,7 @@
  * - 認証処理 (FirebaseManager へ)
  * - ゲームの描画ループ管理 (Game クラスへ)
  */
+import { MobileControlManager } from "./MobileControlManager.js";
 export class UIManager {
   constructor() {
     const testEl = document.getElementById("modal-initial");
@@ -135,8 +136,8 @@ export class UIManager {
       .addEventListener("click", () => {
         this.modalRegister.classList.add("hidden");
       });
-      if (this.isMobileDevice()) {
-        this.mobileControlManager.init(true);
+    if (this.isMobileDevice()) {
+      this.mobileControlManager.init(true);
     }
   }
   hideInitialModal() {
@@ -283,7 +284,7 @@ export class UIManager {
       this.sizeValueEl.textContent = betText;
       this.sizeValueEl.style.color = betColor;
     }
-   if (this.powerValueEl && this.powerLabelEl) {
+    if (this.powerValueEl && this.powerLabelEl) {
       const chargePosition = playerState.chargePosition || null;
       const currentPrice = tradeState ? tradeState.currentPrice : 1000;
       let level = 0;
@@ -294,11 +295,11 @@ export class UIManager {
         let priceDiff;
 
         if (type === "short") {
-            // ショートの場合: (エントリー価格 - 現在価格) が利益
-            priceDiff = chargePosition.entryPrice - currentPrice;
+          // ショートの場合: (エントリー価格 - 現在価格) が利益
+          priceDiff = chargePosition.entryPrice - currentPrice;
         } else {
-            // ロングの場合: (現在価格 - エントリー価格) が利益
-            priceDiff = currentPrice - chargePosition.entryPrice;
+          // ロングの場合: (現在価格 - エントリー価格) が利益
+          priceDiff = currentPrice - chargePosition.entryPrice;
         }
 
         const betAmount = chargePosition.amount;
@@ -811,8 +812,10 @@ export class UIManager {
       /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
     const isIpadDesktop =
       navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
-    const isTouchPrimary =
-      window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
-    return isStandardMobile || isIpadDesktop || isTouchPrimary;
+
+    // ▼ 追加: 画面サイズによる判定も含める (幅か高さが小さい場合はモバイルとみなす)
+    const isSmallScreen = window.innerWidth <= 900 || window.innerHeight <= 600;
+
+    return isStandardMobile || isIpadDesktop || isSmallScreen;
   }
 }
