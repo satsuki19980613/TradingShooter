@@ -66,6 +66,25 @@ export class UIManager {
     this.mobileControlManager = new MobileControlManager();
   }
 
+  // [追加] フルスクリーン化を試みるメソッド
+  tryFullscreen() {
+    const doc = window.document;
+    const docEl = doc.documentElement;
+
+    const requestFullScreen =
+      docEl.requestFullscreen ||
+      docEl.mozRequestFullScreen ||
+      docEl.webkitRequestFullScreen ||
+      docEl.msRequestFullscreen;
+
+    if (requestFullScreen) {
+      // ユーザー操作のコンテキストでないとブロックされることがあるため、catchでエラーを握りつぶす
+      requestFullScreen.call(docEl).catch((err) => {
+        console.warn("フルスクリーン化できませんでした (ユーザー操作が必要な場合があります):", err);
+      });
+    }
+  }
+
   bindActions(actions) {
     document
       .getElementById("btn-initial-start")
@@ -88,6 +107,8 @@ export class UIManager {
       });
 
     document.getElementById("btn-start-game").addEventListener("click", () => {
+      this.tryFullscreen(); // ★ここに追加
+      
       const playerName = this.displayNameEl.textContent || "Guest";
       actions.onStartGame(playerName);
     });
@@ -136,9 +157,8 @@ export class UIManager {
       .addEventListener("click", () => {
         this.modalRegister.classList.add("hidden");
       });
-    if (this.isMobileDevice()) {
-      this.mobileControlManager.init(true);
-    }
+    this.mobileControlManager.init(true);
+    // }
   }
   hideInitialModal() {
     if (this.modalInitial) this.modalInitial.classList.add("hidden");

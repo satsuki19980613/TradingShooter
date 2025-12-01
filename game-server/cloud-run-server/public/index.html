@@ -6,6 +6,16 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, user-scalable=no"
     />
+
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
     <title>TradingShooter</title>
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="https://trading-charge-shooter.web.app" />
@@ -194,139 +204,172 @@
     </div>
     <div id="screen-game" class="screen">
       <div id="cockpit-container" class="overlay-layout">
-        
         <div id="game-field-wrapper" class="full-screen-layer">
-            <div id="game-field-container">
-              <canvas id="game-field" tabindex="0"></canvas>
-              <canvas id="ui-field" style="position: absolute; top: 0; left: 0; pointer-events: none;"></canvas>
-              <div id="obstacle-layer"></div>
-            </div>
+          <div id="game-field-container">
+            <canvas id="game-field" tabindex="0"></canvas>
+            <canvas
+              id="ui-field"
+              style="position: absolute; top: 0; left: 0; pointer-events: none"
+            ></canvas>
+            <div id="obstacle-layer"></div>
+          </div>
         </div>
         <div id="hud-layer" class="full-screen-layer">
-            
-            <div class="hud-group top-left">
-                <div class="panel-module transparent-bg">
-                    <h3>STATUS</h3>
-                    <div id="hud-status-area">
-                        <div class="stat-row">
-                            <span class="stat-label">HP</span>
-                            <div class="stat-bar-outer">
-                                <div id="hp-bar-inner" class="stat-bar hp"></div>
-                            </div>
-                            <span id="hp-value" class="stat-value">100</span>
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label">EP</span>
-                            <div class="stat-bar-outer" style="visibility: hidden; height: 0"></div>
-                            <span id="ep-value" class="stat-value ep-value">100</span>
-                        </div>
-                        <div class="stat-row no-bar">
-                            <span class="stat-label">Size</span>
-                            <span id="size-value" class="stat-value">10</span>
-                        </div>
-                        <div class="stat-row no-bar">
-                            <span class="stat-label" id="power-label">Power</span>
-                            <span id="power-value" class="stat-value">0</span>
-                        </div>
-                    </div>
+          <div class="hud-group top-left">
+            <div class="panel-module transparent-bg">
+              <h3>STATUS</h3>
+              <div id="hud-status-area">
+                <div class="stat-row">
+                  <span class="stat-label">HP</span>
+                  <div class="stat-bar-outer">
+                    <div id="hp-bar-inner" class="stat-bar hp"></div>
+                  </div>
+                  <span id="hp-value" class="stat-value">100</span>
                 </div>
-
-                <div class="panel-module transparent-bg">
-                    <h3>LEADERBOARD</h3>
-                    <div id="hud-leaderboard-container">
-                        <ol id="leaderboard-list"></ol>
-                    </div>
+                <div class="stat-row">
+                  <span class="stat-label">EP</span>
+                  <div
+                    class="stat-bar-outer"
+                    style="visibility: hidden; height: 0"
+                  ></div>
+                  <span id="ep-value" class="stat-value ep-value">100</span>
                 </div>
+                <div class="stat-row no-bar">
+                  <span class="stat-label">Size</span>
+                  <span id="size-value" class="stat-value">10</span>
+                </div>
+                <div class="stat-row no-bar">
+                  <span class="stat-label" id="power-label">Power</span>
+                  <span id="power-value" class="stat-value">0</span>
+                </div>
+              </div>
             </div>
 
-            <div class="hud-group top-right">
-                <div class="hud-row">
-                    <div class="panel-module transparent-bg">
-                        <h3>RADAR</h3>
-                        <div class="canvas-wrapper">
-                            <canvas id="radar-canvas"></canvas>
-                        </div>
-                    </div>
+            <div class="panel-module transparent-bg">
+              <h3>LEADERBOARD</h3>
+              <div id="hud-leaderboard-container">
+                <ol id="leaderboard-list"></ol>
+              </div>
+            </div>
+          </div>
 
-                    <div class="panel-module transparent-bg">
-                         <h3>MAGAZINE</h3>
-                         <div class="canvas-wrapper">
-                            <canvas id="magazine-canvas"></canvas>
-                        </div>
-                    </div>
+          <div class="hud-group top-right">
+            <div class="hud-row">
+              <div class="panel-module transparent-bg">
+                <h3>RADAR</h3>
+                <div class="canvas-wrapper">
+                  <canvas id="radar-canvas"></canvas>
                 </div>
+              </div>
 
-                <button id="btn-retire" class="ui-button small" style="
-                    background-color: #d32f2f; 
-                    width: auto; 
-                    opacity: 0.8; 
-                    font-size: 10px; 
-                    padding: 2px 10px; 
-                    margin-top: 0;
-                    align-self: flex-end; /* 右寄せ */
-                ">RETIRE</button>
-            </div>
-
-            <div class="hud-group bottom-center">
-                 <div id="bottom-chart-panel" class="panel-module transparent-bg" style="width: 600px; height: 180px;">
-                    <div id="bottom-chart-left" style="width: 85%;">
-                        <h3 class="chart-label-badge">MARKET CHART</h3>
-                        <div class="canvas-wrapper" style="height: 100%">
-                            <canvas id="chart-canvas"></canvas>
-                        </div>
-                    </div>
-                    <div id="ma-selection-panel" style="width: 15%;">
-                        <div class="ma-option">
-                            <input type="checkbox" id="ma-short" name="ma-select" value="short" />
-                            <label for="ma-short" style="color: #00ffff">S</label>
-                        </div>
-                        <div class="ma-option">
-                            <input type="checkbox" id="ma-medium" name="ma-select" value="medium" checked />
-                            <label for="ma-medium" style="color: #ffff00">M</label>
-                        </div>
-                        <div class="ma-option">
-                            <input type="checkbox" id="ma-long" name="ma-select" value="long" />
-                            <label for="ma-long" style="color: #ff00ff">L</label>
-                        </div>
-                    </div>
-                 </div>
-            </div>
-            
-            <div class="hud-group bottom-left">
-                <div id="debug-panel" class="ui-panel" style="display: none; background: rgba(0,0,0,0.5);">
-                    <h4>Stats</h4>
-                    <div id="debug-stats-container"></div>
-                    <hr />
-                    <div id="debug-simulation-container"></div>
+              <div class="panel-module transparent-bg">
+                <h3>MAGAZINE</h3>
+                <div class="canvas-wrapper">
+                  <canvas id="magazine-canvas"></canvas>
                 </div>
+              </div>
             </div>
 
-           <div class="hud-group bottom-right"></div>
-        </div> <div id="mobile-controls-layer">
-            <div id="mc-left-bottom">
-                <button id="mc-btn-fire">FIRE</button>
-            </div>
+            <button
+              id="btn-retire"
+              class="ui-button small"
+              style="
+                background-color: #d32f2f;
+                width: auto;
+                opacity: 0.8;
+                font-size: 10px;
+                padding: 2px 10px;
+                margin-top: 0;
+                align-self: flex-end; /* 右寄せ */
+              "
+            >
+              RETIRE
+            </button>
+          </div>
 
-            <div id="mc-right-bottom">
-                <div id="mc-joystick-area">
-                    <div id="mc-joystick-knob"></div>
+          <div class="hud-group bottom-center">
+            <div
+              id="bottom-chart-panel"
+              class="panel-module transparent-bg"
+              style="width: 600px; height: 180px"
+            >
+              <div id="bottom-chart-left" style="width: 85%">
+                <h3 class="chart-label-badge">MARKET CHART</h3>
+                <div class="canvas-wrapper" style="height: 100%">
+                  <canvas id="chart-canvas"></canvas>
                 </div>
-                <button id="mc-btn-settle" class="mc-btn-entry">SETTLE</button>
-                <button id="mc-btn-short" class="mc-btn-entry">SHORT</button>
-                <button id="mc-btn-long" class="mc-btn-entry">LONG</button>
-
-                <div id="mc-lot-control">
-                    <button id="mc-btn-lot-minus" class="mc-btn-lot">-</button>
-                    <div id="mc-lot-display">10</div> 
-                    <button id="mc-btn-lot-plus" class="mc-btn-lot">+</button>
+              </div>
+              <div id="ma-selection-panel" style="width: 15%">
+                <div class="ma-option">
+                  <input
+                    type="checkbox"
+                    id="ma-short"
+                    name="ma-select"
+                    value="short"
+                  />
+                  <label for="ma-short" style="color: #00ffff">S</label>
                 </div>
+                <div class="ma-option">
+                  <input
+                    type="checkbox"
+                    id="ma-medium"
+                    name="ma-select"
+                    value="medium"
+                    checked
+                  />
+                  <label for="ma-medium" style="color: #ffff00">M</label>
+                </div>
+                <div class="ma-option">
+                  <input
+                    type="checkbox"
+                    id="ma-long"
+                    name="ma-select"
+                    value="long"
+                  />
+                  <label for="ma-long" style="color: #ff00ff">L</label>
+                </div>
+              </div>
             </div>
+          </div>
+
+          <div class="hud-group bottom-left">
+            <div
+              id="debug-panel"
+              class="ui-panel"
+              style="display: none; background: rgba(0, 0, 0, 0.5)"
+            >
+              <h4>Stats</h4>
+              <div id="debug-stats-container"></div>
+              <hr />
+              <div id="debug-simulation-container"></div>
+            </div>
+          </div>
+
+          <div class="hud-group bottom-right"></div>
         </div>
-        <div id="hud-layer" class="full-screen-layer">
-            </div> 
+        <div id="mobile-controls-layer">
+          <div id="mc-left-bottom">
+            <button id="mc-btn-fire">FIRE</button>
+          </div>
+
+          <div id="mc-right-bottom">
+            <div id="mc-joystick-area">
+              <div id="mc-joystick-knob"></div>
+            </div>
+            <button id="mc-btn-settle" class="mc-btn-entry">SETTLE</button>
+            <button id="mc-btn-short" class="mc-btn-entry">SHORT</button>
+            <button id="mc-btn-long" class="mc-btn-entry">LONG</button>
+
+            <div id="mc-lot-control">
+              <button id="mc-btn-lot-minus" class="mc-btn-lot">-</button>
+              <div id="mc-lot-display">10</div>
+              <button id="mc-btn-lot-plus" class="mc-btn-lot">+</button>
+            </div>
+          </div>
+        </div>
+        <div id="hud-layer" class="full-screen-layer"></div>
       </div>
     </div>
-
 
     <div id="screen-gameover" class="screen">
       <div class="screen-content">
@@ -356,7 +399,6 @@
         <p>PCブラウザからアクセスしてください。</p>
       </div>
     </div>
-
 
     <script
       src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"

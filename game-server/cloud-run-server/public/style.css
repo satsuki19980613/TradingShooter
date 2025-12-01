@@ -140,7 +140,8 @@ canvas { display: block; }
     display: flex;
     flex-direction: row;
     gap: 10px; /* パネル間の隙間 */
-    align-items: flex-start;
+    /* align-items: flex-start; */
+    bottom: -4px;
 }
 
 /* ▼▼▼ 修正: 右上パネル（レーダー・マガジン）のサイズ調整 ▼▼▼ */
@@ -248,16 +249,28 @@ body.is-mobile #mobile-controls-layer { display: block; }
     background: rgba(255, 200, 0, 0.2); border: 2px solid #ffcc00;
     color: #ffcc00; font-size: 10px; font-weight: bold;
 }
-#mc-btn-long { bottom: 20px; right: 120px; }
-#mc-btn-short { bottom: 80px; right: 90px; }
+#mc-btn-long {bottom: 30px;right: 985px;}
+#mc-btn-short {bottom: 95px;right: 1005px;}
 #mc-btn-settle {
-    position: absolute; bottom: 120px; right: 20px; width: 50px; height: 50px;
-    border-radius: 50%; background: rgba(0, 255, 255, 0.2);
-    border: 2px solid #00ffff; color: #00ffff; font-size: 10px; font-weight: bold;
+    position: absolute;
+    bottom: 120px;
+    right: 1062px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(0, 255, 255, 0.2);
+    border: 2px solid #00ffff;
+    color: #00ffff;
+    font-size: 10px;
+    font-weight: bold;
 }
 #mc-lot-control {
-    position: absolute; bottom: -10px; right: 220px;
-    display: flex; gap: 5px; align-items: center;
+    position: absolute;
+    bottom: -10px;
+    right: 1000px;
+    display: flex;
+    gap: 5px;
+    align-items: center;
 }
 .mc-btn-lot {
     width: 35px; height: 35px; border-radius: 50%;
@@ -369,11 +382,12 @@ body.is-mobile #mobile-controls-layer { display: block; }
     .top-right {
         flex-direction: row;
         gap: 5px;
+        bottm: -32;
     }
-    .top-right .panel-module { width: auto; }
+    .top-right .panel-module {width: auto;bottom: -4px;}
 
     #hud-leaderboard-container { display: none; }
 
-    #mc-left-bottom { transform: scale(0.8); bottom: 10px; left: 10px; }
+    #mc-left-bottom {transform: scale(0.8);bottom: 40px;left: 10px;}
     #mc-right-bottom { transform: scale(0.8); bottom: 10px; right: 10px; }
 }
