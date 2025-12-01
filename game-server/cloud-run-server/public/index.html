@@ -193,216 +193,112 @@
       </div>
     </div>
     <div id="screen-game" class="screen">
-      <div id="cockpit-container">
-        <div id="panel-left" class="cockpit-panel side-panel">
-          <div class="panel-module">
-            <h3>STATUS</h3>
-            <div id="hud-status-area">
-              <div class="stat-row">
-                <span class="stat-label">HP</span>
-                <div class="stat-bar-outer">
-                  <div id="hp-bar-inner" class="stat-bar hp"></div>
-                </div>
-                <span id="hp-value" class="stat-value">100</span>
-              </div>
-              <div class="stat-row">
-                <span class="stat-label">EP</span>
-                <div
-                  class="stat-bar-outer"
-                  style="visibility: hidden; height: 0"
-                ></div>
-                <span id="ep-value" class="stat-value ep-value">100</span>
-              </div>
-              <div class="stat-row no-bar">
-                <span class="stat-label">Size</span>
-                <span id="size-value" class="stat-value">10</span>
-              </div>
-              <div class="stat-row no-bar">
-                <span class="stat-label" id="power-label">Power</span>
-                <span id="power-value" class="stat-value">0</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="panel-module" style="flex-grow: 1; min-height: 200px">
-            <h3>LEADERBOARD</h3>
-            <div id="hud-leaderboard-container">
-              <ol id="leaderboard-list"></ol>
-            </div>
-          </div>
-
-          <div
-            class="panel-module"
-            id="ad-container"
-            style="
-              height: 250px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              background: rgba(0, 0, 0, 0.3);
-            "
-          >
-            <span style="color: #555; font-size: 12px">ADVERTISEMENT AREA</span>
-          </div>
-        </div>
-
-        <div id="panel-center" class="cockpit-panel">
-          <div id="game-field-wrapper">
+      <div id="cockpit-container" class="overlay-layout">
+        
+        <div id="game-field-wrapper" class="full-screen-layer">
             <div id="game-field-container">
               <canvas id="game-field" tabindex="0"></canvas>
-              <canvas
-                id="ui-field"
-                style="
-                  position: absolute;
-                  top: 0;
-                  left: 0;
-                  pointer-events: none;
-                "
-              ></canvas>
+              <canvas id="ui-field" style="position: absolute; top: 0; left: 0; pointer-events: none;"></canvas>
               <div id="obstacle-layer"></div>
             </div>
-          </div>
-
-          <div id="bottom-chart-panel" class="panel-module">
-            <div id="bottom-chart-left">
-              <h3 class="chart-label-badge">MARKET CHART</h3>
-              <div class="canvas-wrapper" style="height: 100%">
-                <canvas id="chart-canvas"></canvas>
-              </div>
-            </div>
-
-            <div id="ma-selection-panel">
-              <h4 class="control-header">MA</h4>
-              <div class="ma-option">
-                <input
-                  type="checkbox"
-                  id="ma-short"
-                  name="ma-select"
-                  value="short"
-                />
-                <label for="ma-short" style="color: #00ffff">S (20)</label>
-              </div>
-              <div class="ma-option">
-                <input
-                  type="checkbox"
-                  id="ma-medium"
-                  name="ma-select"
-                  value="medium"
-                  checked
-                />
-                <label for="ma-medium" style="color: #ffff00">M (50)</label>
-              </div>
-              <div class="ma-option">
-                <input
-                  type="checkbox"
-                  id="ma-long"
-                  name="ma-select"
-                  value="long"
-                />
-                <label for="ma-long" style="color: #ff00ff">L (100)</label>
-              </div>
-            </div>
-
-            <div id="control-area-right">
-              <div class="control-bg-deco"></div>
-
-              <div class="control-content">
-                <h4 class="control-header">SYSTEM CONTROLS</h4>
-
-                <div class="control-row">
-                  <span>MOVE</span>
-                  <div>
-                    <span class="key-cap key-cyan">R</span>
-                    <span class="key-cap key-cyan">D</span>
-                    <span class="key-cap key-cyan">F</span>
-                    <span class="key-cap key-cyan">G</span>
-                  </div>
-                </div>
-
-                <div class="control-row">
-                  <span>SHOT</span>
-                  <span class="key-cap key-red">CLICK</span>
-                </div>
-
-                <div class="control-row">
-                  <span class="key-green-text">LONG (BUY)</span>
-                  <span class="key-cap key-green">A</span>
-                </div>
-
-                <div class="control-row">
-                  <span
-                    style="
-                      color: #ff5252;
-                      font-weight: bold;
-                      text-shadow: 0 0 5px rgba(255, 82, 82, 0.4);
-                    "
-                    >SHORT (SELL)</span
-                  >
-                  <span class="key-cap key-red">Z</span>
-                </div>
-
-                <div class="control-row">
-                  <span style="color: #fff; font-weight: bold;">SETTLE</span>
-                  <span class="key-cap" style="min-width: 60px;">SPACE</span>
-                </div>
-
-                <div class="control-row">
-                  <span>BET</span>
-                  <div>
-                    <span class="key-cap key-gray">E</span>
-                    <span class="sub-text">(UP)</span>
-                    <span class="key-cap key-gray">W</span>
-                    <span class="sub-text">(DWN)</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
+        <div id="hud-layer" class="full-screen-layer">
+            
+            <div class="hud-group top-left">
+                <div class="panel-module transparent-bg">
+                    <h3>STATUS</h3>
+                    <div id="hud-status-area">
+                        <div class="stat-row">
+                            <span class="stat-label">HP</span>
+                            <div class="stat-bar-outer">
+                                <div id="hp-bar-inner" class="stat-bar hp"></div>
+                            </div>
+                            <span id="hp-value" class="stat-value">100</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">EP</span>
+                            <div class="stat-bar-outer" style="visibility: hidden; height: 0"></div>
+                            <span id="ep-value" class="stat-value ep-value">100</span>
+                        </div>
+                        <div class="stat-row no-bar">
+                            <span class="stat-label">Size</span>
+                            <span id="size-value" class="stat-value">10</span>
+                        </div>
+                        <div class="stat-row no-bar">
+                            <span class="stat-label" id="power-label">Power</span>
+                            <span id="power-value" class="stat-value">0</span>
+                        </div>
+                    </div>
+                </div>
 
-        <div id="panel-right" class="cockpit-panel side-panel">
-          <div class="panel-module seamless-module">
-            <h3>RADAR</h3>
-            <div class="canvas-wrapper" style="height: 220px">
-              <canvas id="radar-canvas"></canvas>
+                <div class="panel-module transparent-bg">
+                    <h3>LEADERBOARD</h3>
+                    <div id="hud-leaderboard-container">
+                        <ol id="leaderboard-list"></ol>
+                    </div>
+                </div>
             </div>
-          </div>
 
-          <div class="panel-module seamless-module" style="flex-grow: 1">
-            <h3>MAGAZINE</h3>
-            <div class="canvas-wrapper" style="height: 100%">
-              <canvas id="magazine-canvas"></canvas>
+            <div class="hud-group top-right">
+                
+                <div class="flex-row-wrapper">
+                    <button id="btn-retire" class="ui-button small" style="background-color: #d32f2f; width: auto; height: fit-content; margin: 0 10px 0 0; opacity: 0.9;">RETIRE</button>
+                    
+                    <div class="panel-module transparent-bg">
+                        <h3>RADAR</h3>
+                        <div class="canvas-wrapper" style="height: 180px; width: 180px;">
+                            <canvas id="radar-canvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-module transparent-bg">
+                     <h3>MAGAZINE</h3>
+                     <div class="canvas-wrapper" style="height: 180px; width: 180px;">
+                        <canvas id="magazine-canvas"></canvas>
+                    </div>
+                </div>
             </div>
-          </div>
 
-          <div class="panel-module seamless-module">
-            <button
-              id="btn-retire"
-              class="ui-button small"
-              style="width: 100%; background-color: #d32f2f"
-            >
-              RETIRE
-            </button>
-          </div>
+            <div class="hud-group bottom-right"></div>
+                <button id="btn-retire" class="ui-button small" style="background-color: #d32f2f; width: auto; opacity: 0.8;">RETIRE</button>
+            </div>
 
-          <div
-            id="debug-panel"
-            class="ui-panel"
-            style="
-              position: relative;
-              top: 0;
-              left: 0;
-              width: 100%;
-              display: none;
-            "
-          >
-            <h4>Stats</h4>
-            <div id="debug-stats-container"></div>
-            <hr />
-            <div id="debug-simulation-container"></div>
-          </div>
-        </div>
-      </div>
+            <div class="hud-group bottom-center">
+                 <div id="bottom-chart-panel" class="panel-module transparent-bg" style="width: 600px; height: 180px;">
+                    <div id="bottom-chart-left" style="width: 85%;">
+                        <h3 class="chart-label-badge">MARKET CHART</h3>
+                        <div class="canvas-wrapper" style="height: 100%">
+                            <canvas id="chart-canvas"></canvas>
+                        </div>
+                    </div>
+                    <div id="ma-selection-panel" style="width: 15%;">
+                        <div class="ma-option">
+                            <input type="checkbox" id="ma-short" name="ma-select" value="short" />
+                            <label for="ma-short" style="color: #00ffff">S</label>
+                        </div>
+                        <div class="ma-option">
+                            <input type="checkbox" id="ma-medium" name="ma-select" value="medium" checked />
+                            <label for="ma-medium" style="color: #ffff00">M</label>
+                        </div>
+                        <div class="ma-option">
+                            <input type="checkbox" id="ma-long" name="ma-select" value="long" />
+                            <label for="ma-long" style="color: #ff00ff">L</label>
+                        </div>
+                    </div>
+                 </div>
+            </div>
+            
+            <div class="hud-group bottom-left">
+                <div id="debug-panel" class="ui-panel" style="display: none; background: rgba(0,0,0,0.5);">
+                    <h4>Stats</h4>
+                    <div id="debug-stats-container"></div>
+                    <hr />
+                    <div id="debug-simulation-container"></div>
+                </div>
+            </div>
+
+        </div> </div>
     </div>
     <div id="screen-gameover" class="screen">
       <div class="screen-content">

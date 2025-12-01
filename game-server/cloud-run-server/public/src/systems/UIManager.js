@@ -383,7 +383,7 @@ export class UIManager {
     const stockedBullets = playerState.stockedBullets || [];
     const maxStock = playerState.maxStock || 10;
 
-    const paddingY = 100;
+    const paddingY = 20;
 
     const availableHeight = canvasHeight - paddingY * 2;
     const gap = 4;
@@ -492,24 +492,7 @@ export class UIManager {
     }
 
     ctx.save();
-    ctx.textAlign = "right";
-    ctx.textBaseline = "bottom";
-
-    const countText = stockedBullets.length.toString();
-    const countX = canvasWidth - 10;
-
-    const countY = canvasHeight - 10;
-
-    ctx.font = "italic 900 64px 'Verdana', sans-serif";
-
-    ctx.strokeStyle = "rgba(0, 255, 255, 0.2)";
-    ctx.lineWidth = 2;
-    ctx.strokeText(countText, countX, countY);
-
-    ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
-    ctx.fillText(countText, countX, countY);
-
-    ctx.restore();
+ 
 
     if (stockedBullets.length === maxStock) {
       ctx.save();

@@ -353,8 +353,8 @@ canvas#ui-field {
  * リーダーボード
  * ======================================== */
 #hud-leaderboard-container {
-    flex-grow: 1;
-    overflow-y: auto;
+    max-height: 200px; /* 最大高さを指定 */
+    overflow-y: auto;  /* あふれたらスクロール */
 }
 #leaderboard-list {
     list-style: none;
@@ -680,4 +680,150 @@ canvas#ui-field {
 #panel-right .panel-module:nth-child(2) {
     min-height: 250px; /* マガジンが最低限きれいに見える高さ */
 }
+/* game-server/cloud-run-server/public/style.css */
 
+/* --- 既存の #cockpit-container のスタイルを上書き --- */
+#cockpit-container.overlay-layout {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    padding: 0;
+    margin: 0;
+    background-color: #000;
+    overflow: hidden;
+    display: block; /* Flexboxを解除 */
+}
+
+/* 全画面レイヤー */
+.full-screen-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* ゲーム画面ラッパー */
+#game-field-wrapper {
+    z-index: 1; /* 最背面 */
+    background: #000;
+    border: none;
+    box-shadow: none;
+}
+
+#game-field-container {
+    width: 100%;
+    height: 100%;
+}
+
+/* HUDレイヤー */
+#hud-layer {
+    z-index: 10; /* ゲーム画面より手前 */
+    pointer-events: none; /* ここが重要: UIのない場所はクリックが貫通してゲーム操作できるようにする */
+}
+
+/* 各HUDグループの配置 */
+.hud-group {
+    position: absolute;
+    pointer-events: auto;
+    padding: 15px;
+    display: flex;        /* Flexboxを有効化 */
+    flex-direction: column; /* 縦並びにする */
+    gap: 10px;            /* パネル間の隙間を統一 */
+}
+
+.top-left {
+    top: 0;
+    left: 0;
+    width: 260px; /* 少し幅を確保 */
+}
+
+.top-right {
+    top: 0;
+    right: 0;
+    width: 200px; /* レーダーとマガジンの幅に合わせる */
+    align-items: flex-end; /* 右寄せ */
+}
+.bottom-right {
+    bottom: 0;
+    right: 0;
+    /* フレックスボックスで右寄せ・下寄せにする */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end; /* 右端に寄せる */
+    justify-content: flex-end;
+    padding: 15px; /* 画面端からの余白 */
+    pointer-events: none; /* グループ自体はクリック透過 */
+}
+.bottom-right button {
+    pointer-events: auto;
+}
+
+.bottom-center {
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.bottom-left {
+    bottom: 0;
+    left: 0;
+}
+/* 半透明パネルスタイル (背景を透過させる) */
+.panel-module.transparent-bg {
+    background: rgba(5, 15, 25, 0.7); /* 少し濃い目にして視認性確保 */
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(0, 255, 255, 0.2);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    width: 100%; /* 親(.hud-group)の幅いっぱいに広げる */
+    box-sizing: border-box;
+}
+
+/* チャートパネルの調整 */
+#bottom-chart-panel {
+    display: flex;
+    flex-direction: row;
+    /* absolute配置は .hud-group で制御するため削除 */
+}
+
+#bottom-chart-left {
+    border-right: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+#ma-selection-panel {
+    background: transparent;
+    padding-left: 10px;
+}
+
+/* 既存の不要になったスタイルへの対応 */
+.cockpit-panel, .side-panel, #panel-left, #panel-center, #panel-right {
+    display: none; /* 念のため古いIDが残っていても消す */
+}
+
+/* リーダーボードの微調整 */
+#leaderboard-list {
+    font-size: 12px;
+}
+.leaderboard-row {
+    padding: 5px 8px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.flex-row-wrapper {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start; /* 上揃え */
+    justify-content: flex-end; /* 右寄せ */
+    width: 100%;
+}
+
+/* 右上グループ自体の幅制限を解除または調整 (ボタン分広がるため) */
+.top-right {
+    top: 10px;
+    right: 10px;
+    width: auto; /* 幅固定(200px)を解除して、中身に合わせる */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end; /* 要素全体を右端に寄せる */
+    gap: 10px;
+}

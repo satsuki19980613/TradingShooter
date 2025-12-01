@@ -159,49 +159,51 @@ export class Game {
   resizeCanvas() {
     if (!this.uiManager) return;
 
-    const fieldWrapper = document.getElementById("game-field-wrapper");
+    // ★変更: 画面全体を基準にする
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
     const fieldContainer = document.getElementById("game-field-container");
+    if (fieldContainer) {
+      fieldContainer.style.width = `${width}px`;
+      fieldContainer.style.height = `${height}px`;
 
-    if (fieldWrapper && fieldContainer) {
-      const rect = fieldWrapper.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) {
-          fieldContainer.style.width = `${rect.width}px`;
-          fieldContainer.style.height = `${rect.height}px`;
+      this.gameCanvas.width = width;
+      this.gameCanvas.height = height;
 
-          this.gameCanvas.width = rect.width;
-          this.gameCanvas.height = rect.height;
-          
-          if (this.uiCanvas) {
-            this.uiCanvas.width = rect.width;
-            this.uiCanvas.height = rect.height;
-          }
+      if (this.uiCanvas) {
+        this.uiCanvas.width = width;
+        this.uiCanvas.height = height;
       }
     }
 
+    // チャートのリサイズ (親要素のサイズに追従)
     if (this.chartCanvas && this.chartCanvas.parentElement) {
       const w = this.chartCanvas.parentElement.clientWidth;
       const h = this.chartCanvas.parentElement.clientHeight;
       if (w > 0 && h > 0) {
-          this.chartCanvas.width = w;
-          this.chartCanvas.height = h;
+        this.chartCanvas.width = w;
+        this.chartCanvas.height = h;
       }
     }
 
+    // レーダーのリサイズ
     if (this.radarCanvas && this.radarCanvas.parentElement) {
       const w = this.radarCanvas.parentElement.clientWidth;
       const h = this.radarCanvas.parentElement.clientHeight;
       if (w > 0 && h > 0) {
-          this.radarCanvas.width = w;
-          this.radarCanvas.height = h;
+        this.radarCanvas.width = w;
+        this.radarCanvas.height = h;
       }
     }
 
+    // マガジンのリサイズ
     if (this.magazineCanvas && this.magazineCanvas.parentElement) {
       const w = this.magazineCanvas.parentElement.clientWidth;
       const h = this.magazineCanvas.parentElement.clientHeight;
       if (w > 0 && h > 0) {
-          this.magazineCanvas.width = w;
-          this.magazineCanvas.height = h;
+        this.magazineCanvas.width = w;
+        this.magazineCanvas.height = h;
       }
     }
   }
@@ -254,7 +256,7 @@ export class Game {
   renderLoop() {
     this.renderLoopId = requestAnimationFrame(this.renderLoop.bind(this));
     if (this.gameCanvas.width === 0 || this.chartCanvas.width === 0) {
-        this.resizeCanvas();
+      this.resizeCanvas();
     }
     this.particles = this.particles.filter((p) => {
       p.update();
