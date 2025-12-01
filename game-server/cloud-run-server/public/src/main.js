@@ -29,6 +29,7 @@ window.addEventListener("load", () => {
     bgVideo.muted = true;
     bgVideo.volume = 0; 
   }
+
   document.querySelectorAll('input[name="ma-select"]').forEach(checkbox => {
       checkbox.addEventListener('change', (e) => {
           if (game && game.trading) {
