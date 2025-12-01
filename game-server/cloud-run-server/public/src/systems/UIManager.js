@@ -804,12 +804,10 @@ export class UIManager {
 
   isMobileDevice() {
     const ua = navigator.userAgent;
+    // スマホ・タブレットのキーワードが含まれている場合のみ true にする
     const isStandardMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
-    // タッチ可能なデバイス(MaxTouchPoints > 0) または 画面が明らかに小さい場合
-    const isTouchDevice = (navigator.maxTouchPoints && navigator.maxTouchPoints > 0);
-    const isSmallScreen = window.innerWidth <= 900 || window.innerHeight <= 600;
     
-    // PCのデベロッパーツールで確認する場合も考慮し、isTouchDeviceを含める
-    return isStandardMobile || isTouchDevice || isSmallScreen;
+    // PCでの誤判定を防ぐため、画面サイズやタッチ判定は削除しました
+    return isStandardMobile;
   }
 }

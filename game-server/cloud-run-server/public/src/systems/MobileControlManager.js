@@ -36,7 +36,6 @@ export class MobileControlManager {
     console.log("Mobile Controls Setup Started: Force Display");
 
     // ★重要: HTML側の style="display: none" を直接上書きして消す
-    this.mobileControlsLayer.style.display = ""; 
     
     // ★重要: CSSで制御するためのクラスをbodyに付与
     document.body.classList.add("is-mobile");
