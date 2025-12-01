@@ -244,7 +244,7 @@
                 <div class="flex-row-wrapper">
                     <button id="btn-retire" class="ui-button small" style="background-color: #d32f2f; width: auto; height: fit-content; margin: 0 10px 0 0; opacity: 0.9;">RETIRE</button>
                     
-                    <div class="panel-module transparent-bg">
+                    <div class="panel-module transparent-bg" style="width: auto;">
                         <h3>RADAR</h3>
                         <div class="canvas-wrapper" style="height: 180px; width: 180px;">
                             <canvas id="radar-canvas"></canvas>
@@ -252,16 +252,12 @@
                     </div>
                 </div>
 
-                <div class="panel-module transparent-bg">
+                <div class="panel-module transparent-bg" style="width: fit-content; align-self: flex-end;">
                      <h3>MAGAZINE</h3>
                      <div class="canvas-wrapper" style="height: 180px; width: 180px;">
                         <canvas id="magazine-canvas"></canvas>
                     </div>
                 </div>
-            </div>
-
-            <div class="hud-group bottom-right"></div>
-                <button id="btn-retire" class="ui-button small" style="background-color: #d32f2f; width: auto; opacity: 0.8;">RETIRE</button>
             </div>
 
             <div class="hud-group bottom-center">
@@ -297,6 +293,8 @@
                     <div id="debug-simulation-container"></div>
                 </div>
             </div>
+
+            <div class="hud-group bottom-right"></div>
 
         </div> </div>
     </div>

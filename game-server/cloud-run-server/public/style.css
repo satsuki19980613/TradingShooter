@@ -739,10 +739,16 @@ canvas#ui-field {
 }
 
 .top-right {
-    top: 0;
-    right: 0;
-    width: 200px; /* レーダーとマガジンの幅に合わせる */
-    align-items: flex-end; /* 右寄せ */
+    top: 10px;
+    right: 10px;
+    width: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end; /* 子要素を右端に寄せる */
+    gap: 10px;
+}
+.top-right .panel-module {
+    width: fit-content; /* これにより、上段のボタン分の幅に引きずられず、Canvas幅にフィットします */
 }
 .bottom-right {
     bottom: 0;
@@ -781,9 +787,9 @@ canvas#ui-field {
 
 /* チャートパネルの調整 */
 #bottom-chart-panel {
+    pointer-events: auto; /* チャートの操作を有効化 */
     display: flex;
     flex-direction: row;
-    /* absolute配置は .hud-group で制御するため削除 */
 }
 
 #bottom-chart-left {
@@ -817,13 +823,3 @@ canvas#ui-field {
     width: 100%;
 }
 
-/* 右上グループ自体の幅制限を解除または調整 (ボタン分広がるため) */
-.top-right {
-    top: 10px;
-    right: 10px;
-    width: auto; /* 幅固定(200px)を解除して、中身に合わせる */
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end; /* 要素全体を右端に寄せる */
-    gap: 10px;
-}
