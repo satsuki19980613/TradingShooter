@@ -1,35 +1,24 @@
 export class ScreenScaler {
   constructor() {
-    this.containerId = "cockpit-container";
-    // アスペクト比の固定を廃止します
-    this.targetAspect = null; 
+    // 設定不要
   }
 
   init() {
-    window.addEventListener("resize", () => this.applyScale());
-    this.applyScale();
+    window.addEventListener("resize", () => this.resizeCanvas());
+    // 初期化時にも実行
+    this.resizeCanvas();
   }
 
-  applyScale() {
-    const gameContainer = document.getElementById(this.containerId);
-    if (!gameContainer) return;
-
-    // 画面サイズいっぱいを使う設定に変更
-    const windowWidth = window.innerWidth;
-    const windowHeight = window.innerHeight;
-
-    gameContainer.style.width = `${windowWidth}px`;
-    gameContainer.style.height = `${windowHeight}px`;
+  resizeCanvas() {
+    // ゲーム画面（Canvas）だけは常にウィンドウサイズに合わせる
+    const container = document.getElementById("game-field-container");
+    if (container) {
+      container.style.width = "100vw";
+      container.style.height = "100vh";
+    }
     
-    // 位置調整（念のため）
-    gameContainer.style.position = 'absolute';
-    gameContainer.style.top = '0';
-    gameContainer.style.left = '0';
-    gameContainer.style.transform = 'none'; // 中央寄せ解除
-    
-    // 背景設定
-    document.body.style.backgroundColor = "#000";
-    document.body.style.margin = "0";
-    document.body.style.overflow = "hidden";
+    // ★重要: UIのスケール操作（transform）は一切行わない
+    // CSSのメディアクエリに任せるため、ここでの処理は削除
+    document.documentElement.style.removeProperty('--ui-scale');
   }
 }

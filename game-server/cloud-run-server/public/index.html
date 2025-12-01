@@ -293,13 +293,14 @@
               class="panel-module transparent-bg"
               style="width: 600px; height: 180px"
             >
-              <div id="bottom-chart-left" style="width: 85%">
+              <div id="bottom-chart-left">
                 <h3 class="chart-label-badge">MARKET CHART</h3>
                 <div class="canvas-wrapper" style="height: 100%">
                   <canvas id="chart-canvas"></canvas>
                 </div>
               </div>
-              <div id="ma-selection-panel" style="width: 15%">
+
+              <div id="ma-selection-panel">
                 <div class="ma-option">
                   <input
                     type="checkbox"
@@ -307,7 +308,7 @@
                     name="ma-select"
                     value="short"
                   />
-                  <label for="ma-short" style="color: #00ffff">S</label>
+                  <label for="ma-short">S</label>
                 </div>
                 <div class="ma-option">
                   <input
@@ -317,7 +318,7 @@
                     value="medium"
                     checked
                   />
-                  <label for="ma-medium" style="color: #ffff00">M</label>
+                  <label for="ma-medium">M</label>
                 </div>
                 <div class="ma-option">
                   <input
@@ -326,12 +327,11 @@
                     name="ma-select"
                     value="long"
                   />
-                  <label for="ma-long" style="color: #ff00ff">L</label>
+                  <label for="ma-long">L</label>
                 </div>
               </div>
             </div>
           </div>
-
           <div class="hud-group bottom-left">
             <div
               id="debug-panel"
@@ -347,6 +347,7 @@
 
           <div class="hud-group bottom-right"></div>
         </div>
+       
         <div id="mobile-controls-layer">
           <div id="mc-left-bottom">
             <button id="mc-btn-fire">FIRE</button>

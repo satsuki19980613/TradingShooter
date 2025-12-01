@@ -1,7 +1,6 @@
 /* ========================================
  * 0. ユーティリティ (最優先)
  * ======================================== */
-/* 安全のため、非表示設定を最上部に配置 */
 .hidden { display: none !important; }
 
 /* ========================================
@@ -10,13 +9,15 @@
 body {
     font-family: 'Verdana', 'Noto Sans JP', sans-serif;
     background-color: #000;
-    color: #f0f0f0;
+    /* ★修正: 文字色が透明になっていたのを修正 (00削除) */
+    color: #f0f0f0; 
     overflow: hidden;
     margin: 0;
     padding: 0;
     width: 100vw;
     height: 100vh;
-    height: 100dvh; /* モバイルブラウザのアドレスバー対策 */
+    height: 100dvh;
+    box-sizing: border-box;
     user-select: none;
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
@@ -34,42 +35,51 @@ body {
  * ======================================== */
 .full-screen-layer {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
 }
 
 #game-field-wrapper, #game-field-container {
-    width: 100%;
-    height: 100%;
-    z-index: 1;
+    width: 100%; height: 100%;
+    z-index: 1; /* 背景は1 */
 }
 
 canvas { display: block; }
 
 #obstacle-layer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 10;
-    pointer-events: none;
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 10; pointer-events: none;
 }
 
 /* ========================================
- * 3. UI/HUD レイヤー (前面オーバーレイ)
+ * 3. UIコンテナ (前面表示)
  * ======================================== */
-#hud-layer {
-    z-index: 20;
+#ui-fixed-container {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
     pointer-events: none;
+    transform: none !important;
+    
+    /* ★重要: ここでZ-Indexを指定して最前面に持ってくる */
+    z-index: 100;
 }
 
-/* HUDグループ配置 */
+#ui-fixed-container > * {
+    pointer-events: auto;
+}
+
+#hud-layer {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    /* ★念のためここにもZ-Indexを指定 */
+    z-index: 20; 
+}
+
+/* ========================================
+ * 4. HUDグループ配置 (PCレイアウト: デフォルト)
+ * ======================================== */
 .hud-group {
     position: absolute;
-    pointer-events: auto;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -77,33 +87,117 @@ canvas { display: block; }
     transition: transform 0.2s ease;
 }
 
-.top-left {
-    top: 0; left: 0;
+/* PC: 左上 (ステータス) */
+.hud-group.top-left {
+    top: 20px;
+    left: 20px;
     width: 260px;
     transform-origin: top left;
 }
 
-.top-right {
-    top: 0; right: 0;
-    align-items: flex-end;
+/* PC: 右上 (レーダー・マガジン) */
+.hud-group.top-right {
+    top: 20px;
+    right: 20px;
     transform-origin: top right;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 10px;
 }
 
-.bottom-center {
-    bottom: 10px; left: 50%;
-    transform: translateX(-50%);
-    width: 600px;
-    max-width: 95vw;
-    transform-origin: bottom center;
-}
-
-.bottom-left {
+/* 左下 (デバッグパネル) */
+.hud-group.bottom-left {
     bottom: 0; left: 0;
     transform-origin: bottom left;
 }
 
 /* ========================================
- * 4. UIパネル・モジュール共通デザイン
+ * 5. チャートパネル (PCレイアウト)
+ * ======================================== */
+#bottom-chart-panel {
+    pointer-events: auto;
+    position: absolute !important;
+    
+    /* PC配置: 左下 */
+    bottom: 20px !important;
+    left: 20px !important;
+    right: auto !important;
+    transform: none !important;
+    
+    /* PCサイズ: 大きく */
+    width: 500px !important;
+    height: auto !important;
+    aspect-ratio: 7 / 3;
+    
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+}
+
+#bottom-chart-left {
+    width: 100% !important;
+    height: 100% !important;
+    border: none !important;
+}
+
+.chart-label-badge { display: none !important; }
+
+/* MA選択ボタン */
+#ma-selection-panel {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: auto !important;
+    height: auto !important;
+    background: transparent !important;
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 6px !important;
+    padding: 2px 0 0 2px !important;
+    z-index: 15;
+}
+
+/* MAボタンデザイン */
+.ma-option { margin: 0 !important; display: flex; align-items: center; }
+.ma-option input[type="checkbox"] { display: none; }
+
+.ma-option label {
+    display: inline-block;
+    padding: 2px 8px;
+    background: rgba(30, 30, 30, 0.8);
+    border: 1px solid #555;
+    border-radius: 4px;
+    color: #777;
+    font-size: 10px;
+    font-family: 'Roboto Mono', monospace;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    text-align: center;
+    min-width: 15px;
+}
+
+.ma-option label:hover {
+    background: rgba(50, 50, 50, 0.8);
+    border-color: #777;
+    color: #aaa;
+}
+
+.ma-option input:checked + label {
+    background: rgba(0, 0, 0, 0.6);
+    font-weight: bold;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+    border-color: currentColor;
+}
+.ma-option input#ma-short:checked + label { color: #00ffff; text-shadow: 0 0 5px #00ffff; }
+.ma-option input#ma-medium:checked + label { color: #ffff00; text-shadow: 0 0 5px #ffff00; }
+.ma-option input#ma-long:checked + label { color: #ff00ff; text-shadow: 0 0 5px #ff00ff; }
+
+
+/* ========================================
+ * 6. UIパネル共通デザイン
  * ======================================== */
 .panel-module {
     background: rgba(5, 15, 25, 0.7);
@@ -112,165 +206,101 @@ canvas { display: block; }
     padding: 10px;
     border-radius: 4px;
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
-    display: flex;
-    flex-direction: column;
-}
-
-.panel-module.transparent-bg {
-    background: rgba(5, 15, 25, 0.6);
+    display: flex; flex-direction: column;
 }
 
 .panel-module h3 {
-    margin: 0 0 8px 0;
-    font-size: 12px;
-    color: #00ffff;
-    border-bottom: 1px solid rgba(0, 255, 255, 0.3);
-    padding-bottom: 4px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
+    margin: 0 0 8px 0; font-size: 12px; color: #00ffff;
+    border-bottom: 1px solid rgba(0, 255, 255, 0.3); padding-bottom: 4px;
+    letter-spacing: 2px; text-transform: uppercase;
 }
 
-.canvas-wrapper {
-    width: 100%;
-    position: relative;
-    background: rgba(0, 0, 0, 0.3);
-}
-.canvas-wrapper canvas { width: 100%; height: 100%; }
-.hud-row {
-    display: flex;
-    flex-direction: row;
-    gap: 10px; /* パネル間の隙間 */
-    /* align-items: flex-start; */
-    bottom: -4px;
-}
-
-/* ▼▼▼ 修正: 右上パネル（レーダー・マガジン）のサイズ調整 ▼▼▼ */
-/* 前回の修正で .top-right > .panel-module ... としていた部分を修正 */
-.top-right .panel-module .canvas-wrapper {
-    width: 120px !important;
-    height: 120px !important;
-}
-.top-right .panel-module h3 {
-    display: none;
-}
-.top-right .canvas-wrapper {
+/* 右上透明化 */
+.hud-group.top-right .panel-module {
     background: transparent !important;
     border: none !important;
-    /* マガジンのサイズ調整 */
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+}
+.hud-group.top-right .panel-module h3 { display: none !important; }
+.hud-group.top-right .canvas-wrapper {
+    background: transparent !important;
+    border: none !important;
     width: 120px !important;
     height: 120px !important;
 }
 
-/* ========================================
- * 5. 各種HUDパーツ詳細
- * ======================================== */
 /* ステータスバー */
-#hud-status-area .stat-row {
-    display: flex; align-items: center; margin-bottom: 8px; font-size: 14px;
-}
-#hud-status-area .stat-label {
-    width: 50px; color: #00ffff; font-weight: bold;
-    text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
-}
-.stat-bar-outer {
-    flex-grow: 1; height: 6px; background-color: rgba(0, 0, 0, 0.5);
-    border: 1px solid #333; margin-right: 8px; padding: 1px;
-}
+#hud-status-area .stat-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 14px; }
+#hud-status-area .stat-label { width: 50px; color: #00ffff; font-weight: bold; text-shadow: 0 0 5px rgba(0, 255, 255, 0.5); }
+.stat-bar-outer { flex-grow: 1; height: 6px; background-color: rgba(0, 0, 0, 0.5); border: 1px solid #333; margin-right: 8px; padding: 1px; }
 .stat-bar { height: 100%; transition: width 0.2s ease-out; }
 .stat-bar.hp { background-color: #00bcd4; box-shadow: 0 0 5px #00bcd4; }
-.stat-value {
-    width: 35px; text-align: right; font-family: 'Roboto Mono', monospace; color: #fff;
-}
+.stat-value { width: 35px; text-align: right; font-family: 'Roboto Mono', monospace; color: #fff; }
 .stat-row.no-bar { justify-content: space-between; }
 
 /* リーダーボード */
 #hud-leaderboard-container { max-height: 150px; overflow-y: auto; }
 #leaderboard-list { list-style: none; margin: 0; padding: 0; font-size: 12px; }
-.leaderboard-row {
-    display: flex; justify-content: space-between; padding: 4px 8px;
-    margin-bottom: 2px; background: rgba(255, 255, 255, 0.05); border-radius: 2px;
-}
-.leaderboard-row.you {
-    background: rgba(0, 188, 212, 0.25); border: 1px solid rgba(0, 188, 212, 0.5);
-}
+.leaderboard-row { display: flex; justify-content: space-between; padding: 4px 8px; margin-bottom: 2px; background: rgba(255, 255, 255, 0.05); border-radius: 2px; }
+.leaderboard-row.you { background: rgba(0, 188, 212, 0.25); border: 1px solid rgba(0, 188, 212, 0.5); }
 .lb-name { color: #ddd; }
 .lb-score { color: #00bcd4; font-weight: bold; font-family: 'Roboto Mono', monospace; }
 
-/* チャートパネル */
-#bottom-chart-panel {
-    height: 160px; padding: 0; flex-direction: row !important; position: relative;
-}
-#bottom-chart-left {
-    flex-grow: 1; position: relative; border-right: 1px solid rgba(0, 255, 255, 0.2);
-}
-#ma-selection-panel {
-    width: 40px; display: flex; flex-direction: column; justify-content: center;
-    padding-left: 8px; background: rgba(0, 0, 0, 0.2);
-}
-.chart-label-badge {
-    position: absolute; top: 0; left: 0; margin: 0;
-    background: rgba(0, 255, 255, 0.1); color: #00ffff; font-size: 10px;
-    padding: 2px 8px; border-bottom-right-radius: 4px;
-}
-.ma-option { font-size: 10px; display: flex; align-items: center; margin-bottom: 5px; color: #fff; }
 
 /* ========================================
- * 6. モバイルコントロール (デフォルト非表示)
+ * 7. コントローラー (PCでは非表示)
  * ======================================== */
 #mobile-controls-layer {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    z-index: 200; pointer-events: none; display: none;
+    /* ★重要: Z-Indexを高く */
+    z-index: 200; 
+    pointer-events: none;
+    display: none !important; /* PCでは非表示 */
 }
-body.is-mobile #mobile-controls-layer { display: block; }
 
-#mc-left-bottom, #mc-right-bottom {
-    pointer-events: auto; position: absolute; bottom: 20px;
-    transform-origin: bottom center;
-}
-#mc-left-bottom { left: 20px; transform-origin: bottom left; }
-#mc-right-bottom { right: 20px; width: 200px; height: 200px; transform-origin: bottom right; }
+#mc-left-bottom, #mc-right-bottom { pointer-events: auto; position: absolute; }
+#mc-left-bottom { left: 40px; bottom: 40px; }
+#mc-right-bottom { right: 40px; bottom: 40px; width: 200px; height: 200px; }
 
 #mc-btn-fire {
     width: 70px; height: 70px; border-radius: 50%;
     background: rgba(255, 50, 50, 0.5); border: 3px solid #ff5252;
     color: white; font-weight: bold;
 }
+
 #mc-joystick-area {
-    position: absolute; bottom: 10px; right: 10px;
+    position: absolute;
+    bottom: 52px; right: 54px;
     width: 100px; height: 100px;
-    background: rgba(0, 100, 255, 0.2); border: 2px solid #00aaff; border-radius: 50%;
+    background: rgba(0, 100, 255, 0.2);
+    border: 2px solid #00aaff;
+    border-radius: 50%;
+    display: flex; justify-content: center; align-items: center;
 }
 #mc-joystick-knob {
     width: 40px; height: 40px; background: rgba(0, 200, 255, 0.8);
     border-radius: 50%; position: relative;
 }
+
 .mc-btn-entry {
     position: absolute; width: 50px; height: 50px; border-radius: 50%;
     background: rgba(255, 200, 0, 0.2); border: 2px solid #ffcc00;
     color: #ffcc00; font-size: 10px; font-weight: bold;
 }
-#mc-btn-long {bottom: 30px;right: 985px;}
-#mc-btn-short {bottom: 95px;right: 1005px;}
+#mc-btn-long { bottom: 104px; right: 846px; }
+#mc-btn-short { bottom: 162px; right: 854px; }
 #mc-btn-settle {
-    position: absolute;
-    bottom: 120px;
-    right: 1062px;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background: rgba(0, 255, 255, 0.2);
-    border: 2px solid #00ffff;
-    color: #00ffff;
-    font-size: 10px;
-    font-weight: bold;
+    position: absolute; bottom: 194px; right: 907px;
+    width: 50px; height: 50px; border-radius: 50%;
+    background: rgba(0, 255, 255, 0.2); border: 2px solid #00ffff;
+    color: #00ffff; font-size: 10px; font-weight: bold;
 }
+
 #mc-lot-control {
-    position: absolute;
-    bottom: -10px;
-    right: 1000px;
-    display: flex;
-    gap: 5px;
-    align-items: center;
+    position: absolute; bottom: 65px; right: 871px;
+    display: flex; gap: 5px; align-items: center;
 }
 .mc-btn-lot {
     width: 35px; height: 35px; border-radius: 50%;
@@ -280,8 +310,9 @@ body.is-mobile #mobile-controls-layer { display: block; }
     background: rgba(0,0,0,0.5); color: white; padding: 2px 6px; border-radius: 4px;
 }
 
+
 /* ========================================
- * 7. スクリーン (ホーム・ゲームオーバー等)
+ * 8. スクリーン & モーダル
  * ======================================== */
 .screen {
     width: 100%; height: 100%;
@@ -300,53 +331,21 @@ body.is-mobile #mobile-controls-layer { display: block; }
     border-radius: 8px;
     text-align: center;
     box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
-    
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
-    
-    min-width: 300px;
-    max-width: 90%;
+    display: flex; flex-direction: column; align-items: center; gap: 20px;
+    min-width: 300px; max-width: 90%;
 }
-
-.screen-content h1 {
-    color: #00ffff;
-    margin: 0 0 20px 0;
-    letter-spacing: 2px;
-}
+.screen-content h1 { color: #00ffff; margin: 0 0 20px 0; letter-spacing: 2px; }
 .screen-content h2 { color: #00ffff; margin: 0; }
 
 .ui-button {
-    font-size: 16px;
-    padding: 12px 30px;
-    border: 1px solid #49a5a5;
-    color: #00ffff;
-    background-color: rgba(0, 20, 30, 0.6);
-    border-radius: 4px;
-    cursor: pointer;
-    text-transform: uppercase;
-    transition: all 0.2s ease;
-    
-    width: 260px; 
-    max-width: 100%;
-    margin: 0;
+    font-size: 16px; padding: 12px 30px;
+    border: 1px solid #49a5a5; color: #00ffff; background-color: rgba(0, 20, 30, 0.6);
+    border-radius: 4px; cursor: pointer; text-transform: uppercase; transition: all 0.2s ease;
+    width: 260px; max-width: 100%; margin: 0;
 }
+.ui-button:hover { background-color: rgba(0, 255, 255, 0.2); color: #fff; box-shadow: 0 0 15px rgba(0, 255, 255, 0.4); }
+.ui-button.primary { background-color: rgba(0, 255, 255, 0.3); border-color: #00ffff; color: #fff; box-shadow: 0 0 20px rgba(0, 255, 255, 0.3); }
 
-.ui-button:hover {
-    background-color: rgba(0, 255, 255, 0.2);
-    color: #fff;
-    box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
-}
-
-.ui-button.primary {
-    background-color: rgba(0, 255, 255, 0.3);
-    border-color: #00ffff;
-    color: #fff;
-    box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
-}
-
-/* モーダル */
 .ui-modal {
     position: absolute; width: 100%; height: 100%;
     background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center;
@@ -358,36 +357,60 @@ body.is-mobile #mobile-controls-layer { display: block; }
     padding: 30px; border-radius: 8px; width: 350px; text-align: center;
 }
 
-/* デバッグパネル */
 #debug-panel {
     background: rgba(0,0,0,0.8); padding: 10px; border: 1px solid #555;
     font-family: monospace; font-size: 11px; display: none;
 }
 
-/* ========================================
- * 8. モバイル・小画面用レスポンシブ調整
- * ======================================== */
-@media (max-height: 600px), (max-width: 900px) {
-    .hud-group { transform: scale(0.7); width: auto !important; }
+
+/* =========================================================
+   9. スマホ・タブレット用レイアウト (レスポンシブ)
+   - 画面幅が1024px以下、またはタッチデバイスの場合に適用
+   ========================================================= */
+@media (max-width: 1024px), (pointer: coarse) {
+
+    /* モバイルコントローラーを表示 */
+    #mobile-controls-layer {
+        display: block !important;
+    }
+
+    /* ジョイスティック配置 (サイズ調整) */
+    #mc-left-bottom {
+        position: absolute !important;
+        left: 20px; bottom: 30px;
+        transform: scale(0.8); transform-origin: bottom left;
+    }
+    #mc-right-bottom {
+        position: absolute !important;
+        right: 20px; bottom: 30px;
+        transform: scale(0.8); transform-origin: bottom right;
+    }
     
-    .bottom-center {
-        transform: translateX(-50%) scale(0.7);
-        bottom: 0px;
-        width: 80vw;
-    }
+    /* チャート: スマホ用に中央下配置に変更 */
     #bottom-chart-panel {
-        height: 120px;
+        width: 376px !important;
+        height: 120px !important;
+        
+        /* 中央寄せ配置 */
+        left: 50% !important;
+        bottom: calc(10px + env(safe-area-inset-bottom, 20px)) !important;
+        transform: translateX(-50%) !important;
+        
+        background: transparent !important;
     }
-
-    .top-right {
-        flex-direction: row;
-        gap: 5px;
-        bottm: -32;
+    
+    /* ステータス類: 少し小さく */
+    .hud-group.top-left {
+        top: 10px; left: 10px;
+        transform: scale(0.8); transform-origin: top left;
     }
-    .top-right .panel-module {width: auto;bottom: -4px;}
-
-    #hud-leaderboard-container { display: none; }
-
-    #mc-left-bottom {transform: scale(0.8);bottom: 40px;left: 10px;}
-    #mc-right-bottom { transform: scale(0.8); bottom: 10px; right: 10px; }
+    .hud-group.top-right {
+        top: 10px; right: 10px;
+        transform: scale(0.8); transform-origin: top right;
+    }
+    
+    /* モバイルではリーダーボードを隠す */
+    #hud-leaderboard-container {
+        display: none !important;
+    }
 }

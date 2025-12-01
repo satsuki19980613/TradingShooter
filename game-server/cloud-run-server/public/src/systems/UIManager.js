@@ -263,7 +263,11 @@ export class UIManager {
   showGameOverScreen(score) {
     this.gameoverScoreEl.textContent = Math.round(score);
     this.gameoverMessageEl.textContent = "スコアを保存中...";
-    this.showScreen("gameover");
+    
+    // showScreen("gameover") を使うと game画面 が消えるため、直接クラスを操作する
+    if (this.screens.gameover) {
+      this.screens.gameover.classList.add("active");
+    }
   }
 
   syncHUD(playerState, tradeState) {
@@ -483,27 +487,22 @@ export class UIManager {
 
     const centerX = canvasWidth / 2;
     const centerY = canvasHeight / 2;
-    const viewRadiusWorld = 1500; // レーダーの表示範囲
+    const viewRadiusWorld = 1500;
     const scale = radarRadius / viewRadiusWorld;
 
     ctx.save();
 
-    // 1. 背景 (半透明の円)
+    // 1. クリップ領域の設定（円形）
+    // 背景の塗りつぶし(fill)は行わず、クリップのみ適用して範囲外を描画しないようにする
     ctx.beginPath();
     ctx.arc(centerX, centerY, radarRadius, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(5, 15, 25, 0.85)"; // 濃い目の背景
-    ctx.fill();
-
-    // ★外枠の stroke() を削除しました
-
-    // 2. クリップ (ここから先は円の内側のみ描画)
     ctx.clip();
 
-    // 3. 内部グリッド (前のデザインに戻す)
-    ctx.strokeStyle = "rgba(0, 255, 255, 0.2)"; // 薄いシアン
+    // 2. 内部グリッド
+    ctx.strokeStyle = "rgba(0, 255, 255, 0.2)";
     ctx.lineWidth = 1;
 
-    // 同心円グリッド (33%, 66%)
+    // 同心円グリッド
     ctx.beginPath();
     ctx.arc(centerX, centerY, radarRadius * 0.33, 0, Math.PI * 2);
     ctx.stroke();
@@ -520,11 +519,13 @@ export class UIManager {
     ctx.lineTo(centerX, centerY + radarRadius);
     ctx.stroke();
 
-    // 4. エンティティ描画
+    // 3. エンティティ描画
     if (!playerState) {
       ctx.restore();
       return;
     }
+    
+    // ... (以下、エンティティ描画ロジックは変更なし) ...
 
     const getRadarPos = (wx, wy) => {
       const dx = wx - playerState.x;
@@ -540,7 +541,6 @@ export class UIManager {
       ctx.fillStyle = "#f44336";
       enemiesState.forEach((enemy) => {
         const pos = getRadarPos(enemy.x, enemy.y);
-        // レーダー範囲内かチェック
         const distSq = (pos.x - centerX) ** 2 + (pos.y - centerY) ** 2;
         if (distSq <= radarRadius ** 2) {
           ctx.beginPath();
@@ -571,7 +571,7 @@ export class UIManager {
     ctx.beginPath();
     ctx.arc(centerX, centerY, 4, 0, Math.PI * 2);
     ctx.fill();
-    ctx.shadowBlur = 0; // 他への影響を防ぐためリセット
+    ctx.shadowBlur = 0;
 
     ctx.restore();
   }
@@ -769,11 +769,8 @@ export class UIManager {
 
   isMobileDevice() {
     const ua = navigator.userAgent;
-    // スマホ・タブレットのキーワードが含まれている場合のみ true にする
     const isStandardMobile =
       /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
-
-    // PCでの誤判定を防ぐため、画面サイズやタッチ判定は削除しました
     return isStandardMobile;
   }
 }
