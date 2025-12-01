@@ -159,25 +159,31 @@ export class Game {
   resizeCanvas() {
     if (!this.uiManager) return;
 
-    // ★変更: 画面全体を基準にする
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    // ★修正: window.innerWidth ではなく、親コンテナ(#cockpit-container)のサイズを取得する
+    const container = document.getElementById("cockpit-container");
+    if (!container) return;
 
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+
+    // ゲームフィールドのコンテナサイズを更新
     const fieldContainer = document.getElementById("game-field-container");
     if (fieldContainer) {
       fieldContainer.style.width = `${width}px`;
       fieldContainer.style.height = `${height}px`;
 
+      // ゲーム用キャンバスの解像度を更新
       this.gameCanvas.width = width;
       this.gameCanvas.height = height;
 
+      // UI用キャンバスの解像度を更新
       if (this.uiCanvas) {
         this.uiCanvas.width = width;
         this.uiCanvas.height = height;
       }
     }
 
-    // チャートのリサイズ (親要素のサイズに追従)
+    // チャートなどのサブキャンバスのリサイズ（既存コードのまま）
     if (this.chartCanvas && this.chartCanvas.parentElement) {
       const w = this.chartCanvas.parentElement.clientWidth;
       const h = this.chartCanvas.parentElement.clientHeight;
@@ -187,7 +193,6 @@ export class Game {
       }
     }
 
-    // レーダーのリサイズ
     if (this.radarCanvas && this.radarCanvas.parentElement) {
       const w = this.radarCanvas.parentElement.clientWidth;
       const h = this.radarCanvas.parentElement.clientHeight;
@@ -197,7 +202,6 @@ export class Game {
       }
     }
 
-    // マガジンのリサイズ
     if (this.magazineCanvas && this.magazineCanvas.parentElement) {
       const w = this.magazineCanvas.parentElement.clientWidth;
       const h = this.magazineCanvas.parentElement.clientHeight;

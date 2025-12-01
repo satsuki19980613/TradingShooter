@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>TradingShooter Mobile</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="mobile-mode">
+    <video id="bg-video" muted loop playsinline style="display:none;"></video>
+
+    <div id="game-container">
+        <canvas id="game-field"></canvas>
+        <div id="obstacle-layer"></div>
+        <canvas id="ui-field" style="pointer-events: none;"></canvas>
+    </div>
+
+    <div id="ui-layer">
+        <div class="hud-panel hud-top-left">
+            <div class="status-row"><span>HP</span><div class="bar-frame"><div id="hp-bar-inner" class="bar-fill hp-fill" style="width: 100%;"></div></div><span id="hp-value">100</span></div>
+            <div class="status-row"><span>EP</span><div class="bar-frame"><div id="ep-bar-inner" class="bar-fill ep-fill" style="width: 100%;"></div></div><span id="ep-value">100</span></div>
+            <div class="status-row"><span id="size-value" style="margin-right:5px;">Size:10</span> <span id="power-label">Pow:</span><span id="power-value">0</span></div>
+            <div id="leaderboard-box"><ol id="leaderboard-list" style="padding-left:20px; margin:0;"></ol></div>
+        </div>
+
+        <div class="hud-panel hud-top-right">
+            <div class="radar-wrapper"><canvas id="radar-canvas"></canvas></div>
+            <div class="magazine-wrapper"><canvas id="magazine-canvas"></canvas></div>
+            <button id="btn-retire" class="ui-button" style="padding:5px; font-size:10px; background:#d32f2f; width:auto;">Retire</button>
+        </div>
+
+        <div class="hud-panel hud-bottom-center">
+            <canvas id="chart-canvas"></canvas>
+        </div>
+
+        <div class="hud-panel hud-bottom-left">
+            <div class="bet-circle-container">
+                <div class="bet-display">
+                    <span class="bet-label">BET</span>
+                    <span id="bet-amount-display" class="bet-value">10</span>
+                </div>
+                <div class="bet-buttons">
+                    <button id="btn-bet-up" class="round-btn small">＋</button>
+                    <button id="btn-bet-down" class="round-btn small">－</button>
+                </div>
+            </div>
+
+            <div id="btn-shoot" class="fire-btn-large">FIRE</div>
+        </div>
+
+        <div class="hud-panel hud-bottom-right">
+            <div class="stick-wrapper">
+                
+                <div id="btn-short" class="round-btn trade-short">SHORT</div>
+
+                <div class="joystick-base">
+                    <div class="stick-knob"></div>
+                    
+                    <div id="btn-up" class="stick-zone up"></div>
+                    <div id="btn-down" class="stick-zone down"></div>
+                    <div id="btn-left" class="stick-zone left"></div>
+                    <div id="btn-right" class="stick-zone right"></div>
+                </div>
+
+                <div id="btn-long" class="round-btn trade-long">LONG</div>
+                
+                <div id="btn-settle" class="round-btn trade-settle">SET</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-home" class="screen active">
+        <div class="screen-content">
+            <h1>Trading Shooter</h1>
+            <p>Player: <span id="display-player-name">Guest</span></p>
+            <button id="btn-start-game" class="ui-button">Start Game</button>
+            <button id="btn-menu-register" class="ui-button">Register Name</button>
+        </div>
+        <div id="modal-initial" class="ui-modal hidden" style="background:rgba(0,0,0,0.9); position:absolute; top:0; left:0; width:100%; height:100%; z-index:300; display:flex; justify-content:center; align-items:center;">
+             <div class="modal-content" style="background:#111; padding:20px; border:1px solid cyan;">
+                <h3>Welcome</h3>
+                <input type="text" id="initial-name-input" placeholder="Name">
+                <button id="btn-initial-start" class="ui-button">OK</button>
+                <button id="btn-initial-guest" class="ui-button">Guest</button>
+             </div>
+        </div>
+        <div id="modal-register" class="ui-modal hidden">...</div>
+        <div id="modal-transfer" class="ui-modal hidden">...</div>
+    </div>
+    <div id="screen-loading" class="screen"><h2 id="loading-text">Loading...</h2></div>
+    <div id="screen-gameover" class="screen">
+        <div class="screen-content">
+            <h2>GAME OVER</h2>
+            <p>Score: <span id="gameover-score">0</span></p>
+            <button id="btn-gameover-retry" class="ui-button">Retry</button>
+            <button id="btn-gameover-home" class="ui-button">Home</button>
+        </div>
+    </div>
+    <div id="screen-ranking" class="screen">...</div>
+    <div id="screen-error" class="screen">...</div>
+    <div id="screen-idle-warning" class="screen">...</div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js" type="module"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js" type="module"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js" type="module"></script>
+    <script src="src/main.js" type="module"></script>
+    
+    <script>window.isMobileMode = true;</script>
+</body>
+</html>

@@ -26,7 +26,6 @@ export class UIManager {
       idleWarning: document.getElementById("screen-idle-warning"),
       mobileBlock: document.getElementById("screen-mobile-block"),
     };
-    this.bgVideo = document.getElementById('bg-video');
     this.activeScreen = this.screens.home;
     this.modalInitial = document.getElementById("modal-initial");
     this.modalTransfer = document.getElementById("modal-transfer");
@@ -63,6 +62,7 @@ export class UIManager {
     this.isDebugMode = false;
     this.WORLD_WIDTH = 3000;
     this.WORLD_HEIGHT = 3000;
+    this.mobileControlManager = new MobileControlManager();
   }
 
   bindActions(actions) {
@@ -135,6 +135,9 @@ export class UIManager {
       .addEventListener("click", () => {
         this.modalRegister.classList.add("hidden");
       });
+      if (this.isMobileDevice()) {
+        this.mobileControlManager.init(true);
+    }
   }
   hideInitialModal() {
     if (this.modalInitial) this.modalInitial.classList.add("hidden");
@@ -228,31 +231,12 @@ export class UIManager {
   }
 
   showScreen(screenId) {
-    // すべてのスクリーンを非表示
     for (const key in this.screens) {
       if (this.screens[key]) this.screens[key].classList.remove("active");
     }
-
-    // 指定されたスクリーンを表示
     const s = this.screens[screenId];
     if (s) s.classList.add("active");
     this.activeScreen = s;
-
-    // ★追加: ゲーム画面の時だけ、背景動画を隠して停止する（省エネ＆背景透け防止）
-    if (screenId === "game") {
-        if (this.bgVideo) {
-            this.bgVideo.style.display = 'none'; // 非表示
-            this.bgVideo.pause();                // 再生停止
-        }
-        // ゲーム画面の背景を確実に黒にする
-        document.body.style.backgroundColor = '#000';
-    } else {
-        // メニュー画面などに戻ったら動画を再開
-        if (this.bgVideo) {
-            this.bgVideo.style.display = 'block';
-            this.bgVideo.play().catch(() => {}); // 再生再開
-        }
-    }
   }
 
   showGameOverScreen(score) {
@@ -336,6 +320,7 @@ export class UIManager {
       this.powerLabelEl.textContent = "Power";
       this.powerValueEl.textContent = levelText;
       this.powerValueEl.style.color = levelColor;
+      this.mobileControlManager.updateDisplay(playerState);
     }
   }
 
@@ -383,7 +368,7 @@ export class UIManager {
     const stockedBullets = playerState.stockedBullets || [];
     const maxStock = playerState.maxStock || 10;
 
-    const paddingY = 20;
+    const paddingY = 100;
 
     const availableHeight = canvasHeight - paddingY * 2;
     const gap = 4;
@@ -492,7 +477,24 @@ export class UIManager {
     }
 
     ctx.save();
- 
+    ctx.textAlign = "right";
+    ctx.textBaseline = "bottom";
+
+    const countText = stockedBullets.length.toString();
+    const countX = canvasWidth - 10;
+
+    const countY = canvasHeight - 10;
+
+    ctx.font = "italic 900 64px 'Verdana', sans-serif";
+
+    ctx.strokeStyle = "rgba(0, 255, 255, 0.2)";
+    ctx.lineWidth = 2;
+    ctx.strokeText(countText, countX, countY);
+
+    ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
+    ctx.fillText(countText, countX, countY);
+
+    ctx.restore();
 
     if (stockedBullets.length === maxStock) {
       ctx.save();
