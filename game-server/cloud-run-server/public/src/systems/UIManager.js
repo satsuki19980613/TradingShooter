@@ -64,6 +64,9 @@ export class UIManager {
     this.WORLD_WIDTH = 3000;
     this.WORLD_HEIGHT = 3000;
     this.mobileControlManager = new MobileControlManager();
+    this.modalIngameLeaderboard = document.getElementById("modal-ingame-leaderboard");
+    this.btnShowLeaderboard = document.getElementById("btn-show-leaderboard");
+    this.btnCloseLeaderboard = document.getElementById("btn-close-leaderboard");
   }
 
   // [追加] フルスクリーン化を試みるメソッド
@@ -158,7 +161,21 @@ export class UIManager {
         this.modalRegister.classList.add("hidden");
       });
     this.mobileControlManager.init(true);
-    // }
+    if (this.btnShowLeaderboard) {
+        this.btnShowLeaderboard.addEventListener("click", () => {
+            if (this.modalIngameLeaderboard) {
+                this.modalIngameLeaderboard.classList.remove("hidden");
+            }
+        });
+    }
+
+    if (this.btnCloseLeaderboard) {
+        this.btnCloseLeaderboard.addEventListener("click", () => {
+            if (this.modalIngameLeaderboard) {
+                this.modalIngameLeaderboard.classList.add("hidden");
+            }
+        });
+    }
   }
   hideInitialModal() {
     if (this.modalInitial) this.modalInitial.classList.add("hidden");
