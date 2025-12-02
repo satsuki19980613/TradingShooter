@@ -275,6 +275,9 @@ export class UIManager {
     const s = this.screens[screenId];
     if (s) s.classList.add("active");
     this.activeScreen = s;
+    if (this.mobileControlManager) {
+      this.mobileControlManager.applyScreenMode(screenId);
+    }
   }
 
   showGameOverScreen(score) {

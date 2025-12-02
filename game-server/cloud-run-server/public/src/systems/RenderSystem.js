@@ -57,7 +57,7 @@ export class RenderSystem {
 
     // 砲塔描画 (エイム方向)
     ctx.save();
-    ctx.rotate(player.aimAngle);
+    ctx.rotate(player.rotationAngle );
     ctx.drawImage(turretSkin, -this.PLAYER_SKIN_SIZE / 2, -this.PLAYER_SKIN_SIZE / 2);
 
     // レーザーサイト

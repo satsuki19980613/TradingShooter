@@ -40,7 +40,6 @@ export class Player extends GameObject {
       this.rotationAngle = lerpAngle(this.rotationAngle, moveAngle, 0.1);
     }
 
-    this.aimAngle = lerpAngle(this.aimAngle, this.targetAimAngle, 0.3);
 
     this.hoverOffset = Math.sin(Date.now() / 200) * 3;
   }

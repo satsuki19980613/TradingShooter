@@ -177,11 +177,6 @@ export class ServerPlayer extends ServerGameObject {
       hp: this.hp,
       ep: this.ep,
       aimAngle: this.angle,
-      aimAngle: Math.atan2(
-        this.mouseWorldPos.y - this.y,
-        this.mouseWorldPos.x - this.x
-      ),
-
       chargeBetAmount: this.chargeBetAmount,
       chargePosition: this.chargePosition,
 

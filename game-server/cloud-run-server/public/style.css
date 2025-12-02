@@ -675,17 +675,22 @@ canvas { display: block; }
     
     /* ステータス類: 右上は少し小さく */
     .hud-group.top-right {
-        top: 10px;
-        right: -6px;
-        transform: scale(0.8);
-        transform-origin: top right;
+        right: 10px !important;
+        top: 10px !important;
+        
+        /* フレックス配置の調整 */
+        align-items: flex-end !important;
+        gap: 5px !important;
     }
     
     /* リーダーボードリスト非表示 (モーダルは表示可) */
     #hud-leaderboard-container {
         display: block; 
     }
-    
+    #hud-dashboard,
+    .hud-group.top-right {
+        transform: scale(0.75) !important; /* 強制的に0.75倍 */
+    }
     /* --- ダッシュボードのスマホ配置 (修正版) --- */
     #hud-dashboard {
         /* ★修正: 中央下固定をやめて、PCと同じ「左上」配置にする */
@@ -724,6 +729,10 @@ canvas { display: block; }
         transform: scale(0.7);
         transform-origin: top left;
     }
+    #btn-retire {
+        padding: 4px 8px !important;
+        font-size: 10px !important;
+    }
 }
 
 /* ========================================
@@ -743,13 +752,16 @@ canvas { display: block; }
 /* JSで計算された --ui-scale を適用するクラス。
    対象: 左上のステータス/チャート、右上のレーダー/マガジン/リタイア
 */
-#hud-dashboard,          /* 左上グループ */
-.hud-group.top-right,    /* 右上グループ */
-#gameover-screen,        /* (必要なら)ゲームオーバー画面など */
-.screen-content          /* メニュー画面の中身など */
+#hud-dashboard,
+.hud-group.top-right
 {
-    /* 基準点を「画面の角」に固定したまま拡大縮小する */
-    transform: scale(var(--ui-scale, 1)); 
+    transform: scale(var(--ui-scale, 1));
+}
+
+/* --- 変更箇所 2: メニュー画面は拡大せず、中央配置のままにする --- */
+.screen-content {
+    /* 既存の transform-origin 設定も削除または無効化 */
+    transform: none !important; 
 }
 
 /* 左上は「左上」を基準に拡大 */
@@ -771,3 +783,93 @@ canvas { display: block; }
    これらには transform: scale(...) を適用しないため、
    画面サイズが変わっても物理的な大きさ（ピクセル等倍）が維持されます。
 */
+
+
+/* =========================================================
+   スマホ・タブレット用：メニュー画面の縮小対応
+   ========================================================= */
+@media (max-width: 600px) {
+    /* メニュー画面の枠を小さくする */
+    .screen-content {
+        width: 85% !important;       /* 画面幅の85%に収める */
+        min-width: auto !important;  /* 最小幅制限を解除 */
+        padding: 20px !important;    /* 余白を60px→20pxに減らす */
+        gap: 10px !important;        /* 要素間の隙間を減らす */
+    }
+
+    /* タイトル文字を小さく */
+    .screen-content h1 {
+        font-size: 24px !important;  /* PC版より小さく */
+        margin-bottom: 10px !important;
+    }
+
+    /* ボタンを小さく */
+    .ui-button {
+        width: 100% !important;      /* 横幅いっぱいに */
+        font-size: 14px !important;  /* 文字サイズ縮小 */
+        padding: 10px !important;    /* ボタン内の余白を減らす */
+    }
+
+    /* プレイヤー情報表示の調整 */
+    .player-info-display {
+        font-size: 14px !important;
+        margin-bottom: 5px !important;
+    }
+}
+
+/* =========================================================
+   強制横画面化 (Force Landscape)
+   スマホが縦向き(Portrait)の場合、強制的に90度回転させて横画面として扱う
+   ========================================================= */
+@media only screen and (orientation: portrait) {
+    /* ゲーム画面全体を含むコンテナを回転対象にする */
+    #cockpit-container {
+        /* 幅と高さを入れ替える (縦長の画面いっぱいに横長のゲームを表示するため) */
+        width: 100vh;
+        height: 100vw;
+        
+        /* 画面中央に配置して回転 */
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(90deg);
+        
+        /* 回転時のスクロール発生防止 */
+        overflow: hidden;
+        
+        /* タッチ操作の補正用基準 */
+        touch-action: none;
+    }
+}
+
+
+/* =========================================================
+   メニュー画面の強制縦画面化 (Force Portrait for Menu)
+   スマホが横向き(Landscape)の場合、メニュー画面を回転させて縦画面として扱う
+   ========================================================= */
+@media only screen and (orientation: landscape) {
+    /* メニューモード(.mode-menu) の時だけ適用 */
+    body.mode-menu .screen {
+        /* 幅と高さを入れ替えて全画面にフィットさせる */
+        width: 100vh;
+        height: 100vw;
+        
+        /* 画面中央を軸に回転 */
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        
+        /* -90度回転（左に倒す）させて、横持ち状態でも縦に見えるようにする */
+        /* ※もし逆向きが良い場合は rotate(90deg) にしてください */
+        transform: translate(-50%, -50%) rotate(-90deg);
+        
+        overflow: hidden;
+        z-index: 1000; /* 最前面に表示 */
+    }
+    
+    /* コンテンツのスクロール調整 */
+    body.mode-menu .screen-content {
+        max-height: 100vw; /* 横幅（回転後の高さ）に収める */
+        overflow-y: auto;
+    }
+}
