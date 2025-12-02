@@ -36,37 +36,40 @@ export class MobileControlManager {
     document.body.classList.add("is-mobile");
 
     const moveJoy = (clientX, clientY) => {
-      if (!this.joystickState.active) return;
+        if (!this.joystickState.active) return;
 
-      const isPortrait = window.innerHeight > window.innerWidth;
+        
+        const isPortrait = window.innerHeight > window.innerWidth;
 
-      let rawDx = clientX - this.joystickState.startX;
-      let rawDy = clientY - this.joystickState.startY;
+        
+        let rawDx = clientX - this.joystickState.startX;
+        let rawDy = clientY - this.joystickState.startY;
+        let dx, dy;
 
-      let dx, dy;
+        
+        if (isPortrait) {
+            
+            
+            
+            dx = rawDy;
+            dy = -rawDx;
+        } else {
+            dx = rawDx;
+            dy = rawDy;
+        }
 
-      if (isPortrait) {
-        dx = rawDy;
-        dy = -rawDx;
-      } else {
-        dx = rawDx;
-        dy = rawDy;
-      }
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const max = this.joystickState.maxDist;
+        if (dist > max) {
+          dx = (dx / dist) * max;
+          dy = (dy / dist) * max;
+        }
 
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      const max = this.joystickState.maxDist;
-
-      if (dist > max) {
-        dx = (dx / dist) * max;
-        dy = (dy / dist) * max;
-      }
-
-      this.updateJoystickVisual(dx, dy);
-
-      if (window.gameInput) {
-        window.gameInput.setJoystickVector(dx / max, dy / max);
-      }
-    };
+        this.updateJoystickVisual(dx, dy);
+        if (window.gameInput) {
+          window.gameInput.setJoystickVector(dx / max, dy / max);
+        }
+        }
     const addInputListener = (elem, action) => {
       if (!elem) return;
 

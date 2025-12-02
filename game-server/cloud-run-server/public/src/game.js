@@ -185,12 +185,21 @@ export class Game {
     if (this.chartCanvas && this.chartCanvas.parentElement) {
       const w = this.chartCanvas.parentElement.clientWidth;
       const h = this.chartCanvas.parentElement.clientHeight;
+
+      const dpr = window.devicePixelRatio || 1;
+
       if (w > 0 && h > 0) {
-        this.chartCanvas.width = w;
-        this.chartCanvas.height = h;
+        this.chartCanvas.width = w * dpr;
+        this.chartCanvas.height = h * dpr;
+
+        this.chartCanvas.style.width = `${w}px`;
+        this.chartCanvas.style.height = `${h}px`;
+
+        if (this.chartCtx) {
+          this.chartCtx.scale(dpr, dpr);
+        }
       }
     }
-
     if (this.radarCanvas && this.radarCanvas.parentElement) {
       const w = this.radarCanvas.parentElement.clientWidth;
       const h = this.radarCanvas.parentElement.clientHeight;
@@ -320,10 +329,11 @@ export class Game {
         this.chartCanvas.width,
         this.chartCanvas.height
       );
+      const dpr = window.devicePixelRatio || 1; // ★DPR取得
       this.trading.drawChart(
         this.chartCtx,
-        this.chartCanvas.width,
-        this.chartCanvas.height,
+        this.chartCanvas.width / dpr, // ★論理幅を渡す
+        this.chartCanvas.height / dpr, // ★論理高さを渡す
         myPlayerState
       );
     }

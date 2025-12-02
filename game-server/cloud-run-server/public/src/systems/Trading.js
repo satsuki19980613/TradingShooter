@@ -203,13 +203,7 @@ export class Trading {
     );
 
     ctx.save();
-    ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-    ctx.fillRect(
-      textX - 2,
-      textY - textHeight / 2 - 2,
-      textMetrics.width + 4,
-      textHeight + 4
-    );
+    
 
     ctx.fillStyle =
       lastPrice >= (chartData[chartData.length - 2] || 0)
