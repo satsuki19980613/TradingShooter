@@ -38,8 +38,6 @@ export class MobileControlManager {
     const moveJoy = (clientX, clientY) => {
       if (!this.joystickState.active) return;
 
-      // ▼▼▼ 修正: 判定を「画面が縦長かどうか」のみに単純化 ▼▼▼
-      // CSSで「縦長なら90度回転」としているため、これだけで条件は一致します
       const isPortrait = window.innerHeight > window.innerWidth;
 
       let rawDx = clientX - this.joystickState.startX;
@@ -48,30 +46,12 @@ export class MobileControlManager {
       let dx, dy;
 
       if (isPortrait) {
-        // ★縦持ち（強制回転中）の座標変換★
-
-        // 指を「画面の上（物理的な右）」に動かした時:
-        // rawDx(物理横移動) が増える -> ゲーム内では 上(dyマイナス) にしたい
-        // dx = rawDy;
-        // dy = -rawDx;
-
-        // もし「指の動きと90度ずれる」場合は、以下の組み合わせが正解です。
-        // 画面の回転方向(時計回り/反時計回り)に合わせてここを調整します。
-
-        // 【パターンA】 (CSSが rotate(90deg) の場合)
         dx = rawDy;
         dy = -rawDx;
-
-        /* // 【パターンB】 (もし逆ならこちらを試してください)
-                dx = -rawDy;
-                dy = rawDx;
-                */
       } else {
-        // 横持ち（通常）
         dx = rawDx;
         dy = rawDy;
       }
-      // ▲▲▲ 修正ここまで ▲▲▲
 
       const dist = Math.sqrt(dx * dx + dy * dy);
       const max = this.joystickState.maxDist;
@@ -81,7 +61,6 @@ export class MobileControlManager {
         dy = (dy / dist) * max;
       }
 
-      // ジョイスティックの見た目を更新
       this.updateJoystickVisual(dx, dy);
 
       if (window.gameInput) {
