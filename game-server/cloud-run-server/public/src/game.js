@@ -82,6 +82,9 @@ export class Game {
     this.magazineCtx = this.magazineCanvas
       ? this.magazineCanvas.getContext("2d")
       : null;
+    this.BASE_WIDTH = 896;
+    this.BASE_HEIGHT = 414;
+    this.gameScale = 1.0;
   }
 
   sendPause() {
@@ -159,31 +162,26 @@ export class Game {
   resizeCanvas() {
     if (!this.uiManager) return;
 
-    // ★修正: window.innerWidth ではなく、親コンテナ(#cockpit-container)のサイズを取得する
     const container = document.getElementById("cockpit-container");
     if (!container) return;
 
     const width = container.clientWidth;
     const height = container.clientHeight;
 
-    // ゲームフィールドのコンテナサイズを更新
     const fieldContainer = document.getElementById("game-field-container");
     if (fieldContainer) {
       fieldContainer.style.width = `${width}px`;
       fieldContainer.style.height = `${height}px`;
 
-      // ゲーム用キャンバスの解像度を更新
       this.gameCanvas.width = width;
       this.gameCanvas.height = height;
 
-      // UI用キャンバスの解像度を更新
       if (this.uiCanvas) {
         this.uiCanvas.width = width;
         this.uiCanvas.height = height;
       }
     }
 
-    // チャートなどのサブキャンバスのリサイズ（既存コードのまま）
     if (this.chartCanvas && this.chartCanvas.parentElement) {
       const w = this.chartCanvas.parentElement.clientWidth;
       const h = this.chartCanvas.parentElement.clientHeight;
@@ -271,16 +269,12 @@ export class Game {
     this.enemyEntities.forEach((e) => e.update());
     this.bulletEntities.forEach((b) => b.update(this));
     this.updateCamera();
-    this.inputManager.updateMouseWorldPos(
-      this.mouseWorldPos.x,
-      this.mouseWorldPos.y
-    );
-
     const ctx = this.gameCtx;
-
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.drawBackground(ctx);
 
     ctx.save();
+    ctx.scale(this.gameScale, this.gameScale);
     ctx.translate(-this.cameraX, -this.cameraY);
 
     this.obstacleEntities.forEach((obs) => {
@@ -602,51 +596,66 @@ export class Game {
   updateCamera() {
     if (!this.uiManager) return;
 
+    const scaleX = this.gameCanvas.width / this.BASE_WIDTH;
+    const scaleY = this.gameCanvas.height / this.BASE_HEIGHT;
+    this.gameScale = Math.min(scaleX, scaleY);
     const myPlayer = this.playerEntities.get(this.userId);
     if (myPlayer) {
-      let targetX = myPlayer.x - this.gameCanvas.width / 2;
-      let targetY = myPlayer.y - this.gameCanvas.height / 2;
+      let targetX = myPlayer.x - this.gameCanvas.width / this.gameScale / 2;
+      let targetY = myPlayer.y - this.gameCanvas.height / this.gameScale / 2;
+
       this.cameraX += (targetX - this.cameraX) * 0.1;
       this.cameraY += (targetY - this.cameraY) * 0.1;
     }
 
     this.cameraX = Math.max(
       0,
-      Math.min(this.cameraX, this.WORLD_WIDTH - this.gameCanvas.width)
+      Math.min(
+        this.cameraX,
+        this.WORLD_WIDTH - this.gameCanvas.width / this.gameScale
+      )
     );
     this.cameraY = Math.max(
       0,
-      Math.min(this.cameraY, this.WORLD_HEIGHT - this.gameCanvas.height)
+      Math.min(
+        this.cameraY,
+        this.WORLD_HEIGHT - this.gameCanvas.height / this.gameScale
+      )
     );
 
-    this.mouseWorldPos.x = this.mousePos.x + this.cameraX;
-    this.mouseWorldPos.y = this.mousePos.y + this.cameraY;
+    this.mouseWorldPos.x = this.mousePos.x / this.gameScale + this.cameraX;
+    this.mouseWorldPos.y = this.mousePos.y / this.gameScale + this.cameraY;
   }
 
   drawBackground(ctx) {
     ctx.fillStyle = "#213135";
     ctx.fillRect(0, 0, this.gameCanvas.width, this.gameCanvas.height);
+
     const gridSize = 50;
     const tileCanvas = skinManager.getSkin(
       "grid_tile_50",
       gridSize,
       gridSize,
-
       GridSkin.drawTile("rgba(0, 255, 255, 0.1)", 1)
     );
-
     const pattern = skinManager.getPattern(ctx, "grid_tile_50", tileCanvas);
+
     ctx.save();
+
+    const scale = this.gameScale || 1;
+    ctx.scale(scale, scale);
+
     const offsetX = -this.cameraX;
     const offsetY = -this.cameraY;
     ctx.translate(offsetX, offsetY);
+
     ctx.fillStyle = pattern;
 
     ctx.fillRect(
-      -offsetX,
-      -offsetY,
-      this.gameCanvas.width,
-      this.gameCanvas.height
+      this.cameraX,
+      this.cameraY,
+      this.gameCanvas.width / scale,
+      this.gameCanvas.height / scale
     );
 
     ctx.restore();

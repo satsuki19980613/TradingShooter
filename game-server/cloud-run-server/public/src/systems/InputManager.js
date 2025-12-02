@@ -104,13 +104,6 @@ export class InputManager {
     }
   }
 
-  /**
-   *Game.js がマウスのワールド座標を更新するために呼ぶ
-   */
-  updateMouseWorldPos(x, y) {
-    this.mouseWorldPos.x = x;
-    this.mouseWorldPos.y = y;
-  }
 
   /**
    *Game.js が射撃ボタン(mousedown)を検知したら呼ぶ
@@ -126,7 +119,6 @@ export class InputManager {
     const inputState = {
       states: { ...this.actionStates },
       wasPressed: { ...this.actionPressed },
-      mouseWorldPos: { ...this.mouseWorldPos },
     };
 
     if (this.shootPressed) {

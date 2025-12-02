@@ -219,10 +219,13 @@
             <div class="hud-upper-row">
               <div class="dashboard-item status-group">
                 <div class="panel-module transparent-bg">
+                <div class="panel-header-row">
                   <h3>STATUS</h3>
-                  <div id="hud-status-area">
-                    <div class="stat-row">
-                      <span class="stat-label">HP</span>
+                  <button id="btn-show-leaderboard" class="header-action-btn">LEADERBOARD</button>
+                </div>
+                <div id="hud-status-area">
+                  <div class="stat-row">
+                    <span class="stat-label">HP</span>
                       <div class="stat-bar-outer">
                         <div id="hp-bar-inner" class="stat-bar hp"></div>
                       </div>
@@ -290,15 +293,6 @@
                 </div>
               </div>
             </div>
-            <div class="hud-lower-row">
-              <button
-                id="btn-show-leaderboard"
-                class="ui-button small"
-                style="width: auto; min-width: 100px; padding: 8px"
-              >
-                LEADERBOARD
-              </button>
-            </div>
           </div>
           <div class="hud-group top-right">
             <div class="hud-row">
@@ -346,25 +340,27 @@
           </div>
         </div>
         <div id="mobile-controls-layer">
-          <div id="mc-left-bottom">
-            <button id="mc-btn-fire">FIRE</button>
-          </div>
+      <div id="mc-left-bottom">
+        <div id="mc-action-cluster">
+          <button id="mc-btn-settle" class="mc-btn-entry">SETTLE</button>
+          <button id="mc-btn-short" class="mc-btn-entry">SHORT</button>
+          <button id="mc-btn-fire">FIRE</button>
+          <button id="mc-btn-long" class="mc-btn-entry">LONG</button>
 
-          <div id="mc-right-bottom">
-            <div id="mc-joystick-area">
-              <div id="mc-joystick-knob"></div>
-            </div>
-            <button id="mc-btn-settle" class="mc-btn-entry">SETTLE</button>
-            <button id="mc-btn-short" class="mc-btn-entry">SHORT</button>
-            <button id="mc-btn-long" class="mc-btn-entry">LONG</button>
-
-            <div id="mc-lot-control">
-              <button id="mc-btn-lot-minus" class="mc-btn-lot">-</button>
-              <div id="mc-lot-display">10</div>
-              <button id="mc-btn-lot-plus" class="mc-btn-lot">+</button>
-            </div>
+          <div id="mc-lot-control">
+            <button id="mc-btn-lot-minus" class="mc-btn-lot">-</button>
+            <div id="mc-lot-display">10</div>
+            <button id="mc-btn-lot-plus" class="mc-btn-lot">+</button>
           </div>
         </div>
+      </div>
+
+      <div id="mc-right-bottom">
+        <div id="mc-joystick-area">
+          <div id="mc-joystick-knob"></div>
+        </div>
+      </div>
+    </div>
       </div>
       <div id="modal-ingame-leaderboard" class="ui-modal hidden">
         <div class="modal-content" style="width: 320px">

@@ -201,7 +201,56 @@ canvas { display: block; }
 .ma-option input#ma-medium:checked + label { color: #ffff00; text-shadow: 0 0 5px #ffff00; }
 .ma-option input#ma-long:checked + label { color: #ff00ff; text-shadow: 0 0 5px #ff00ff; }
 
+/* ========================================
+ * Statusパネル内ヘッダー & ミニボタン
+ * ======================================== */
 
+/* タイトルとボタンを横並びにするコンテナ */
+.panel-header-row {
+    display: flex;
+    justify-content: space-between; /* 左右に配置 */
+    align-items: center;            /* 上下中央揃え */
+    
+    /* 元々h3にあった下線をここに移動 */
+    border-bottom: 1px solid rgba(0, 255, 255, 0.3);
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+}
+
+/* h3 (STATUS文字) のスタイル調整 */
+.panel-module .panel-header-row h3 {
+    border-bottom: none; /* 重複する下線を消す */
+    margin: 0;
+    padding: 0;
+    /* フォントサイズなどは既存のスタイル(12px)が継承されます */
+}
+
+/* 新しいリーダーボードボタンのデザイン */
+.header-action-btn {
+    background: rgba(0, 255, 255, 0.1); /* 薄いシアン背景 */
+    border: 1px solid rgba(0, 255, 255, 0.5);
+    color: #00ffff;
+    font-size: 10px;       /* Statusパネルに合わせて文字を小さく */
+    font-family: 'Roboto Mono', monospace;
+    padding: 2px 8px;      /* コンパクトに */
+    border-radius: 4px;
+    cursor: pointer;
+    line-height: 1.2;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.header-action-btn:hover {
+    background: rgba(0, 255, 255, 0.3);
+    color: #ffffff;
+    box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+}
+
+.header-action-btn:active {
+    background: rgba(0, 255, 255, 0.5);
+    transform: translateY(1px);
+}
 /* ========================================
  * 5. その他のHUDグループ (右上・左下)
  * ======================================== */
@@ -212,6 +261,7 @@ canvas { display: block; }
     gap: 10px;
     padding: 15px;
     transition: transform 0.2s ease;
+    pointer-events: none; /* コンテナ自体は操作不可 */
 }
 
 /* PC: 右上 (レーダー・マガジン) */
@@ -219,16 +269,32 @@ canvas { display: block; }
     top: 20px;
     right: 20px;
     transform-origin: top right;
+    
+    /* ★変更: 全体を縦並びにして、右端に寄せる */
     display: flex;
-    flex-direction: row;
-    align-items: flex-start;
+    flex-direction: column; 
+    align-items: flex-end; 
     gap: 10px;
 }
-
 /* 左下 (デバッグパネル) */
 .hud-group.bottom-left {
     bottom: 0; left: 0;
     transform-origin: bottom left;
+}
+/* ★修正: レーダーとマガジンを近づける */
+.hud-group.top-right .hud-row {
+    display: flex;
+    flex-direction: row;
+    gap: 0;               /* 隙間をゼロに */
+    align-items: center;  /* 上下中央揃え */
+}
+
+/* ★追加: マガジン（2番目の要素）を強制的に左へ寄せる */
+/* レーダーとマガジンのCanvasには透明な余白があるため、マイナスマージンで重ねることで見た目の隙間を消します */
+.hud-group.top-right .hud-row > .panel-module:nth-child(2) {
+    margin-left: -22px;   /* 数値を大きくするほど近づきます（-30px ～ -50px 推奨） */
+    position: relative;
+    z-index: 10;          /* レーダーより手前に表示 */
 }
 
 /* 右上パネルの透明化設定 */
@@ -238,12 +304,27 @@ canvas { display: block; }
     box-shadow: none !important;
     backdrop-filter: none !important;
     padding: 0 !important;
+    /* ★追加: 必要であればここも操作可能にする */
+    pointer-events: auto; 
+}
+#btn-retire {
+    /* ★重要: これがないとクリックできませんでした */
+    pointer-events: auto; 
+    
+    /* デザイン調整（既存のまま） */
+    background-color: #d32f2f;
+    width: auto;
+    opacity: 0.8;
+    font-size: 10px;
+    padding: 4px 12px;
+    margin-top: 5px; /* 上との隙間 */
+    align-self: flex-end; /* 右寄せ */
 }
 .hud-group.top-right .panel-module h3 { display: none !important; }
 .hud-group.top-right .canvas-wrapper {
     background: transparent !important;
     border: none !important;
-    width: 120px !important;
+    width: 80px !important;
     height: 120px !important;
 }
 
@@ -252,13 +333,14 @@ canvas { display: block; }
  * 6. UIパネル共通デザイン & コンポーネント
  * ======================================== */
 .panel-module {
-    background: rgba(5, 15, 25, 0.7);
-    border: 1px solid rgba(0, 255, 255, 0.2);
-    backdrop-filter: blur(5px);
+    background: rgb(5 15 25 / 0%);
+    border: 1px solid rgb(0 255 255 / 0%);
+    /* backdrop-filter: blur(5px); */
     padding: 10px;
     border-radius: 4px;
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
-    display: flex; flex-direction: column;
+    display: flex;
+    flex-direction: column;
 }
 
 .panel-module h3 {
@@ -302,63 +384,209 @@ canvas { display: block; }
 
 
 /* ========================================
- * 7. コントローラー (PCでは非表示)
+ * 7. コントローラー (モバイル・タッチ用)
  * ======================================== */
 #mobile-controls-layer {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
     z-index: 200; 
     pointer-events: none;
-    display: none !important; /* PCでは非表示 */
+    /* JS (MobileControlManager) で display: block に上書きされますが、
+       念のため初期状態は非表示にしておきます */
+    display: none; 
 }
 
-#mc-left-bottom, #mc-right-bottom { pointer-events: auto; position: absolute; }
-#mc-left-bottom { left: 40px; bottom: 40px; }
-#mc-right-bottom { right: 40px; bottom: 40px; width: 200px; height: 200px; }
-
-#mc-btn-fire {
-    width: 70px; height: 70px; border-radius: 50%;
-    background: rgba(255, 50, 50, 0.5); border: 3px solid #ff5252;
-    color: white; font-weight: bold;
+/* --- 右下：ジョイスティック --- */
+#mc-right-bottom {
+    position: absolute;
+    right: 40px; 
+    bottom: 40px;
+    pointer-events: auto;
+    /* ジョイスティックエリアのサイズ */
+    width: 120px;
+    height: 120px;
 }
 
 #mc-joystick-area {
-    position: absolute;
-    bottom: 52px; right: 54px;
-    width: 100px; height: 100px;
+    width: 100%;
+    height: 100%;
     background: rgba(0, 100, 255, 0.2);
-    border: 2px solid #00aaff;
+    border: 1px solid #00aaffb8;
     border-radius: 50%;
-    display: flex; justify-content: center; align-items: center;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
+
 #mc-joystick-knob {
-    width: 40px; height: 40px; background: rgba(0, 200, 255, 0.8);
-    border-radius: 50%; position: relative;
+    width: 40%;
+    height: 40%;
+    background: rgba(0, 200, 255, 0.8);
+    border-radius: 50%;
+    position: absolute;
+    /* JSで transform: translate(...) されます */
 }
 
-.mc-btn-entry {
-    position: absolute; width: 50px; height: 50px; border-radius: 50%;
-    background: rgba(255, 200, 0, 0.2); border: 2px solid #ffcc00;
-    color: #ffcc00; font-size: 10px; font-weight: bold;
+
+/* --- 左下：アクションボタン・クラスター --- */
+#mc-left-bottom {
+    position: absolute;
+    left: 20px;
+    bottom: 20px;
+    pointer-events: auto;
 }
-#mc-btn-long { bottom: 104px; right: 846px; }
-#mc-btn-short { bottom: 162px; right: 854px; }
+
+/* ボタン類をまとめるコンテナ 
+   ここを基準(relative)に内部のボタンを配置します
+*/
+#mc-action-cluster {
+    position: relative;
+    width: 241px;
+    height: 260px;
+    /* 配置確認用に背景色をつける場合はコメントアウトを外してください */
+    /* background: rgba(255,0,0,0.1); */
+}
+
+/* クラスター内の共通設定 */
+#mc-action-cluster > button,
+#mc-action-cluster > div {
+    position: absolute;
+    /* 位置合わせの基準点を要素の中心にする */
+    transform: translate(-29%, -11%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* box-shadow: 0 0 10px rgb(0 0 0 / 0%); */
+}
+
+/* --- 各ボタンの配置 (画像の配置を再現) --- */
+/* 座標は #mc-action-cluster の左上(0,0)からの距離 */
+
+/* 1. FIREボタン (赤・大: 左寄り中心) */
+#mc-btn-fire {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: rgb(187 9 9 / 49%);
+    border: 0px solid #ff5252;
+    color: white;
+    font-weight: bold;
+    font-size: 18px;
+    z-index: 10;
+    left: 60px;
+    top: 110px;
+}
+#mc-btn-fire:active { background: #ff5252; transform: translate(-50%, -50%) scale(0.95); }
+
+
+/* 2. SETTLEボタン (水色: Fireの真上) */
 #mc-btn-settle {
-    position: absolute; bottom: 194px; right: 907px;
-    width: 50px; height: 50px; border-radius: 50%;
-    background: rgba(0, 255, 255, 0.2); border: 2px solid #00ffff;
-    color: #00ffff; font-size: 10px; font-weight: bold;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgb(180 181 181 / 34%);
+    border: 0px solid #00ffff;
+    color: #fff;
+    font-size: 10px;
+    font-weight: bold;
+    left: 60px; /* Fireと同じ軸 */
+    top: 35px;
+}
+#mc-btn-settle:active { background: #00ffff; color: #000; }
+
+
+/* 3. SHORTボタン (黄色: Fireの右上) */
+#mc-btn-short {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(0, 188, 212, 0.25);
+    border: 0px solid #ffc107;
+    color: #fff;
+    font-size: 11px;
+    font-weight: bold;
+    left: 135px;
+    top: 70px;
+}
+#mc-btn-short:active { background: #ffeb3b; color: #000; }
+
+
+/* 4. LONGボタン (黄色: Fireの右下) */
+#mc-btn-long {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgb(227 101 101 / 34%);
+    border: 0px solid #ffc107;
+    color: #fff;
+    font-size: 12px;
+    font-weight: bold;
+    left: 150px;
+    top: 150px;
+}
+#mc-btn-long:active { background: #ffeb3b; color: #000; }
+
+
+/* 5. ロット調整 (Fireの真下) */
+#mc-lot-control {
+    width: 140px;
+    height: 50px;
+    /* transformなしで配置 (内部レイアウトのため) */
+    transform: none;
+    display: flex;
+    gap: 5px;
+    left: 43px; /* クラスター内の左端合わせ */
+    top: 210px;
 }
 
-#mc-lot-control {
-    position: absolute; bottom: 65px; right: 871px;
-    display: flex; gap: 5px; align-items: center;
-}
+/* ロットボタン (- / +) */
 .mc-btn-lot {
-    width: 35px; height: 35px; border-radius: 50%;
-    background: rgba(255, 50, 50, 0.2); border: 2px solid #ff5252; color: white;
+    position: static !important; /* 絶対配置を解除 */
+    transform: none !important;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgb(84 255 217 / 24%);
+    border: 0px solid #ffffff;
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+    box-shadow: none !important;
 }
+.mc-btn-lot:active { background: #ff5252; }
+
+/* ロット表示数値 */
 #mc-lot-display {
-    background: rgba(0,0,0,0.5); color: white; padding: 2px 6px; border-radius: 4px;
+    position: static !important;
+    transform: none !important;
+    background: rgba(0,0,0,0.8);
+    color: white;
+    font-family: monospace;
+    font-size: 18px;
+    font-weight: bold;
+    padding: 5px 10px;
+    border: 0px solid #ff5252;
+    border-radius: 4px;
+    min-width: 30px;
+    text-align: center;
+    box-shadow: none !important;
+}
+
+/* =========================================================
+   レスポンシブ対応: 画面が小さい場合に縮小
+   ========================================================= */
+@media (max-width: 600px) {
+    #mc-left-bottom {
+        transform-origin: bottom left;
+        transform: scale(0.85); /* 左下基準で縮小 */
+        left: 10px; bottom: 10px;
+    }
+    #mc-right-bottom {
+        transform-origin: bottom right;
+        transform: scale(0.85);
+        right: 20px; bottom: 20px;
+    }
 }
 
 
@@ -432,21 +660,25 @@ canvas { display: block; }
     /* ジョイスティック配置 (サイズ調整) */
     #mc-left-bottom {
         position: absolute !important;
-        left: 92px;
-        bottom: 120px;
+        left: 66px;
+        bottom: 32px;
         transform: scale(0.8);
         transform-origin: bottom left;
     }
     #mc-right-bottom {
         position: absolute !important;
-        right: 20px; bottom: 30px;
-        transform: scale(0.8); transform-origin: bottom right;
+        right: 81px;
+        bottom: 68px;
+        transform: scale(0.8);
+        transform-origin: bottom right;
     }
     
     /* ステータス類: 右上は少し小さく */
     .hud-group.top-right {
-        top: 10px; right: 10px;
-        transform: scale(0.8); transform-origin: top right;
+        top: 10px;
+        right: -6px;
+        transform: scale(0.8);
+        transform-origin: top right;
     }
     
     /* リーダーボードリスト非表示 (モーダルは表示可) */
@@ -482,8 +714,8 @@ canvas { display: block; }
 
     #bottom-chart-panel.dashboard-item {
         /* チャートをスマホ用にさらにコンパクトに */
-        width: 180px !important;
-        height: 80px !important;
+        width: 326px !important;
+        height: 94px !important;
         margin-top: 5px !important;
     }
     
@@ -503,3 +735,39 @@ canvas { display: block; }
     /* 描画の崩れを防ぐため、オブジェクトフィットを指定 */
     object-fit: contain; 
 }
+
+/* ========================================
+ * スケーリング適用設定
+ * ======================================== */
+
+/* JSで計算された --ui-scale を適用するクラス。
+   対象: 左上のステータス/チャート、右上のレーダー/マガジン/リタイア
+*/
+#hud-dashboard,          /* 左上グループ */
+.hud-group.top-right,    /* 右上グループ */
+#gameover-screen,        /* (必要なら)ゲームオーバー画面など */
+.screen-content          /* メニュー画面の中身など */
+{
+    /* 基準点を「画面の角」に固定したまま拡大縮小する */
+    transform: scale(var(--ui-scale, 1)); 
+}
+
+/* 左上は「左上」を基準に拡大 */
+#hud-dashboard {
+    transform-origin: top left;
+}
+
+/* 右上は「右上」を基準に拡大 */
+.hud-group.top-right {
+    transform-origin: top right;
+}
+
+/* 中央表示の要素は「中央」基準 */
+.screen-content {
+    transform-origin: center center;
+}
+
+/* ★除外対象: モバイルコントローラー
+   これらには transform: scale(...) を適用しないため、
+   画面サイズが変わっても物理的な大きさ（ピクセル等倍）が維持されます。
+*/

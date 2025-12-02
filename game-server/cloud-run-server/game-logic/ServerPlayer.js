@@ -27,6 +27,7 @@ export class ServerPlayer extends ServerGameObject {
     this.score = 0;
     this.hp = 100;
     this.ep = 100;
+    this.angle = 0;
     this.defaultSpeed = 6.5;
     this.speed = this.defaultSpeed;
     this.shootCooldown = 0;
@@ -37,7 +38,6 @@ export class ServerPlayer extends ServerGameObject {
     this.maxStock = 10;
     this.inputs = {};
     this.inputPressed = {};
-    this.mouseWorldPos = { x: 0, y: 0 };
     this.lastInputTime = Date.now();
     this.isPaused = false;
     this.deathCleanupTimer = null;
@@ -60,10 +60,7 @@ export class ServerPlayer extends ServerGameObject {
     }
     this.inputs = inputActions.states || {};
     this.inputPressed = inputActions.wasPressed || {};
-    if (inputActions.mouseWorldPos) {
-      this.mouseWorldPos = inputActions.mouseWorldPos;
-      this.isDirty = true;
-    }
+
   }
 
   /**
@@ -97,26 +94,27 @@ export class ServerPlayer extends ServerGameObject {
 
       this.vx = dx * this.speed;
       this.vy = dy * this.speed;
+      this.angle = Math.atan2(dy, dx);
+      this.isDirty = true;
     }
 
     if (this.shootCooldown > 0) this.shootCooldown--;
     this.score = Math.floor(this.ep - 100);
   }
 
-  shoot(targetX, targetY, game) {
+  shoot(game) { 
     if (this.shootCooldown > 0 || this.stockedBullets.length === 0) {
       return;
     }
 
     const bulletData = this.stockedBullets.pop();
-
-    const damage =
-      typeof bulletData === "object" ? bulletData.damage : bulletData;
-    const type =
-      typeof bulletData === "object" ? bulletData.type : "player_special_1";
-
+    const damage = typeof bulletData === "object" ? bulletData.damage : bulletData;
+    const type = typeof bulletData === "object" ? bulletData.type : "player_special_1";
+    
     this.isDirty = true;
-    const angle = Math.atan2(targetY - this.y, targetX - this.x);
+
+    // ★変更: マウス座標計算をやめ、現在の angle をそのまま使う
+    const angle = this.angle;
     let speed = 9;
     let radius = 6;
 
@@ -178,7 +176,7 @@ export class ServerPlayer extends ServerGameObject {
       y: this.y,
       hp: this.hp,
       ep: this.ep,
-
+      aimAngle: this.angle,
       aimAngle: Math.atan2(
         this.mouseWorldPos.y - this.y,
         this.mouseWorldPos.x - this.x

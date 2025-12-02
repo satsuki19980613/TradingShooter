@@ -518,7 +518,7 @@ export class ServerGame {
         if (!inputActions.wasPressed[action]) continue;
 
         if (action === "shoot") {
-          player.shoot(player.mouseWorldPos.x, player.mouseWorldPos.y, this);
+          player.shoot(this);
         }
 
         if (action === "trade_long") {

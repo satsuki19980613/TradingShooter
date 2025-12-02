@@ -329,12 +329,8 @@ export class NetworkManager {
     const view = new DataView(buffer);
     view.setUint8(0, 2);
     view.setUint16(1, mask, true);
-    const mx = inputActions.mouseWorldPos ? inputActions.mouseWorldPos.x : 0;
-    view.setFloat32(3, mx, true);
-    const my = inputActions.mouseWorldPos ? inputActions.mouseWorldPos.y : 0;
-    view.setFloat32(7, my, true);
     this.ws.send(buffer);
-    this.stats.total_bytes += 11;
+    this.stats.total_bytes += 3;
   }
 
   sendPause() {

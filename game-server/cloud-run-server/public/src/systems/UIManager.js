@@ -419,7 +419,7 @@ export class UIManager {
     const slotHeight = Math.floor(availableHeight / maxStock - gap);
     
     // 幅設定（CSSで小さくしているので、Canvas内では幅を使い切る）
-    const contentWidth = canvasWidth * 0.7; 
+    const contentWidth = canvasWidth * 0.35; 
     const startX = (canvasWidth - contentWidth) / 2 + 10; // 斜めにする分、少し右へ
     const bottomY = canvasHeight - paddingY;
 
@@ -427,7 +427,7 @@ export class UIManager {
 
     // ★デザイン変更: 全体を斜めに傾ける (Skew)
     // 水平方向に -0.3 の傾斜をつける
-    ctx.transform(1, 0, -0.3, 1, 0, 0);
+    ctx.transform(1, 0, 0, 1, 0, 0);
 
     for (let i = 0; i < maxStock; i++) {
       const currentY = bottomY - (i + 1) * (slotHeight + gap) + gap;
