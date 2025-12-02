@@ -85,6 +85,7 @@ export class Game {
     this.BASE_WIDTH = 896;
     this.BASE_HEIGHT = 414;
     this.gameScale = 1.0;
+    this.particlePool = [];
   }
 
   sendPause() {
@@ -146,6 +147,38 @@ export class Game {
       this.sendInputLoop.bind(this),
       INPUT_SEND_INTERVAL
     );
+  }
+  // Gameクラスの中（spawnParticleメソッドの下あたり）に追加してください
+
+  /**
+   * ヒットエフェクト生成
+   * @param {number} x - 発生X座標
+   * @param {number} y - 発生Y座標
+   * @param {string} color - エフェクトの色
+   * @param {number} count - パーティクルの数
+   * @param {string} type - 'hit' または 'explosion'
+   */
+  createHitEffect(x, y, color, count, type = "hit") {
+    // spawnParticle が定義されているか念のため確認
+    if (typeof this.spawnParticle !== 'function') {
+        console.error("spawnParticle is not defined! Fallback to new Particle.");
+        return; 
+    }
+
+    for (let i = 0; i < count; i++) {
+      const speed = Math.random() * 5 + 2;
+      const angle = Math.random() * Math.PI * 2;
+      const vx = Math.cos(angle) * speed;
+      const vy = Math.sin(angle) * speed;
+      const radius = Math.random() * 2 + 1;
+
+      // プールを使った生成メソッドを呼び出す
+      this.spawnParticle(x, y, radius, color, vx, vy, "spark");
+    }
+
+    if (type === "explosion" || count > 8) {
+      this.spawnParticle(x, y, 10, color, 0, 0, "ring");
+    }
   }
 
   stopGameLoop() {
@@ -269,10 +302,16 @@ export class Game {
     if (this.gameCanvas.width === 0 || this.chartCanvas.width === 0) {
       this.resizeCanvas();
     }
-    this.particles = this.particles.filter((p) => {
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const p = this.particles[i];
       p.update();
-      return p.alpha > 0;
-    });
+
+      if (p.alpha <= 0) {
+        this.particlePool.push(p);
+
+        this.particles.splice(i, 1);
+      }
+    }
 
     this.playerEntities.forEach((p) => p.update());
     this.enemyEntities.forEach((e) => e.update());
@@ -329,11 +368,11 @@ export class Game {
         this.chartCanvas.width,
         this.chartCanvas.height
       );
-      const dpr = window.devicePixelRatio || 1; // ★DPR取得
+      const dpr = window.devicePixelRatio || 1;
       this.trading.drawChart(
         this.chartCtx,
-        this.chartCanvas.width / dpr, // ★論理幅を渡す
-        this.chartCanvas.height / dpr, // ★論理高さを渡す
+        this.chartCanvas.width / dpr,
+        this.chartCanvas.height / dpr,
         myPlayerState
       );
     }
@@ -386,6 +425,21 @@ export class Game {
       const simStats = this.networkManager.getSimulationStats();
       this.uiManager.syncDebugHUD(stats, simStats, this.serverPerformanceStats);
     }
+  }
+
+  /**
+   * ★パーティクルを生成（プールから再利用）するメソッド
+   */
+  spawnParticle(x, y, radius, color, vx, vy, type = "spark") {
+    let p;
+
+    if (this.particlePool.length > 0) {
+      p = this.particlePool.pop();
+      p.reset(x, y, radius, color, vx, vy, type);
+    } else {
+      p = new Particle(x, y, radius, color, vx, vy, type);
+    }
+    this.particles.push(p);
   }
 
   applySnapshot(snapshot) {
@@ -542,21 +596,16 @@ export class Game {
    * @param {number} count - パーティクルの数
    * @param {string} type - 'hit' または 'explosion'
    */
-  createHitEffect(x, y, color, count, type = "hit") {
+  createParticles(x, y, color, count) {
     for (let i = 0; i < count; i++) {
-      const speed = Math.random() * 5 + 2;
-      const angle = Math.random() * Math.PI * 2;
-      const vx = Math.cos(angle) * speed;
-      const vy = Math.sin(angle) * speed;
-      const radius = Math.random() * 2 + 1;
-      this.particles.push(new Particle(x, y, radius, color, vx, vy, "spark"));
+        const vx = (Math.random() - 0.5) * 5;
+        const vy = (Math.random() - 0.5) * 5 - 2;
+        const radius = Math.random() * 3 + 1;
+        
+        // ★修正
+        this.spawnParticle(x, y, radius, color, vx, vy);
     }
-
-    if (type === "explosion" || count > 8) {
-      this.particles.push(new Particle(x, y, 10, color, 0, 0, "ring"));
-    }
-  }
-
+}
   setStaticState(staticData) {
     if (!staticData) return;
 

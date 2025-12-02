@@ -1,9 +1,6 @@
 import { GameObject } from "./GameObject.js";
+import { skinManager } from "../systems/SkinManager.js";
 
-/**
- * パーティクルクラス
- * type: 'spark', 'smoke', 'ring', 'rect', 'bolt'
- */
 export class Particle extends GameObject {
   constructor(x, y, radius, color, vx, vy, type = "spark") {
     super(x, y, radius, color);
@@ -11,102 +8,68 @@ export class Particle extends GameObject {
     this.vy = vy;
     this.type = type;
     this.alpha = 1.0;
-    this.friction = 0.95; // 摩擦追加
+    this.friction = 0.95;
     this.decay = Math.random() * 0.03 + 0.02;
 
     this.boltSegments = [];
-    if (this.type === 'bolt') {
-        this.decay = 0.1;
-        this.generateBolt();
+    if (this.type === "bolt") {
+      this.decay = 0.1;
+      this.generateBolt();
     }
-  }
 
-  generateBolt() {
-      let currX = 0;
-      let currY = 0;
-      const len = this.radius * 3; 
-      const segments = 4;
-      this.boltSegments.push({x:0, y:0});
-      for(let i=0; i<segments; i++) {
-          currX += len / segments;
-          currY += (Math.random() - 0.5) * 15; 
-          this.boltSegments.push({x: currX, y: currY});
-      }
+    this.skinKey = `particle_${this.type}_${this.color}`;
   }
 
   update() {
     this.x += this.vx;
     this.y += this.vy;
-    
-    // 摩擦
     this.vx *= this.friction;
     this.vy *= this.friction;
-
     this.alpha -= this.decay;
-
-    if (this.type === 'smoke') {
-        this.radius *= 0.96; 
-        this.y -= 0.5;
+    if (this.type === "smoke") {
+      this.radius *= 0.96;
+      this.y -= 0.5;
     }
   }
 
   draw(ctx) {
     if (this.alpha <= 0) return;
+
+    const baseSize = 32;
+
+    const skin = skinManager.getSkin(
+      this.skinKey,
+      baseSize,
+      baseSize,
+      (g, w, h) => {
+        const cx = w / 2;
+        const cy = h / 2;
+        const r = w / 4;
+
+        g.shadowBlur = 10;
+        g.shadowColor = this.color;
+        g.fillStyle = this.color;
+
+        if (this.type === "rect" || this.type === "bolt") {
+          g.fillRect(cx - r, cy - r, r * 2, r * 2);
+        } else {
+          g.beginPath();
+          g.arc(cx, cy, r, 0, Math.PI * 2);
+          g.fill();
+        }
+      }
+    );
+
     ctx.save();
+    ctx.translate(this.x, this.y);
     ctx.globalAlpha = this.alpha;
-    
-    ctx.globalCompositeOperation = 'lighter';
-    ctx.fillStyle = this.color;
-    ctx.strokeStyle = this.color;
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = this.color;
 
-    if (this.type === "ring") {
-      const ringSize = this.radius * (2 - this.alpha);
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, ringSize, 0, Math.PI * 2);
-      ctx.stroke();
+    ctx.globalCompositeOperation = "lighter";
 
-    } else if (this.type === "spark") {
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-      ctx.fill();
+    const scale = this.radius / (baseSize / 4);
+    ctx.scale(scale, scale);
 
-    } else if (this.type === "smoke") {
-       ctx.globalCompositeOperation = 'source-over';
-       ctx.globalAlpha = this.alpha * 0.6;
-       ctx.beginPath();
-       ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-       ctx.fill();
-
-    } else if (this.type === "rect") {
-        ctx.translate(this.x, this.y);
-        ctx.rotate(this.alpha * 5);
-        ctx.fillRect(-this.radius/2, -this.radius/2, this.radius, this.radius);
-
-    } else if (this.type === "bolt") {
-        ctx.translate(this.x, this.y);
-        ctx.rotate(Math.atan2(this.vy, this.vx)); 
-        
-        ctx.lineWidth = 2;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        
-        ctx.beginPath();
-        this.boltSegments.forEach((seg, i) => {
-            if(i===0) ctx.moveTo(seg.x, seg.y);
-            else ctx.lineTo(seg.x, seg.y);
-        });
-        ctx.stroke();
-    } else {
-        // Fallback (for generic GameObject draw)
-        // ここでsuper.drawを呼ぶと、rect型などでradiusがマイナスになった時にクラッシュする可能性があるため、
-        // 念のため単純な円描画にしておきます
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, Math.abs(this.radius), 0, Math.PI * 2);
-        ctx.fill();
-    }
+    ctx.drawImage(skin, -baseSize / 2, -baseSize / 2);
 
     ctx.restore();
   }

@@ -59,16 +59,14 @@ export class Bullet extends GameObject {
     }
     if (this.type === "player_special_1" || this.type === "player") {
       if (Math.random() < 0.3) {
-        gameInstance.particles.push(
-          new Particle(
+        gameInstance.spawnParticle(
             this.x, 
             this.y, 
-            2,          // radius
-            "#00aaff",  // color
-            0,          // vx
-            0,          // vy
-            "spark"     // type
-          )
+            2, 
+            "#00aaff", 
+            0, 
+            0, 
+            "spark"
         );
       }
     }
