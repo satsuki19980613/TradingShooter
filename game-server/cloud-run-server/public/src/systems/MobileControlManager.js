@@ -127,26 +127,7 @@ export class MobileControlManager {
         this.updateJoystickVisual(0, 0);
       };
 
-      const moveJoy = (clientX, clientY) => {
-        if (!this.joystickState.active) return;
-
-        let dx = clientX - this.joystickState.startX;
-        let dy = clientY - this.joystickState.startY;
-
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const max = this.joystickState.maxDist;
-
-        if (dist > max) {
-          dx = (dx / dist) * max;
-          dy = (dy / dist) * max;
-        }
-
-        this.updateJoystickVisual(dx, dy);
-
-        if (window.gameInput) {
-          window.gameInput.setJoystickVector(dx / max, dy / max);
-        }
-      };
+      
 
       const endJoy = () => {
         this.joystickState.active = false;
