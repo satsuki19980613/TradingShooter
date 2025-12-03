@@ -72,7 +72,7 @@ export class Trading {
 
     if (chartData.length < 2) return;
 
-    const padding = { top: 20, right: 60, bottom: 20, left: 10 };
+    const padding = { top: 10, right: 30, bottom: 5, left: 0 };
     const chartX = padding.left;
     const chartY = padding.top;
     const chartWidth = canvasWidth - padding.left - padding.right;
@@ -86,16 +86,16 @@ export class Trading {
     maxPrice += margin;
     minPrice -= margin;
     const renderRange = maxPrice - minPrice;
-
+    const px = (val) => Math.floor(val) + 0.5;
     const getX = (index) =>
       chartX + (index / (visibleData.length - 1)) * chartWidth;
     const getY = (price) =>
       chartY + chartHeight - ((price - minPrice) / renderRange) * chartHeight;
 
     ctx.beginPath();
-    ctx.moveTo(getX(0), getY(visibleData[0]));
+   ctx.moveTo(px(getX(0)), px(getY(visibleData[0])));
     for (let i = 1; i < visibleData.length; i++) {
-      ctx.lineTo(getX(i), getY(visibleData[i]));
+      ctx.lineTo(px(getX(i)), px(getY(visibleData[i])));
     }
     const lastPrice = visibleData[visibleData.length - 1];
     const firstPrice = visibleData[0];
@@ -141,10 +141,10 @@ export class Trading {
         const y = getY(val);
 
         if (!maStarted) {
-          ctx.moveTo(x, y);
+          ctx.moveTo(px(x), px(y));
           maStarted = true;
         } else {
-          ctx.lineTo(x, y);
+         ctx.lineTo(px(x), px(y));
         }
       }
       ctx.stroke();
@@ -155,8 +155,8 @@ export class Trading {
     ctx.setLineDash([5, 5]);
     ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 1;
-    ctx.moveTo(chartX, currentY);
-    ctx.lineTo(chartX + chartWidth, currentY);
+    ctx.moveTo(px(chartX), px(currentY)); // ★修正
+    ctx.lineTo(px(chartX + chartWidth), px(currentY));
     ctx.stroke();
     ctx.setLineDash([]);
 
@@ -176,8 +176,8 @@ export class Trading {
       ctx.lineWidth = 2;
       ctx.setLineDash([4, 4]);
 
-      ctx.moveTo(chartX, entryY);
-      ctx.lineTo(chartX + chartWidth, entryY);
+      ctx.moveTo(px(chartX), px(entryY)); // ★修正
+       ctx.lineTo(px(chartX + chartWidth), px(entryY));
       ctx.stroke();
       ctx.setLineDash([]);
 

@@ -82,10 +82,42 @@ export class Game {
     this.magazineCtx = this.magazineCanvas
       ? this.magazineCanvas.getContext("2d")
       : null;
-    this.BASE_WIDTH = 896;
-    this.BASE_HEIGHT = 414;
+    this.BASE_WIDTH = 900;
+    this.BASE_HEIGHT = 450;
     this.gameScale = 1.0;
     this.particlePool = [];
+  }
+
+  createHitEffect(x, y, color, count, type = "hit") {
+    if (typeof this.spawnParticle !== "function") {
+      console.error("spawnParticle not found!");
+      return;
+    }
+
+    for (let i = 0; i < count; i++) {
+      const speed = Math.random() * 5 + 2;
+      const angle = Math.random() * Math.PI * 2;
+      const vx = Math.cos(angle) * speed;
+      const vy = Math.sin(angle) * speed;
+      const radius = Math.random() * 2 + 1;
+
+      this.spawnParticle(x, y, radius, color, vx, vy, "spark");
+    }
+
+    if (type === "explosion" || count > 8) {
+      this.spawnParticle(x, y, 10, color, 0, 0, "ring");
+    }
+  }
+
+  spawnParticle(x, y, radius, color, vx, vy, type = "spark") {
+    let p;
+    if (this.particlePool.length > 0) {
+      p = this.particlePool.pop();
+      p.reset(x, y, radius, color, vx, vy, type);
+    } else {
+      p = new Particle(x, y, radius, color, vx, vy, type);
+    }
+    this.particles.push(p);
   }
 
   sendPause() {
@@ -148,38 +180,6 @@ export class Game {
       INPUT_SEND_INTERVAL
     );
   }
-  // Gameクラスの中（spawnParticleメソッドの下あたり）に追加してください
-
-  /**
-   * ヒットエフェクト生成
-   * @param {number} x - 発生X座標
-   * @param {number} y - 発生Y座標
-   * @param {string} color - エフェクトの色
-   * @param {number} count - パーティクルの数
-   * @param {string} type - 'hit' または 'explosion'
-   */
-  createHitEffect(x, y, color, count, type = "hit") {
-    // spawnParticle が定義されているか念のため確認
-    if (typeof this.spawnParticle !== 'function') {
-        console.error("spawnParticle is not defined! Fallback to new Particle.");
-        return; 
-    }
-
-    for (let i = 0; i < count; i++) {
-      const speed = Math.random() * 5 + 2;
-      const angle = Math.random() * Math.PI * 2;
-      const vx = Math.cos(angle) * speed;
-      const vy = Math.sin(angle) * speed;
-      const radius = Math.random() * 2 + 1;
-
-      // プールを使った生成メソッドを呼び出す
-      this.spawnParticle(x, y, radius, color, vx, vy, "spark");
-    }
-
-    if (type === "explosion" || count > 8) {
-      this.spawnParticle(x, y, 10, color, 0, 0, "ring");
-    }
-  }
 
   stopGameLoop() {
     console.log("クライアントの描画/入力ループを停止...");
@@ -216,19 +216,23 @@ export class Game {
     }
 
     if (this.chartCanvas && this.chartCanvas.parentElement) {
-      const w = this.chartCanvas.parentElement.clientWidth;
-      const h = this.chartCanvas.parentElement.clientHeight;
+      // ★修正: 親要素のサイズを整数で取得
+      const w = Math.floor(this.chartCanvas.parentElement.clientWidth);
+      const h = Math.floor(this.chartCanvas.parentElement.clientHeight);
 
       const dpr = window.devicePixelRatio || 1;
 
       if (w > 0 && h > 0) {
-        this.chartCanvas.width = w * dpr;
-        this.chartCanvas.height = h * dpr;
+        // ★修正: バッファサイズも整数化する
+        this.chartCanvas.width = Math.floor(w * dpr);
+        this.chartCanvas.height = Math.floor(h * dpr);
 
         this.chartCanvas.style.width = `${w}px`;
         this.chartCanvas.style.height = `${h}px`;
 
         if (this.chartCtx) {
+          // ★追加: 既存の変形をリセットしてからスケール設定
+          this.chartCtx.setTransform(1, 0, 0, 1, 0, 0); 
           this.chartCtx.scale(dpr, dpr);
         }
       }
@@ -427,21 +431,6 @@ export class Game {
     }
   }
 
-  /**
-   * ★パーティクルを生成（プールから再利用）するメソッド
-   */
-  spawnParticle(x, y, radius, color, vx, vy, type = "spark") {
-    let p;
-
-    if (this.particlePool.length > 0) {
-      p = this.particlePool.pop();
-      p.reset(x, y, radius, color, vx, vy, type);
-    } else {
-      p = new Particle(x, y, radius, color, vx, vy, type);
-    }
-    this.particles.push(p);
-  }
-
   applySnapshot(snapshot) {
     if (!snapshot) return;
 
@@ -486,6 +475,8 @@ export class Game {
       delta.events.forEach((ev) => {
         if (ev.type === "hit") {
           this.createHitEffect(ev.x, ev.y, ev.color, 8, "hit");
+        } else if (ev.type === "explosion") {
+          this.createHitEffect(ev.x, ev.y, ev.color, 30, "explosion");
         }
       });
     }
@@ -553,26 +544,6 @@ export class Game {
 
       if (delta.removed.enemies) {
         delta.removed.enemies.forEach((id) => {
-          const enemy = this.enemyEntities.get(id);
-          if (enemy) {
-            let isDeath = false;
-            if (myPlayer) {
-              const dx = enemy.x - myPlayer.x;
-              const dy = enemy.y - myPlayer.y;
-              if (dx * dx + dy * dy < 650 * 650) {
-                isDeath = true;
-              }
-            }
-            if (isDeath) {
-              this.createHitEffect(
-                enemy.x,
-                enemy.y,
-                "#f44336",
-                30,
-                "explosion"
-              );
-            }
-          }
           this.enemyEntities.delete(id);
         });
       }
@@ -588,24 +559,7 @@ export class Game {
       this.gameOver(myPlayer.score || 0);
     }
   }
-  /**
-   * ヒットエフェクト生成
-   * @param {number} x - 発生X座標
-   * @param {number} y - 発生Y座標
-   * @param {string} color - エフェクトの色
-   * @param {number} count - パーティクルの数
-   * @param {string} type - 'hit' または 'explosion'
-   */
-  createParticles(x, y, color, count) {
-    for (let i = 0; i < count; i++) {
-        const vx = (Math.random() - 0.5) * 5;
-        const vy = (Math.random() - 0.5) * 5 - 2;
-        const radius = Math.random() * 3 + 1;
-        
-        // ★修正
-        this.spawnParticle(x, y, radius, color, vx, vy);
-    }
-}
+
   setStaticState(staticData) {
     if (!staticData) return;
 

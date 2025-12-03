@@ -272,7 +272,7 @@ export class ServerNetworkSystem {
   }
 
   getRelevantEntityMapsFor(player) {
-    const viewport = { x: player.x, y: player.y, radius: 700 };
+    const viewport = { x: player.x, y: player.y, radius: 500 };
     const nearbyEntities = this.game.grid.getNearbyEntities(viewport);
     const playersMap = new Map();
     const enemiesMap = new Map();

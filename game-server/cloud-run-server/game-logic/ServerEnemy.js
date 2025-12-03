@@ -32,7 +32,7 @@ export class ServerEnemy extends ServerGameObject {
   }
 
   update(game) {
-    const SEARCH_RADIUS = 700;
+    const SEARCH_RADIUS = 500;
     const searchArea = { x: this.x, y: this.y, radius: SEARCH_RADIUS };
 
     const nearbyEntities = game.grid.getNearbyEntities(searchArea);
@@ -108,6 +108,12 @@ export class ServerEnemy extends ServerGameObject {
         attackerPlayer.hp = Math.min(100, attackerPlayer.hp + 20);
         attackerPlayer.isDirty = true;
       }
+      game.frameEvents.push({
+        type: "explosion", // 新しいイベントタイプ
+        x: this.x,
+        y: this.y,
+        color: "#f44336"   // 敵の色（赤）
+      });
 
       game.removeEnemy(this);
     }

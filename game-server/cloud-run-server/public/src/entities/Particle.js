@@ -19,6 +19,29 @@ export class Particle extends GameObject {
 
     this.skinKey = `particle_${this.type}_${this.color}`;
   }
+  reset(x, y, radius, color, vx, vy, type = "spark") {
+    this.x = x;
+    this.y = y;
+    this.radius = radius;
+    this.color = color;
+    this.vx = vx;
+    this.vy = vy;
+    this.type = type;
+    
+    // パラメータを初期状態に戻す
+    this.alpha = 1.0;
+    this.decay = Math.random() * 0.03 + 0.02;
+    
+    // スキンキーの再生成（色がかわる可能性があるため）
+    this.skinKey = `particle_${this.type}_${this.color}`;
+
+    // bolt（稲妻）タイプなどの特殊処理があればここでも初期化
+    if (this.type === 'bolt') {
+        this.decay = 0.1;
+        this.boltSegments = []; 
+        this.generateBolt();
+    }
+  }
 
   update() {
     this.x += this.vx;

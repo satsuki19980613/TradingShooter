@@ -1,7 +1,6 @@
 import { GameObject } from "./GameObject.js";
 import { skinManager } from "../systems/SkinManager.js";
 import { BulletSkins } from "../skins/bullets/BulletSkins.js";
-import { Particle } from "./Particle.js";
 import { getDistance } from "../utils.js"; 
 
 export class Bullet extends GameObject {
