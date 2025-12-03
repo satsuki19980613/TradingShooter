@@ -16,6 +16,11 @@ export class AppFlowManager {
     this.firebase = firebaseManager;
     this.network = networkManager;
     this.isDebugMode = uiManager.isDebugMode;
+    this.bgmAudio = document.getElementById("bg-music");
+    if (this.bgmAudio) {
+        this.bgmAudio.volume = 0.3; // 音量を30%に設定（適宜調整）
+    }
+  
   }
 
   init() {
@@ -51,6 +56,7 @@ export class AppFlowManager {
   }
 
   async handleStartGame(playerName) {
+    this.playBGM();
     this.ui.setLoadingText("接続中...");
     this.ui.showScreen("loading");
 
@@ -139,6 +145,22 @@ export class AppFlowManager {
       } catch (error) {
           this.ui.showErrorScreen("接続失敗", error);
       }
+  }
+  playBGM() {
+    if (this.bgmAudio) {
+      // ユーザーインタラクション内（クリックイベントなど）で呼ぶ必要があります
+      this.bgmAudio.play().catch(e => {
+        console.warn("BGM autoplay prevented:", e);
+      });
+    }
+  }
+
+  // ▼▼▼ BGM停止メソッド ▼▼▼
+  stopBGM() {
+    if (this.bgmAudio) {
+      this.bgmAudio.pause();
+      this.bgmAudio.currentTime = 0; // 最初に戻す
+    }
   }
 
   handleRetire() {
