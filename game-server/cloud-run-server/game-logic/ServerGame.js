@@ -30,6 +30,7 @@ import { ServerAccountManager } from "./ServerAccountManager.js";
 import { ServerNetworkSystem } from "./ServerNetworkSystem.js";
 import { ServerPhysicsSystem } from "./ServerPhysicsSystem.js";
 import { ServerPersistenceManager } from "./ServerPersistenceManager.js";
+import { ServerMapLoader } from "./ServerMapLoader.js";
 
 const IDLE_WARNING_TIME = 180000;
 const IDLE_TIMEOUT_TIME = 300000;
@@ -50,7 +51,7 @@ try {
   console.log(`[Server] マップデータをキャッシュしました: ${mapFileName}`);
 } catch (error) {
   console.warn(`[Server] マップ読み込み失敗 (キャッシュなし):`, error.message);
-  // 失敗時はデフォルト値を入れておく
+
   CACHED_MAP_DATA = {
     worldSize: { width: WORLD_WIDTH, height: WORLD_HEIGHT },
     obstacles: [],
@@ -107,88 +108,8 @@ export class ServerGame {
    * ワールドの初期化 (障害物と敵の配置)
    */
   initWorld() {
-   let mapData = CACHED_MAP_DATA;
-   if (!mapData.definitions && mapData.obstacles && !Array.isArray(mapData.obstacles)) {
-        console.log("[ServerGame] 入れ子になったマップ構造を検出しました。データを補正します。");
-        mapData = mapData.obstacles;
-    }
-    this.WORLD_WIDTH =
-      (mapData.worldSize && mapData.worldSize.width) || WORLD_WIDTH;
-    this.WORLD_HEIGHT =
-      (mapData.worldSize && mapData.worldSize.height) || WORLD_HEIGHT;
+    ServerMapLoader.loadMapData(this, CACHED_MAP_DATA);
 
-    let obstacleConfigs = [];
-
-    if (mapData.definitions && mapData.placements) {
-      console.log(`[ServerGame] パレット形式のマップデータを読み込みます。`);
-      obstacleConfigs = mapData.placements
-        .map((placement) => {
-          const def = mapData.definitions[placement.defId];
-          if (!def) {
-            console.warn(
-              `[MapError] 定義ID '${placement.defId}' が見つかりません。`
-            );
-            return null;
-          }
-
-          return {
-            ...def,
-            x: placement.x,
-            y: placement.y,
-            rotation: placement.rotation || 0,
-            id: placement.id,
-          };
-        })
-        .filter(Boolean);
-    } else if (mapData.obstacles) {
-      console.log(`[ServerGame] 従来形式のマップデータを読み込みます。`);
-      obstacleConfigs = mapData.obstacles;
-    }
-
-    this.obstacles = obstacleConfigs
-      .map((obsData) => {
-        if (obsData.type === "obstacle_wall" || obsData.type === "WALL") {
-          const obs = new ServerObstacle(
-            obsData.x,
-            obsData.y,
-            obsData.width,
-            obsData.height,
-            "obstacle_wall",
-            obsData.borderRadius || 0,
-            obsData.individualRadii || {},
-            obsData.rotation || 0,
-            obsData.className
-          );
-
-          if (obsData.colliders) {
-            obs.setColliders(obsData.colliders);
-          }
-          return obs;
-        }
-        return null;
-      })
-      .filter((obs) => obs !== null);
-
-    if (mapData.playerSpawns && mapData.playerSpawns.length > 0) {
-      this.playerSpawns = mapData.playerSpawns;
-    } else {
-      console.warn(
-        `[ServerGame] マップに playerSpawns がないため、デフォルト値を使用します。`
-      );
-      this.playerSpawns = [{ x: 500, y: 500 }];
-    }
-
-    if (mapData.enemySpawns && mapData.enemySpawns.length > 0) {
-      this.enemySpawns = mapData.enemySpawns;
-    } else {
-      console.warn(
-        `[ServerGame] マップに enemySpawns がないため、デフォルト値を使用します。`
-      );
-      this.enemySpawns = [{ x: 1500, y: 1500 }];
-    }
-    this.obstacles.forEach((obs) => {
-      this.grid.insertStatic(obs);
-    });
     this.nextSpawnIndex = 0;
     for (let i = 0; i < 3; i++) {
       this.spawnEnemy();
@@ -558,30 +479,25 @@ export class ServerGame {
     }
   }
 
-  // ★新規メソッド: 決済処理
-  // ★新規メソッド: 決済処理 (修正版)
   handleSettle(player) {
     if (player.isDead) return;
-    
+
     const result = this.trading.releaseCharge(player);
-    
+
     if (result) {
       if (result.type === "profit") {
         const profit = result.profitAmount;
-        let bulletType = "player_special_1"; // Tier 1 (通常)
+        let bulletType = "player_special_1";
 
-        // ★追加: 利益額(HP100基準)に応じたティア判定
         if (profit >= 100) {
-            bulletType = "player_special_4"; // Tier 4 (即死級)
+          bulletType = "player_special_4";
         } else if (profit >= 50) {
-            bulletType = "player_special_3"; // Tier 3 (大ダメージ)
+          bulletType = "player_special_3";
         } else if (profit >= 25) {
-            bulletType = "player_special_2"; // Tier 2 (中ダメージ)
+          bulletType = "player_special_2";
         }
 
-        // 第2引数に bulletType を渡すように変更
-        player.specialAttack(profit, bulletType); 
-
+        player.specialAttack(profit, bulletType);
       } else {
         player.takeDamage(result.lossAmount, this, null);
       }

@@ -11,6 +11,7 @@
  * - 通信パケットの解析 (NetworkManager/PacketReader へ)
  */
 import { Player } from "./entities/Player.js";
+import { ParticleSystem } from "./systems/ParticleSystem.js";
 import { Enemy } from "./entities/Enemy.js";
 import { Bullet } from "./entities/Bullet.js";
 import { Particle } from "./entities/Particle.js";
@@ -57,7 +58,6 @@ export class Game {
     this.enemyEntities = new Map();
     this.bulletEntities = new Map();
     this.obstacleEntities = new Map();
-    this.particles = [];
     this.cameraX = 0;
     this.cameraY = 0;
     this.mousePos = { x: 0, y: 0 };
@@ -85,40 +85,11 @@ export class Game {
     this.BASE_WIDTH = 900;
     this.BASE_HEIGHT = 450;
     this.gameScale = 1.0;
-    this.particlePool = [];
   }
 
-  createHitEffect(x, y, color, count, type = "hit") {
-    if (typeof this.spawnParticle !== "function") {
-      console.error("spawnParticle not found!");
-      return;
-    }
+ 
 
-    for (let i = 0; i < count; i++) {
-      const speed = Math.random() * 5 + 2;
-      const angle = Math.random() * Math.PI * 2;
-      const vx = Math.cos(angle) * speed;
-      const vy = Math.sin(angle) * speed;
-      const radius = Math.random() * 2 + 1;
 
-      this.spawnParticle(x, y, radius, color, vx, vy, "spark");
-    }
-
-    if (type === "explosion" || count > 8) {
-      this.spawnParticle(x, y, 10, color, 0, 0, "ring");
-    }
-  }
-
-  spawnParticle(x, y, radius, color, vx, vy, type = "spark") {
-    let p;
-    if (this.particlePool.length > 0) {
-      p = this.particlePool.pop();
-      p.reset(x, y, radius, color, vx, vy, type);
-    } else {
-      p = new Particle(x, y, radius, color, vx, vy, type);
-    }
-    this.particles.push(p);
-  }
 
   sendPause() {
     if (this.networkManager) {
@@ -318,6 +289,7 @@ export class Game {
   }
 
   renderLoop() {
+    this.particleSystem.update();
     this.renderLoopId = requestAnimationFrame(this.renderLoop.bind(this));
     if (this.gameCanvas.width === 0 || this.chartCanvas.width === 0) {
       this.resizeCanvas();
@@ -332,7 +304,7 @@ export class Game {
         this.particles.splice(i, 1);
       }
     }
-
+    this.particleSystem.draw(ctx);
     this.playerEntities.forEach((p) => {
       p.update(this);
     });
