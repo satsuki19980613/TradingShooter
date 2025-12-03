@@ -2,5 +2,157 @@
   "worldSize": {
     "width": 3000,
     "height": 3000
-  }
+  },
+  "obstacles": {
+    "worldSize": {
+      "width": 3000,
+      "height": 3000
+    },
+    "definitions": {
+      "obs-hexagon-fortress-animated": {
+        "type": "obstacle_wall",
+        "width": 490,
+        "height": 490,
+        "className": "obs-hexagon-fortress-animated",
+        "borderRadius": 0,
+        "colliders": [
+          {
+            "type": "rect",
+            "x": 0,
+            "y": -0.5,
+            "w": 35,
+            "h": 18,
+            "angle": 0,
+            "offsetX": 0,
+            "offsetY": -0.5
+          },
+          {
+            "type": "rect",
+            "x": -0.5,
+            "y": 0,
+            "w": 35,
+            "h": 20,
+            "angle": 60,
+            "offsetX": -0.5,
+            "offsetY": 0
+          },
+          {
+            "type": "rect",
+            "x": -0.5,
+            "y": -0.5,
+            "w": 20,
+            "h": 34,
+            "angle": 30,
+            "offsetX": -0.5,
+            "offsetY": -0.5
+          }
+        ]
+      }
+    },
+    "placements": [
+      {
+        "defId": "obs-hexagon-fortress-animated",
+        "x": 245,
+        "y": 355,
+        "rotation": 0
+      },
+      {
+        "defId": "obs-hexagon-fortress-animated",
+        "x": 695,
+        "y": 415,
+        "rotation": 0
+      },
+      {
+        "defId": "obs-hexagon-fortress-animated",
+        "x": 835,
+        "y": 1585,
+        "rotation": 0
+      },
+      {
+        "defId": "obs-hexagon-fortress-animated",
+        "x": 915,
+        "y": 835,
+        "rotation": 0
+      },
+      {
+        "defId": "obs-hexagon-fortress-animated",
+        "x": 1165,
+        "y": 445,
+        "rotation": 0
+      },
+      {
+        "defId": "obs-hexagon-fortress-animated",
+        "x": 945,
+        "y": 25,
+        "rotation": 0
+      },
+      {
+        "defId": "obs-hexagon-fortress-animated",
+        "x": 625,
+        "y": 1175,
+        "rotation": 0
+      },
+      {
+        "defId": "obs-hexagon-fortress-animated",
+        "x": 1105,
+        "y": 1225,
+        "rotation": 0
+      },
+      {
+        "defId": "obs-hexagon-fortress-animated",
+        "x": 1625,
+        "y": 435,
+        "rotation": 0
+      },
+      {
+        "defId": "obs-hexagon-fortress-animated",
+        "x": 1615,
+        "y": 1255,
+        "rotation": 0
+      },
+      {
+        "defId": "obs-hexagon-fortress-animated",
+        "x": 1845,
+        "y": 855,
+        "rotation": 0
+      },
+      {
+        "defId": "obs-hexagon-fortress-animated",
+        "x": 1815,
+        "y": 1665,
+        "rotation": 0
+      },
+      {
+        "defId": "obs-hexagon-fortress-animated",
+        "x": 1075,
+        "y": 1975,
+        "rotation": 0
+      }
+    ],
+    "obstacles": [],
+    "playerSpawns": [
+      {
+        "x": 500,
+        "y": 500
+      }
+    ],
+    "enemySpawns": [
+      {
+        "x": 1500,
+        "y": 1500
+      }
+    ]
+  },
+  "playerSpawns": [
+    {
+      "x": 500,
+      "y": 500
+    }
+  ],
+  "enemySpawns": [
+    {
+      "x": 1500,
+      "y": 1500
+    }
+  ]
 }

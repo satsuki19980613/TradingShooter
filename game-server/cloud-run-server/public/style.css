@@ -1,288 +1,287 @@
-/* ========================================
- * 0. ユーティリティ & 基本設定
- * ======================================== */
 .hidden {
-    display: none !important;
+  display: none !important;
 }
 
 body {
-    font-family: 'Verdana', 'Noto Sans JP', sans-serif;
-    background-color: #000;
-    color: #f0f0f0;
-    overflow: hidden;
-    margin: 0;
-    padding: 0;
-    width: 100vw;
-    height: 100vh;
-    height: 100dvh;
-    box-sizing: border-box;
-    user-select: none;
-    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  font-family: "Verdana", "Noto Sans JP", sans-serif;
+  background-color: #000;
+  color: #f0f0f0;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  box-sizing: border-box;
+  user-select: none;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
-/* ========================================
- * 1. ゲーム描画レイヤー (最背面)
- * ======================================== */
 #cockpit-container {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    background-color: #000;
-    overflow: hidden;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-color: #000;
+  overflow: hidden;
 }
 
 .full-screen-layer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
 
 #game-field-wrapper,
 #game-field-container {
-    width: 100%;
-    height: 100%;
-    z-index: 1;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
 }
 
 canvas {
-    display: block;
+  display: block;
 }
 
 #obstacle-layer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 10;
-    pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  pointer-events: none;
 }
 
-/* ========================================
- * 2. UIレイヤー (前面)
- * ======================================== */
 #ui-fixed-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    transform: none !important;
-    z-index: 100;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  transform: none !important;
+  z-index: 100;
 }
 
-#ui-fixed-container>* {
-    pointer-events: auto;
+#ui-fixed-container > * {
+  pointer-events: auto;
 }
 
 #hud-layer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 20;
-    pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 20;
+  pointer-events: none;
 }
 
-/* ========================================
- * 3. HUD: ダッシュボード (左上)
- * ======================================== */
 #hud-dashboard {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    bottom: auto;
-    right: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    pointer-events: none;
-    z-index: 25;
-    transform-origin: top left;
-    transform: scale(var(--ui-scale, 1));
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  bottom: auto;
+  right: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  pointer-events: none;
+  z-index: 25;
+  transform-origin: top left;
+  transform: scale(var(--ui-scale, 1));
 }
 
 #hud-dashboard .dashboard-item,
 #hud-dashboard button {
-    pointer-events: auto;
+  pointer-events: auto;
 }
 
-/* 上段エリア: ステータスとチャート */
 .hud-upper-row {
-    display: flex;
-    flex-direction: row;
-    align-items: stretch !important; /* 高さを揃える */
-    gap: 5px;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch !important;
+  gap: 5px;
+  height: 130px;
 }
 
-/* ステータスパネル */
 .status-group {
-    width: 220px;
-    flex-shrink: 0;
+  transform: scale(1) !important;
+  transform-origin: top left;
+
+  margin-right: 0 !important;
+  margin-bottom: 5px !important;
 }
 
 .status-group .panel-module {
-    height: 100% !important;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    justify-content: center; /* 中身を上下中央に */
+  height: 100% !important;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
-/* チャートパネル */
 #bottom-chart-panel.dashboard-item {
-    position: relative !important;
-    bottom: auto !important;
-    left: auto !important;
-    right: auto !important;
-    transform: none !important;
-    margin: 0 !important;
-    width: 350px !important;
-    height: 110px !important;
-    background: transparent !important;
-    border: none !important;
-    padding: 0 !important; /* 余白削除 */
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5) !important; /* ステータスと同じシャドウ */
-    backdrop-filter: none !important;
+  position: relative !important;
+  bottom: auto !important;
+  left: auto !important;
+  right: auto !important;
+  transform: none !important;
+  margin: 0 !important;
+  width: 350px !important;
+  background: rgba(0, 0, 0, 0.3) !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: none !important;
 }
 
 #bottom-chart-left {
-    width: 100% !important;
-    height: 100% !important;
-    border: none !important;
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
 }
 
 #bottom-chart-panel canvas {
-    width: 100% !important;
-    height: 100% !important;
-    display: block;
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .chart-label-badge {
-    display: none !important;
+  display: none !important;
 }
 
-/* MA選択ボタン */
 #ma-selection-panel {
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: auto !important;
-    height: auto !important;
-    background: transparent !important;
-    display: flex !important;
-    flex-direction: row !important;
-    gap: 6px !important;
-    padding: 2px 0 0 2px !important;
-    z-index: 15;
-    transform: scale(0.9);
-    transform-origin: top left;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  background: transparent !important;
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 6px !important;
+  padding: 2px 0 0 2px !important;
+  z-index: 15;
+  transform: scale(0.9);
+  transform-origin: top left;
 }
 
 .ma-option {
-    margin: 0 !important;
-    display: flex;
-    align-items: center;
+  margin: 0 !important;
+  display: flex;
+  align-items: center;
 }
 
 .ma-option input[type="checkbox"] {
-    display: none;
+  display: none;
 }
 
 .ma-option label {
-    display: inline-block;
-    padding: 2px 8px;
-    background: rgba(30, 30, 30, 0.8);
-    border: 1px solid #555;
-    border-radius: 4px;
-    color: #777;
-    font-size: 10px;
-    font-family: 'Roboto Mono', monospace;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    user-select: none;
-    text-align: center;
-    min-width: 15px;
+  display: inline-block;
+  padding: 2px 8px;
+  background: rgba(30, 30, 30, 0.8);
+  border: 1px solid #555;
+  border-radius: 4px;
+  color: #777;
+  font-size: 10px;
+  font-family: "Roboto Mono", monospace;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  text-align: center;
+  min-width: 15px;
 }
 
 .ma-option label:hover {
-    background: rgba(50, 50, 50, 0.8);
-    border-color: #777;
-    color: #aaa;
+  background: rgba(50, 50, 50, 0.8);
+  border-color: #777;
+  color: #aaa;
 }
 
-.ma-option input:checked+label {
-    background: rgba(0, 0, 0, 0.6);
-    font-weight: bold;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
-    border-color: currentColor;
+.ma-option input:checked + label {
+  background: rgba(0, 0, 0, 0.6);
+  font-weight: bold;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+  border-color: currentColor;
 }
 
-.ma-option input#ma-short:checked+label { color: #00ffff; text-shadow: 0 0 5px #00ffff; }
-.ma-option input#ma-medium:checked+label { color: #ffff00; text-shadow: 0 0 5px #ffff00; }
-.ma-option input#ma-long:checked+label { color: #ff00ff; text-shadow: 0 0 5px #ff00ff; }
+.ma-option input#ma-short:checked + label {
+  color: #00ffff;
+  text-shadow: 0 0 5px #00ffff;
+}
+.ma-option input#ma-medium:checked + label {
+  color: #ffff00;
+  text-shadow: 0 0 5px #ffff00;
+}
+.ma-option input#ma-long:checked + label {
+  color: #ff00ff;
+  text-shadow: 0 0 5px #ff00ff;
+}
 
-/* ========================================
- * 4. HUD: その他グループ (右上・左下)
- * ======================================== */
 .hud-group {
-    position: absolute;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 15px;
-    transition: transform 0.2s ease;
-    pointer-events: none;
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 15px;
+  transition: transform 0.2s ease;
+  pointer-events: none;
 }
 
-/* 右上 (レーダー・マガジン) */
 .hud-group.top-right {
-    top: 20px;
-    right: 20px;
-    transform-origin: top right;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 10px;
-    transform: scale(var(--ui-scale, 1));
+  top: 5px;
+  right: 20px;
+  transform-origin: top right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  transform: scale(var(--ui-scale, 1));
 }
 
 .hud-group.top-right .hud-row {
     display: flex;
-    flex-direction: row;
-    gap: 0;
+    flex-direction: column;
+    gap: 10px;             
     align-items: center;
 }
 
-/* マガジンを左に寄せてレーダーに重ねる */
-.hud-group.top-right .hud-row>.panel-module:nth-child(2) {
-    margin-left: -22px;
+
+.hud-group.top-right .hud-row > .panel-module:nth-child(2) {
+    margin-left: 0 !important;
     position: relative;
     z-index: 10;
 }
 
+.hud-group.top-right .hud-row > .panel-module:nth-child(2) {
+  margin-left: -5px;
+  position: relative;
+  z-index: 10;
+}
+
 .hud-group.top-right .panel-module {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-    padding: 0 !important;
-    pointer-events: auto;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  padding: 0 !important;
+  pointer-events: auto;
 }
 
 .hud-group.top-right .panel-module h3 {
-    display: none !important;
+  display: none !important;
 }
 
 .hud-group.top-right .canvas-wrapper {
-    background: transparent !important;
-    border: none !important;
-    width: 80px !important;
-    height: 120px !important;
+  background: transparent !important;
+  border: none !important;
+  width: 120px !important;
+  height: 160px !important;
 }
 
 #btn-retire {
@@ -290,548 +289,626 @@ canvas {
     background-color: #d32f2f;
     width: auto;
     opacity: 0.8;
-    font-size: 10px;
-    padding: 4px 12px;
-    margin-top: 5px;
-    align-self: flex-end;
+    font-size: 12px;
+    padding: 8px 20px;
+    
+   
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 100;
+    
+   
+    transform: none; 
+    margin: 0;
 }
-
-/* 左下 (デバッグパネル) */
 .hud-group.bottom-left {
-    bottom: 0;
-    left: 0;
-    transform-origin: bottom left;
+  bottom: 0;
+  left: 0;
+  transform-origin: bottom left;
 }
 
 #debug-panel {
-    background: rgba(0, 0, 0, 0.8);
-    padding: 10px;
-    border: 1px solid #555;
-    font-family: monospace;
-    font-size: 11px;
-    display: none;
-    pointer-events: auto;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 10px;
+  border: 1px solid #555;
+  font-family: monospace;
+  font-size: 11px;
+  display: none;
+  pointer-events: auto;
 }
 
-/* ========================================
- * 5. UIコンポーネント共通
- * ======================================== */
 .panel-module {
-    background: rgb(5 15 25 / 0%);
-    border: 1px solid rgb(0 255 255 / 0%);
-    padding: 10px;
-    border-radius: 4px;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
-    display: flex;
-    flex-direction: column;
+  background: rgb(5 15 25 / 0%);
+  border: 1px solid rgb(0 255 255 / 0%);
+  padding: 10px;
+  border-radius: 4px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
 }
 
-/* ヘッダー & ボタン */
 .panel-header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid rgba(0, 255, 255, 0.3);
-    margin-bottom: 8px;
-    padding-bottom: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.3);
+  margin-bottom: 8px;
+  padding-bottom: 4px;
 }
 
 .panel-module h3,
 .panel-module .panel-header-row h3 {
-    margin: 0;
-    padding: 0;
-    font-size: 12px;
-    color: #00ffff;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    border-bottom: none;
+  margin: 0;
+  padding: 0;
+  font-size: 12px;
+  color: #00ffff;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border-bottom: none;
 }
 
-/* ヘッダー内アクションボタン */
 .header-action-btn {
-    background: rgba(0, 255, 255, 0.1);
-    border: 1px solid rgba(0, 255, 255, 0.5);
-    color: #00ffff;
-    font-size: 10px;
-    font-family: 'Roboto Mono', monospace;
-    padding: 2px 8px;
-    border-radius: 4px;
-    cursor: pointer;
-    line-height: 1.2;
-    transition: all 0.2s ease;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+  background: rgba(0, 255, 255, 0.1);
+  border: 1px solid rgba(0, 255, 255, 0.5);
+  color: #00ffff;
+  font-size: 10px;
+  font-family: "Roboto Mono", monospace;
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  line-height: 1.2;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .header-action-btn:hover {
-    background: rgba(0, 255, 255, 0.3);
-    color: #ffffff;
-    box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+  background: rgba(0, 255, 255, 0.3);
+  color: #ffffff;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
 }
 
 .header-action-btn:active {
-    background: rgba(0, 255, 255, 0.5);
-    transform: translateY(1px);
+  background: rgba(0, 255, 255, 0.5);
+  transform: translateY(1px);
 }
 
-/* ステータスバー表示 */
 #hud-status-area .stat-row {
-    display: flex;
-    align-items: center;
-    margin-bottom: 8px;
-    font-size: 14px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 10px !important;
 }
 
 #hud-status-area .stat-label {
-    width: 50px;
-    color: #00ffff;
-    font-weight: bold;
-    text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+  width: 50px;
+  color: #00ffff;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
 }
 
 .stat-bar-outer {
-    flex-grow: 1;
-    height: 6px;
-    background-color: rgba(0, 0, 0, 0.5);
-    border: 1px solid #333;
-    margin-right: 8px;
-    padding: 1px;
+  flex-grow: 1;
+  height: 6px;
+  background-color: rgba(0, 0, 0, 0.5);
+  border: 1px solid #333;
+  margin-right: 8px;
+  padding: 1px;
 }
 
 .stat-bar {
-    height: 100%;
-    transition: width 0.2s ease-out;
+  height: 100%;
+  transition: width 0.2s ease-out;
 }
 
 .stat-bar.hp {
-    background-color: #00bcd4;
-    box-shadow: 0 0 5px #00bcd4;
+  background-color: #00bcd4;
+  box-shadow: 0 0 5px #00bcd4;
 }
 
 .stat-value {
-    width: 35px;
-    text-align: right;
-    font-family: 'Roboto Mono', monospace;
-    color: #fff;
+  width: 35px;
+  text-align: right;
+  font-family: "Roboto Mono", monospace;
+  color: #fff;
 }
 
 .stat-row.no-bar {
-    justify-content: space-between;
+  justify-content: space-between;
 }
 
-/* ========================================
- * 6. モバイルコントローラー (タッチ用)
- * ======================================== */
 #mobile-controls-layer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 200;
-    pointer-events: none;
-    display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 200;
+  pointer-events: none;
+  display: none;
 }
 
-/* 右下: ジョイスティック */
 #mc-right-bottom {
-    position: absolute;
-    right: 40px;
-    bottom: 40px;
-    pointer-events: auto;
-    width: 120px;
-    height: 120px;
+  position: absolute;
+  right: 40px;
+  bottom: 40px;
+  pointer-events: auto;
+  width: 120px;
+  height: 120px;
 }
 
 #mc-joystick-area {
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 100, 255, 0.2);
-    border: 1px solid #00aaffb8;
-    border-radius: 50%;
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 100, 255, 0.2);
+  border: 1px solid #00aaffb8;
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 #mc-joystick-knob {
-    width: 40%;
-    height: 40%;
-    background: rgba(0, 200, 255, 0.8);
-    border-radius: 50%;
-    position: absolute;
+  width: 40%;
+  height: 40%;
+  background: rgba(0, 200, 255, 0.8);
+  border-radius: 50%;
+  position: absolute;
 }
 
-/* 左下: アクションボタン */
 #mc-left-bottom {
-    position: absolute;
-    left: 20px;
-    bottom: 20px;
-    pointer-events: auto;
+  position: absolute;
+  left: 20px;
+  bottom: 20px;
+  pointer-events: auto;
 }
 
 #mc-action-cluster {
-    position: relative;
-    width: 241px;
-    height: 260px;
+  position: relative;
+  width: 241px;
+  height: 260px;
 }
 
-#mc-action-cluster>button,
-#mc-action-cluster>div {
-    position: absolute;
-    transform: translate(-29%, -11%);
-    display: flex;
-    justify-content: center;
-    align-items: center;
+#mc-action-cluster > button,
+#mc-action-cluster > div {
+  position: absolute;
+  transform: translate(-29%, -11%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-/* ボタン個別設定 */
 #mc-btn-fire {
-    width: 90px;
-    height: 90px;
-    border-radius: 50%;
-    background: rgb(187 9 9 / 49%);
-    border: 0px solid #ff5252;
-    color: white;
-    font-weight: bold;
-    font-size: 18px;
-    z-index: 10;
-    left: 60px;
-    top: 110px;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: rgb(187 9 9 / 49%);
+  border: 0px solid #ff5252;
+  color: white;
+  font-weight: bold;
+  font-size: 18px;
+  z-index: 10;
+  left: 60px;
+  top: 110px;
 }
-#mc-btn-fire:active { background: #ff5252; transform: translate(-50%, -50%) scale(0.95); }
+#mc-btn-fire:active {
+  background: #ff5252;
+  transform: translate(-50%, -50%) scale(0.95);
+}
 
 #mc-btn-settle {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: rgb(180 181 181 / 34%);
-    border: 0px solid #00ffff;
-    color: #fff;
-    font-size: 10px;
-    font-weight: bold;
-    left: 60px;
-    top: 35px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgb(180 181 181 / 34%);
+  border: 0px solid #00ffff;
+  color: #fff;
+  font-size: 10px;
+  font-weight: bold;
+  left: 60px;
+  top: 35px;
 }
-#mc-btn-settle:active { background: #00ffff; color: #000; }
+#mc-btn-settle:active {
+  background: #00ffff;
+  color: #000;
+}
 
 #mc-btn-short {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: rgba(0, 188, 212, 0.25);
-    border: 0px solid #ffc107;
-    color: #fff;
-    font-size: 11px;
-    font-weight: bold;
-    left: 135px;
-    top: 70px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(0, 188, 212, 0.25);
+  border: 0px solid #ffc107;
+  color: #fff;
+  font-size: 11px;
+  font-weight: bold;
+  left: 135px;
+  top: 70px;
 }
-#mc-btn-short:active { background: #ffeb3b; color: #000; }
+#mc-btn-short:active {
+  background: #ffeb3b;
+  color: #000;
+}
 
 #mc-btn-long {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: rgb(227 101 101 / 34%);
-    border: 0px solid #ffc107;
-    color: #fff;
-    font-size: 12px;
-    font-weight: bold;
-    left: 150px;
-    top: 150px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgb(227 101 101 / 34%);
+  border: 0px solid #ffc107;
+  color: #fff;
+  font-size: 12px;
+  font-weight: bold;
+  left: 150px;
+  top: 150px;
 }
-#mc-btn-long:active { background: #ffeb3b; color: #000; }
+#mc-btn-long:active {
+  background: #ffeb3b;
+  color: #000;
+}
 
-/* ロット調整 */
 #mc-lot-control {
-    width: 140px;
-    height: 50px;
-    transform: none;
-    display: flex;
-    gap: 5px;
-    left: 43px;
-    top: 210px;
+  width: 140px;
+  height: 50px;
+  transform: none;
+  display: flex;
+  gap: 5px;
+  left: 43px;
+  top: 210px;
 }
 
 .mc-btn-lot {
-    position: static !important;
-    transform: none !important;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: rgb(84 255 217 / 24%);
-    border: 0px solid #ffffff;
-    color: white;
-    font-size: 20px;
-    font-weight: bold;
-    box-shadow: none !important;
+  position: static !important;
+  transform: none !important;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgb(84 255 217 / 24%);
+  border: 0px solid #ffffff;
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  box-shadow: none !important;
 }
-.mc-btn-lot:active { background: #ff5252; }
+.mc-btn-lot:active {
+  background: #ff5252;
+}
 
 #mc-lot-display {
-    position: static !important;
-    transform: none !important;
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    font-family: monospace;
-    font-size: 18px;
-    font-weight: bold;
-    padding: 5px 10px;
-    border: 0px solid #ff5252;
-    border-radius: 4px;
-    min-width: 30px;
-    text-align: center;
-    box-shadow: none !important;
+  position: static !important;
+  transform: none !important;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  font-family: monospace;
+  font-size: 18px;
+  font-weight: bold;
+  padding: 5px 10px;
+  border: 0px solid #ff5252;
+  border-radius: 4px;
+  min-width: 30px;
+  text-align: center;
+  box-shadow: none !important;
 }
 
-/* ========================================
- * 7. スクリーン & モーダル
- * ======================================== */
 .screen {
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    top: 0;
-    left: 0;
-    display: none;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-    z-index: 50;
-    background: rgba(0, 0, 0, 0.6);
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.6);
 }
 
 .screen.active {
-    display: flex;
+  display: flex;
 }
 
 .screen-content {
-    background: rgba(10, 20, 30, 0.9);
-    border: 1px solid #00ffff;
-    padding: 60px;
-    border-radius: 8px;
-    text-align: center;
-    box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
-    min-width: 300px;
-    max-width: 90%;
-    transform-origin: center center;
-    transform: none !important;
+  background: rgba(10, 20, 30, 0.9);
+  border: 1px solid #00ffff;
+  padding: 60px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  min-width: 300px;
+  max-width: 90%;
+  transform-origin: center center;
+  transform: none !important;
 }
 
-.screen-content h1 { color: #00ffff; margin: 0 0 20px 0; letter-spacing: 2px; }
-.screen-content h2 { color: #00ffff; margin: 0; }
+.screen-content h1 {
+  color: #00ffff;
+  margin: 0 0 20px 0;
+  letter-spacing: 2px;
+}
+.screen-content h2 {
+  color: #00ffff;
+  margin: 0;
+}
 
 .ui-button {
-    font-size: 16px;
-    padding: 12px 30px;
-    border: 1px solid #49a5a5;
-    color: #00ffff;
-    background-color: rgba(0, 20, 30, 0.6);
-    border-radius: 4px;
-    cursor: pointer;
-    text-transform: uppercase;
-    transition: all 0.2s ease;
-    width: 260px;
-    max-width: 100%;
-    margin: 0;
+  font-size: 16px;
+  padding: 12px 30px;
+  border: 1px solid #49a5a5;
+  color: #00ffff;
+  background-color: rgba(0, 20, 30, 0.6);
+  border-radius: 4px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+  width: 260px;
+  max-width: 100%;
+  margin: 0;
 }
 
-.ui-button:hover { background-color: rgba(0, 255, 255, 0.2); color: #fff; box-shadow: 0 0 15px rgba(0, 255, 255, 0.4); }
-.ui-button.primary { background-color: rgba(0, 255, 255, 0.3); border-color: #00ffff; color: #fff; box-shadow: 0 0 20px rgba(0, 255, 255, 0.3); }
-.ui-button.small { width: auto; font-size: 12px; padding: 4px 12px; }
+.ui-button:hover {
+  background-color: rgba(0, 255, 255, 0.2);
+  color: #fff;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+}
+.ui-button.primary {
+  background-color: rgba(0, 255, 255, 0.3);
+  border-color: #00ffff;
+  color: #fff;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+}
+.ui-button.small {
+  width: auto;
+  font-size: 12px;
+  padding: 4px 12px;
+}
 
 .ui-modal {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 300;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 300;
 }
 
 .ui-modal.hidden {
-    display: none;
+  display: none;
 }
 
 .modal-content {
-    background: #0a1928;
-    border: 1px solid #ff9800;
-    padding: 30px;
-    border-radius: 8px;
-    width: 350px;
-    text-align: center;
+  background: #0a1928;
+  border: 1px solid #ff9800;
+  padding: 30px;
+  border-radius: 8px;
+  width: 350px;
+  text-align: center;
 }
 
-/* リーダーボードリスト */
-#hud-leaderboard-container { max-height: 150px; overflow-y: auto; }
-#leaderboard-list { list-style: none; margin: 0; padding: 0; font-size: 12px; }
+#hud-leaderboard-container {
+  max-height: 150px;
+  overflow-y: auto;
+}
+#leaderboard-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 12px;
+}
 .leaderboard-row {
-    display: flex; justify-content: space-between; padding: 4px 8px; margin-bottom: 2px;
-    background: rgba(255, 255, 255, 0.05); border-radius: 2px;
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 8px;
+  margin-bottom: 2px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
 }
-.leaderboard-row.you { background: rgba(0, 188, 212, 0.25); border: 1px solid rgba(0, 188, 212, 0.5); }
-.lb-name { color: #ddd; }
-.lb-score { color: #00bcd4; font-weight: bold; font-family: 'Roboto Mono', monospace; }
+.leaderboard-row.you {
+  background: rgba(0, 188, 212, 0.25);
+  border: 1px solid rgba(0, 188, 212, 0.5);
+}
+.lb-name {
+  color: #ddd;
+}
+.lb-score {
+  color: #00bcd4;
+  font-weight: bold;
+  font-family: "Roboto Mono", monospace;
+}
 
-/* モーダル内リーダーボード */
-#modal-ingame-leaderboard #leaderboard-list { list-style: none; margin: 0; padding: 0; }
+#modal-ingame-leaderboard #leaderboard-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
 #modal-ingame-leaderboard .leaderboard-row {
-    display: flex; justify-content: space-between; padding: 8px 12px; margin-bottom: 4px;
-    background: rgba(255, 255, 255, 0.05); border-radius: 4px; font-family: 'Roboto Mono', monospace; font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  margin-bottom: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  font-family: "Roboto Mono", monospace;
+  font-size: 14px;
 }
-#modal-ingame-leaderboard .leaderboard-row.you { background: rgba(0, 188, 212, 0.25); border: 1px solid rgba(0, 188, 212, 0.5); }
+#modal-ingame-leaderboard .leaderboard-row.you {
+  background: rgba(0, 188, 212, 0.25);
+  border: 1px solid rgba(0, 188, 212, 0.5);
+}
 
-/* ========================================
- * 8. レスポンシブ (スマホ・タブレット)
- * ======================================== */
 @media (max-width: 1024px), (pointer: coarse) {
-    #mobile-controls-layer {
-        display: block !important;
+  #mobile-controls-layer {
+    display: block !important;
+  }
+  #hud-status-area .stat-row {
+        font-size: 16px !important;
     }
+  #mc-left-bottom {
+    transform: scale(0.8);
+    transform-origin: bottom left;
+    left: 66px !important;
+    bottom: 32px !important;
+  }
 
-    #mc-left-bottom {
-        transform: scale(0.8);
-        transform-origin: bottom left;
-        left: 66px !important;
-        bottom: 32px !important;
-    }
+  #mc-right-bottom {
+    transform: scale(0.8);
+    transform-origin: bottom right;
+    right: 81px !important;
+    bottom: 68px !important;
+  }
 
-    #mc-right-bottom {
-        transform: scale(0.8);
-        transform-origin: bottom right;
-        right: 81px !important;
-        bottom: 68px !important;
-    }
+  .hud-group.top-right {
+    right: 10px !important;
+    top: 10px !important;
+    align-items: flex-end !important;
+    gap: -4px !important;
+    transform: scale(0.75) !important;
+  }
 
-    /* 右上HUD: 少し小さく */
-    .hud-group.top-right {
-        right: 10px !important;
-        top: 10px !important;
-        align-items: flex-end !important;
-        gap: 5px !important;
-        transform: scale(0.75) !important;
-    }
+  #hud-dashboard {
+    top: 10px;
+    left: 10px;
+    bottom: auto;
+    right: auto;
+    transform: scale(0.75) !important;
+    transform-origin: top left;
+    align-items: flex-start;
+    gap: 17px;
+  }
 
-    /* ダッシュボード: 強制的に0.75倍 & 左上配置 */
-    #hud-dashboard {
-        top: 10px;
-        left: 10px;
-        bottom: auto;
-        right: auto;
-        transform: scale(0.75) !important;
-        transform-origin: top left;
-        align-items: flex-start;
-        gap: 17px;
-    }
+  .hud-upper-row {
+    flex-direction: row;
+    align-items: flex-start !important;
+    height: auto;
+  }
 
-    .hud-upper-row {
-        flex-direction: row;
-        align-items: stretch !important;
-    }
+  .status-group {
+    transform: scale(1) !important;
+    transform-origin: top left;
+    margin-right: 0 !important;
+    margin-bottom: 5px !important;
+  }
 
-    .status-group {
-        transform: scale(0.8);
-        transform-origin: top left;
-        margin-right: -40px;
-        margin-bottom: -50px;
-    }
+  #bottom-chart-panel.dashboard-item {
+    width: 400px !important;
+    height: 180px !important;
+  }
 
-    #bottom-chart-panel.dashboard-item {
-        width: 326px !important;
-        height: 94px !important;
-        margin-top: 5px !important;
-    }
+  #ma-selection-panel {
+    transform: scale(1);
+    transform-origin: top left;
+  }
+  .hud-group.top-right .hud-row {
+    flex-direction: row !important;  
+    align-items: center !important;
+    gap: 20 !important;               
+}
 
-    #ma-selection-panel {
-        transform: scale(0.7);
-        transform-origin: top left;
-    }
 
-    #btn-retire {
-        padding: 4px 8px !important;
-        font-size: 10px !important;
-    }
+.hud-group.top-right .hud-row > .panel-module:nth-child(2) {
+    margin-left: -15px !important;   
+    position: relative !important;
+    z-index: 10 !important;
+}
+
+  #btn-retire {
+    /* 位置合わせの重要設定 */
+    position: absolute !important;
+    top: 180px !important;    /* 上からの位置 */
+    right: 10px !important;   /* 右からの位置 */
+    
+    bottom: auto !important;  /* ★重要: これで引き伸ばしを解除します */
+    height: auto !important;  /* ★念のため高さも自動に戻します */
+    
+    /* デザイン調整 */
+    padding: 4px 8px !important;
+    font-size: 10px !important;
+    margin: 0 !important;
+    width: auto !important;
+    
+    /* スケール調整 */
+    transform: scale(0.75) !important;
+    transform-origin: top right;
+  }
 }
 
 @media (max-width: 600px) {
-    #mc-left-bottom {
-        transform-origin: bottom left;
-        transform: scale(0.85);
-        left: 10px;
-        bottom: 10px;
-    }
+  #mc-left-bottom {
+    transform-origin: bottom left;
+    transform: scale(0.85);
+    left: 10px;
+    bottom: 10px;
+  }
 
-    #mc-right-bottom {
-        transform-origin: bottom right;
-        transform: scale(0.85);
-        right: 20px;
-        bottom: 20px;
-    }
+  #mc-right-bottom {
+    transform-origin: bottom right;
+    transform: scale(0.85);
+    right: 20px;
+    bottom: 20px;
+  }
 
-    .screen-content {
-        width: 85% !important;
-        min-width: auto !important;
-        padding: 20px !important;
-        gap: 10px !important;
-    }
+  .screen-content {
+    width: 85% !important;
+    min-width: auto !important;
+    padding: 20px !important;
+    gap: 10px !important;
+  }
 
-    .screen-content h1 {
-        font-size: 24px !important;
-        margin-bottom: 10px !important;
-    }
+  .screen-content h1 {
+    font-size: 24px !important;
+    margin-bottom: 10px !important;
+  }
 
-    .ui-button {
-        width: 100% !important;
-        font-size: 14px !important;
-        padding: 10px !important;
-    }
+  .ui-button {
+    width: 100% !important;
+    font-size: 14px !important;
+    padding: 10px !important;
+  }
 
-    .player-info-display {
-        font-size: 14px !important;
-        margin-bottom: 5px !important;
-    }
+  .player-info-display {
+    font-size: 14px !important;
+    margin-bottom: 5px !important;
+  }
 }
 
-/* 強制横画面化 (縦向きスマホ用) */
 @media only screen and (orientation: portrait) {
-    #cockpit-container,
-    #screen-ranking,
-    #screen-gameover {
-        width: 100vh;
-        height: 100vw;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%) rotate(90deg);
-        overflow: hidden;
-        touch-action: none;
-    }
+  #cockpit-container,
+  #screen-ranking,
+  #screen-gameover {
+    width: 100vh;
+    height: 100vw;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(90deg);
+    overflow: hidden;
+    touch-action: none;
+  }
 
-    #screen-ranking.active,
-    #screen-gameover.active {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
+  #screen-ranking.active,
+  #screen-gameover.active {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
 }
 
-/* メニュー画面の強制縦画面化の例外設定 */
 @media only screen and (orientation: landscape) {
-    body.mode-menu #screen-ranking,
-    body.mode-menu #screen-gameover {
-        width: 100%;
-        height: 100%;
-        transform: none;
-        position: absolute;
-        top: 0;
-        left: 0;
-    }
+  body.mode-menu #screen-ranking,
+  body.mode-menu #screen-gameover {
+    width: 100%;
+    height: 100%;
+    transform: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
 }

@@ -13,6 +13,8 @@
  * - ゲームの描画ループ管理 (Game クラスへ)
  */
 import { MobileControlManager } from "./MobileControlManager.js";
+import { RadarRenderer } from "./RadarRenderer.js";
+import { MagazineRenderer } from "./MagazineRenderer.js";
 export class UIManager {
   constructor() {
     const testEl = document.getElementById("modal-initial");
@@ -64,12 +66,25 @@ export class UIManager {
     this.WORLD_WIDTH = 3000;
     this.WORLD_HEIGHT = 3000;
     this.mobileControlManager = new MobileControlManager();
-    this.modalIngameLeaderboard = document.getElementById("modal-ingame-leaderboard");
+    this.radarRenderer = new RadarRenderer();
+    this.magazineRenderer = new MagazineRenderer();
+    this.modalIngameLeaderboard = document.getElementById(
+      "modal-ingame-leaderboard"
+    );
     this.btnShowLeaderboard = document.getElementById("btn-show-leaderboard");
     this.btnCloseLeaderboard = document.getElementById("btn-close-leaderboard");
+   
   }
+  drawRadar(ctx, w, h, ww, wh, p, e, o, op) {
+      // 新しいレンダラーの draw メソッドを呼び出す
+      this.radarRenderer.draw(ctx, w, h, ww, wh, p, e, o, op);
+    }
 
-  // [追加] フルスクリーン化を試みるメソッド
+    // ▼ 3. これも重要です。エラーの原因はこのメソッドがないことです
+    drawChargeUI(ctx, playerState, w, h) {
+      // 新しいレンダラーの draw メソッドを呼び出す
+      this.magazineRenderer.draw(ctx, playerState, w, h);
+    }
   tryFullscreen() {
     const doc = window.document;
     const docEl = doc.documentElement;
@@ -81,9 +96,11 @@ export class UIManager {
       docEl.msRequestFullscreen;
 
     if (requestFullScreen) {
-      // ユーザー操作のコンテキストでないとブロックされることがあるため、catchでエラーを握りつぶす
       requestFullScreen.call(docEl).catch((err) => {
-        console.warn("フルスクリーン化できませんでした (ユーザー操作が必要な場合があります):", err);
+        console.warn(
+          "フルスクリーン化できませんでした (ユーザー操作が必要な場合があります):",
+          err
+        );
       });
     }
   }
@@ -110,8 +127,8 @@ export class UIManager {
       });
 
     document.getElementById("btn-start-game").addEventListener("click", () => {
-      this.tryFullscreen(); // ★ここに追加
-      
+      this.tryFullscreen();
+
       const playerName = this.displayNameEl.textContent || "Guest";
       actions.onStartGame(playerName);
     });
@@ -162,19 +179,19 @@ export class UIManager {
       });
     this.mobileControlManager.init(true);
     if (this.btnShowLeaderboard) {
-        this.btnShowLeaderboard.addEventListener("click", () => {
-            if (this.modalIngameLeaderboard) {
-                this.modalIngameLeaderboard.classList.remove("hidden");
-            }
-        });
+      this.btnShowLeaderboard.addEventListener("click", () => {
+        if (this.modalIngameLeaderboard) {
+          this.modalIngameLeaderboard.classList.remove("hidden");
+        }
+      });
     }
 
     if (this.btnCloseLeaderboard) {
-        this.btnCloseLeaderboard.addEventListener("click", () => {
-            if (this.modalIngameLeaderboard) {
-                this.modalIngameLeaderboard.classList.add("hidden");
-            }
-        });
+      this.btnCloseLeaderboard.addEventListener("click", () => {
+        if (this.modalIngameLeaderboard) {
+          this.modalIngameLeaderboard.classList.add("hidden");
+        }
+      });
     }
   }
   hideInitialModal() {
@@ -283,8 +300,7 @@ export class UIManager {
   showGameOverScreen(score) {
     this.gameoverScoreEl.textContent = Math.round(score);
     this.gameoverMessageEl.textContent = "スコアを保存中...";
-    
-    // showScreen("gameover") を使うと game画面 が消えるため、直接クラスを操作する
+
     if (this.screens.gameover) {
       this.screens.gameover.classList.add("active");
     }
@@ -334,15 +350,12 @@ export class UIManager {
       let level = 0;
 
       if (chargePosition) {
-        // ★修正: ポジションタイプを確認して計算式を変える
         const type = chargePosition.type || "long";
         let priceDiff;
 
         if (type === "short") {
-          // ショートの場合: (エントリー価格 - 現在価格) が利益
           priceDiff = chargePosition.entryPrice - currentPrice;
         } else {
-          // ロングの場合: (現在価格 - エントリー価格) が利益
           priceDiff = currentPrice - chargePosition.entryPrice;
         }
 
@@ -408,193 +421,7 @@ export class UIManager {
     this.debugSimulationContainerEl.innerHTML = serverHtml;
   }
 
-  drawChargeUI(ctx, playerState, canvasWidth, canvasHeight) {
-    if (!playerState) return;
-    const stockedBullets = playerState.stockedBullets || [];
-    const maxStock = playerState.maxStock || 10;
 
-    // 上下のパディング
-    const paddingY = 10;
-    const availableHeight = canvasHeight - paddingY * 2;
-    
-    // バーの設定
-    const gap = 6; // 隙間を少し広げて独立感を出す
-    const slotHeight = Math.floor(availableHeight / maxStock - gap);
-    
-    // 幅設定（CSSで小さくしているので、Canvas内では幅を使い切る）
-    const contentWidth = canvasWidth * 0.35; 
-    const startX = (canvasWidth - contentWidth) / 2 + 10; // 斜めにする分、少し右へ
-    const bottomY = canvasHeight - paddingY;
-
-    ctx.save();
-
-    // ★デザイン変更: 全体を斜めに傾ける (Skew)
-    // 水平方向に -0.3 の傾斜をつける
-    ctx.transform(1, 0, 0, 1, 0, 0);
-
-    for (let i = 0; i < maxStock; i++) {
-      const currentY = bottomY - (i + 1) * (slotHeight + gap) + gap;
-      const hasBullet = i < stockedBullets.length;
-      const damageVal = hasBullet ? Math.ceil(stockedBullets[i]) : 0;
-
-      ctx.beginPath();
-      // 角を少し削ったような矩形にするなどのパス操作も可能ですが、
-      // transformで傾けているのでfillRectで平行四辺形になります。
-      
-      if (hasBullet) {
-        // --- 弾がある場合 (発光グラデーション) ---
-        ctx.save();
-
-        let baseColor, highColor;
-        // 威力に応じた色分け
-        if (damageVal >= 100) {       // Tier 4
-          baseColor = "#aa00ff";      // 紫
-          highColor = "#ea80fc";
-        } else if (damageVal >= 50) { // Tier 3
-          baseColor = "#ff6d00";      // オレンジ
-          highColor = "#ffab40";
-        } else {                      // Tier 1-2
-          baseColor = "#00bcd4";      // シアン
-          highColor = "#84ffff";
-        }
-
-        // グラデーション作成 (左から右へ)
-        const grad = ctx.createLinearGradient(startX, currentY, startX + contentWidth, currentY);
-        grad.addColorStop(0, baseColor);
-        grad.addColorStop(0.6, highColor);
-        grad.addColorStop(1, "rgba(255, 255, 255, 0.8)"); // 先端を光らせる
-
-        ctx.fillStyle = grad;
-        
-        // 強い発光エフェクト
-        ctx.shadowColor = baseColor;
-        ctx.shadowBlur = 15;
-        
-        ctx.fillRect(startX, currentY, contentWidth, slotHeight);
-        
-        // ハイライト線を入れる
-        ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
-        ctx.fillRect(startX, currentY, contentWidth, 2); // 上端のハイライト
-
-        ctx.restore();
-      } else {
-        // --- 空スロットの場合 (薄い背景) ---
-        ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
-        ctx.fillRect(startX, currentY, contentWidth, slotHeight);
-        
-        // 枠線だけ薄く描画して「空き」を強調
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
-        ctx.lineWidth = 1;
-        ctx.strokeRect(startX, currentY, contentWidth, slotHeight);
-      }
-    }
-
-    ctx.restore();
-  }
-  drawRadar(
-    ctx,
-    canvasWidth,
-    canvasHeight,
-    worldWidth,
-    worldHeight,
-    playerState,
-    enemiesState,
-    obstaclesState,
-    otherPlayersState
-  ) {
-    const size = Math.min(canvasWidth, canvasHeight);
-    const radarRadius = (size * 0.95) / 2;
-
-    const centerX = canvasWidth / 2;
-    const centerY = canvasHeight / 2;
-    const viewRadiusWorld = 1500;
-    const scale = radarRadius / viewRadiusWorld;
-
-    ctx.save();
-
-    // 1. クリップ領域の設定（円形）
-    // 背景の塗りつぶし(fill)は行わず、クリップのみ適用して範囲外を描画しないようにする
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, radarRadius, 0, Math.PI * 2);
-    ctx.clip();
-
-    // 2. 内部グリッド
-    ctx.strokeStyle = "rgba(0, 255, 255, 0.2)";
-    ctx.lineWidth = 1;
-
-    // 同心円グリッド
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, radarRadius * 0.33, 0, Math.PI * 2);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, radarRadius * 0.66, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // 十字線
-    ctx.beginPath();
-    ctx.moveTo(centerX - radarRadius, centerY);
-    ctx.lineTo(centerX + radarRadius, centerY);
-    ctx.moveTo(centerX, centerY - radarRadius);
-    ctx.lineTo(centerX, centerY + radarRadius);
-    ctx.stroke();
-
-    // 3. エンティティ描画
-    if (!playerState) {
-      ctx.restore();
-      return;
-    }
-    
-    // ... (以下、エンティティ描画ロジックは変更なし) ...
-
-    const getRadarPos = (wx, wy) => {
-      const dx = wx - playerState.x;
-      const dy = wy - playerState.y;
-      return {
-        x: centerX + dx * scale,
-        y: centerY + dy * scale,
-      };
-    };
-
-    // 敵 (赤)
-    if (enemiesState && enemiesState.length > 0) {
-      ctx.fillStyle = "#f44336";
-      enemiesState.forEach((enemy) => {
-        const pos = getRadarPos(enemy.x, enemy.y);
-        const distSq = (pos.x - centerX) ** 2 + (pos.y - centerY) ** 2;
-        if (distSq <= radarRadius ** 2) {
-          ctx.beginPath();
-          ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      });
-    }
-
-    // 他プレイヤー (緑)
-    if (otherPlayersState && otherPlayersState.length > 0) {
-      ctx.fillStyle = "#76ff03";
-      otherPlayersState.forEach((p) => {
-        const pos = getRadarPos(p.x, p.y);
-        const distSq = (pos.x - centerX) ** 2 + (pos.y - centerY) ** 2;
-        if (distSq <= radarRadius ** 2) {
-          ctx.beginPath();
-          ctx.arc(pos.x, pos.y, 3.5, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      });
-    }
-
-    // 自分 (中心、シアン)
-    ctx.fillStyle = "#00bbd4";
-    ctx.shadowColor = "#00bbd4";
-    ctx.shadowBlur = 10;
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, 4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-
-    ctx.restore();
-  }
   setGameOverMessage(message) {
     this.gameoverMessageEl.textContent = message;
   }

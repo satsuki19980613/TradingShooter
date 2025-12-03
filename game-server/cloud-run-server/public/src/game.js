@@ -194,7 +194,13 @@ export class Game {
 
   resizeCanvas() {
     if (!this.uiManager) return;
-
+    let uiScale = 1;
+    try {
+      const style = getComputedStyle(document.body);
+      const val = style.getPropertyValue("--ui-scale");
+      if (val) uiScale = parseFloat(val);
+    } catch (e) {}
+    if (!uiScale || isNaN(uiScale)) uiScale = 1;
     const container = document.getElementById("cockpit-container");
     if (!container) return;
 
@@ -216,42 +222,52 @@ export class Game {
     }
 
     if (this.chartCanvas && this.chartCanvas.parentElement) {
-      // ★修正: 親要素のサイズを整数で取得
       const w = Math.floor(this.chartCanvas.parentElement.clientWidth);
       const h = Math.floor(this.chartCanvas.parentElement.clientHeight);
 
       const dpr = window.devicePixelRatio || 1;
 
       if (w > 0 && h > 0) {
-        // ★修正: バッファサイズも整数化する
-        this.chartCanvas.width = Math.floor(w * dpr);
-        this.chartCanvas.height = Math.floor(h * dpr);
+        this.chartCanvas.width = Math.floor(w * dpr * uiScale);
+        this.chartCanvas.height = Math.floor(h * dpr * uiScale);
 
         this.chartCanvas.style.width = `${w}px`;
         this.chartCanvas.style.height = `${h}px`;
 
         if (this.chartCtx) {
-          // ★追加: 既存の変形をリセットしてからスケール設定
-          this.chartCtx.setTransform(1, 0, 0, 1, 0, 0); 
-          this.chartCtx.scale(dpr, dpr);
+          this.chartCtx.setTransform(1, 0, 0, 1, 0, 0);
         }
       }
     }
     if (this.radarCanvas && this.radarCanvas.parentElement) {
-      const w = this.radarCanvas.parentElement.clientWidth;
-      const h = this.radarCanvas.parentElement.clientHeight;
+      const w = Math.floor(this.radarCanvas.parentElement.clientWidth);
+      const h = Math.floor(this.radarCanvas.parentElement.clientHeight);
+
+      const dpr = window.devicePixelRatio || 1;
+
       if (w > 0 && h > 0) {
-        this.radarCanvas.width = w;
-        this.radarCanvas.height = h;
+        this.radarCanvas.width = Math.floor(w * dpr * uiScale);
+        this.radarCanvas.height = Math.floor(h * dpr * uiScale);
+        this.radarCanvas.style.width = `${w}px`;
+        this.radarCanvas.style.height = `${h}px`;
+
+        if (this.radarCtx) this.radarCtx.setTransform(1, 0, 0, 1, 0, 0);
       }
     }
 
     if (this.magazineCanvas && this.magazineCanvas.parentElement) {
-      const w = this.magazineCanvas.parentElement.clientWidth;
-      const h = this.magazineCanvas.parentElement.clientHeight;
+      const w = Math.floor(this.magazineCanvas.parentElement.clientWidth);
+      const h = Math.floor(this.magazineCanvas.parentElement.clientHeight);
+
+      const dpr = window.devicePixelRatio || 1;
+
       if (w > 0 && h > 0) {
-        this.magazineCanvas.width = w;
-        this.magazineCanvas.height = h;
+        this.magazineCanvas.width = Math.floor(w * dpr * uiScale);
+        this.magazineCanvas.height = Math.floor(h * dpr * uiScale);
+        this.magazineCanvas.style.width = `${w}px`;
+        this.magazineCanvas.style.height = `${h}px`;
+
+        if (this.magazineCtx) this.magazineCtx.setTransform(1, 0, 0, 1, 0, 0);
       }
     }
   }
@@ -317,7 +333,9 @@ export class Game {
       }
     }
 
-    this.playerEntities.forEach((p) => p.update());
+    this.playerEntities.forEach((p) => {
+      p.update(this);
+    });
     this.enemyEntities.forEach((e) => e.update());
     this.bulletEntities.forEach((b) => b.update(this));
     this.updateCamera();
@@ -375,8 +393,8 @@ export class Game {
       const dpr = window.devicePixelRatio || 1;
       this.trading.drawChart(
         this.chartCtx,
-        this.chartCanvas.width / dpr,
-        this.chartCanvas.height / dpr,
+        this.chartCanvas.width,
+        this.chartCanvas.height,
         myPlayerState
       );
     }
@@ -694,5 +712,41 @@ export class Game {
     this.uiManager.setGameOverMessage(
       "お疲れ様でした。スコアは自動的に保存されます。"
     );
+  }
+  findNearestTarget(player, gridRadius = 5) {
+    const cellSize = 150;
+    const range = gridRadius * cellSize;
+    const rangeSq = range * range;
+
+    let nearestTarget = null;
+    let minDistSq = rangeSq;
+
+    this.enemyEntities.forEach((enemy) => {
+      if (!enemy.isInitialized || enemy.hp <= 0) return;
+
+      const dx = enemy.x - player.x;
+      const dy = enemy.y - player.y;
+      const distSq = dx * dx + dy * dy;
+
+      if (distSq < minDistSq) {
+        minDistSq = distSq;
+        nearestTarget = enemy;
+      }
+    });
+
+    this.playerEntities.forEach((other) => {
+      if (other.id === player.id || other.isDead) return;
+
+      const dx = other.x - player.x;
+      const dy = other.y - player.y;
+      const distSq = dx * dx + dy * dy;
+
+      if (distSq < minDistSq) {
+        minDistSq = distSq;
+        nearestTarget = other;
+      }
+    });
+
+    return nearestTarget;
   }
 }

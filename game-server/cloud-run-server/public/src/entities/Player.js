@@ -29,7 +29,7 @@ export class Player extends GameObject {
     this.hoverOffset = 0;
   }
 
-  update() {
+  update(gameInstance) {
     super.update();
 
     const dx = this.targetX - this.x;
@@ -40,8 +40,22 @@ export class Player extends GameObject {
       this.rotationAngle = lerpAngle(this.rotationAngle, moveAngle, 0.1);
     }
 
-
     this.hoverOffset = Math.sin(Date.now() / 200) * 3;
+
+    this.lockedTarget = null;
+
+    if (this.isMe && gameInstance) {
+      const target = gameInstance.findNearestTarget(this, 5);
+
+      if (target) {
+        this.lockedTarget = target;
+
+        this.aimAngle = Math.atan2(target.y - this.y, target.x - this.x);
+      } else {
+        this.aimAngle = this.rotationAngle;
+      }
+    } else if (!this.isMe) {
+    }
   }
 
   /**
@@ -92,12 +106,11 @@ export class Player extends GameObject {
       this.chargePosition = {
         entryPrice: state.cp.ep,
         amount: state.cp.a,
-        type: state.cp.t || "long", // ★追加: タイプを保存
+        type: state.cp.t || "long",
       };
     } else {
       this.chargePosition = null;
     }
-    
 
     this.stockedBullets = state.sb;
   }

@@ -60,7 +60,6 @@ export class ServerPlayer extends ServerGameObject {
     }
     this.inputs = inputActions.states || {};
     this.inputPressed = inputActions.wasPressed || {};
-
   }
 
   /**
@@ -102,33 +101,70 @@ export class ServerPlayer extends ServerGameObject {
     this.score = Math.floor(this.ep - 100);
   }
 
-  shoot(game) { 
+  shoot(game) {
     if (this.shootCooldown > 0 || this.stockedBullets.length === 0) {
       return;
     }
 
     const bulletData = this.stockedBullets.pop();
-    const damage = typeof bulletData === "object" ? bulletData.damage : bulletData;
-    const type = typeof bulletData === "object" ? bulletData.type : "player_special_1";
-    
+    const damage =
+      typeof bulletData === "object" ? bulletData.damage : bulletData;
+    const type =
+      typeof bulletData === "object" ? bulletData.type : "player_special_1";
+
     this.isDirty = true;
 
-    // ★変更: マウス座標計算をやめ、現在の angle をそのまま使う
-    const angle = this.angle;
+    let shootAngle = this.angle;
+
+    const SEARCH_RADIUS = 750;
+
+    const searchArea = { x: this.x, y: this.y, radius: SEARCH_RADIUS };
+    const nearbyEntities = game.grid.getNearbyEntities(searchArea);
+
+    let closestTarget = null;
+    let minDistSq = SEARCH_RADIUS * SEARCH_RADIUS;
+
+    for (const entity of nearbyEntities) {
+      if (entity.id === this.id) continue;
+      if (entity.hp <= 0) continue;
+
+      const isEnemy = entity.constructor.name === "ServerEnemy";
+      const isPlayer = entity.constructor.name === "ServerPlayer";
+
+      if (isEnemy || isPlayer) {
+        const dx = entity.x - this.x;
+        const dy = entity.y - this.y;
+        const distSq = dx * dx + dy * dy;
+
+        if (distSq < minDistSq) {
+          minDistSq = distSq;
+          closestTarget = entity;
+        }
+      }
+    }
+
+    if (closestTarget) {
+      shootAngle = Math.atan2(
+        closestTarget.y - this.y,
+        closestTarget.x - this.x
+      );
+
+      this.angle = shootAngle;
+    }
+
     let speed = 9;
     let radius = 6;
-
-    if (type === "player_special_2") { // Plasma
+    if (type === "player_special_2") {
       speed = 10;
       radius = 12;
     }
-    if (type === "player_special_3") { // Nova (サイズアップ)
+    if (type === "player_special_3") {
       speed = 11;
-      radius = 30; // 18 -> 30 へ拡大
+      radius = 30;
     }
-    if (type === "player_special_4") { // Gamma (レーザー)
-      speed = 24;  // 16 -> 24 (超高速)
-      radius = 45; // 極太判定
+    if (type === "player_special_4") {
+      speed = 24;
+      radius = 45;
     }
 
     game.addBullet(
@@ -136,7 +172,7 @@ export class ServerPlayer extends ServerGameObject {
         this.x,
         this.y,
         radius,
-        angle,
+        shootAngle,
         speed,
         type,
         damage,

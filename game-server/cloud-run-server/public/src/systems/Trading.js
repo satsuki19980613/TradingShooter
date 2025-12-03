@@ -9,7 +9,7 @@ export class Trading {
       maxPrice: 1010,
     };
 
-    this.selectedMaTypes = new Set(["medium"]);
+    this.selectedMaTypes = new Set(["short", "long"]);
   }
 
   toggleMaType(type, isChecked) {
@@ -62,7 +62,23 @@ export class Trading {
     }
   }
 
+  /**
+   * チャート描画メソッド（高解像度対応版）
+   * game.js で scale() を行わず、物理ピクセルサイズをそのまま受け取る前提
+   */
   drawChart(ctx, canvasWidth, canvasHeight, playerState) {
+    // 1. デバイスピクセル比を取得（文字サイズや余白の計算に使用）
+    const dpr = window.devicePixelRatio || 1;
+    let uiScale = 1;
+    try {
+        const val = getComputedStyle(document.body).getPropertyValue('--ui-scale');
+        if (val) uiScale = parseFloat(val);
+    } catch(e) {}
+    if (!uiScale || isNaN(uiScale)) uiScale = 1;
+
+    // ★重要: 全体の描画倍率を決定 (DPR × UIスケール)
+    // これをフォントサイズやパディングの計算に使います
+    const ratio = dpr * uiScale;
     const tradeState = this.tradeState;
     const chartData = tradeState.chartData || [];
 
@@ -72,7 +88,14 @@ export class Trading {
 
     if (chartData.length < 2) return;
 
-    const padding = { top: 10, right: 30, bottom: 5, left: 0 };
+    // 2. 余白（padding）を解像度に合わせてスケーリング
+    const padding = {
+      top: 10 * ratio,
+      right: 30 * ratio,
+      bottom: 5 * ratio,
+      left: 0,
+    };
+
     const chartX = padding.left;
     const chartY = padding.top;
     const chartWidth = canvasWidth - padding.left - padding.right;
@@ -86,27 +109,37 @@ export class Trading {
     maxPrice += margin;
     minPrice -= margin;
     const renderRange = maxPrice - minPrice;
+
+    // 物理ピクセルの境界に合わせて描画（+0.5 で線の滲みを防ぐ）
     const px = (val) => Math.floor(val) + 0.5;
+
     const getX = (index) =>
       chartX + (index / (visibleData.length - 1)) * chartWidth;
+
     const getY = (price) =>
       chartY + chartHeight - ((price - minPrice) / renderRange) * chartHeight;
 
+    // --- チャート線の描画 ---
     ctx.beginPath();
-   ctx.moveTo(px(getX(0)), px(getY(visibleData[0])));
+    ctx.moveTo(px(getX(0)), px(getY(visibleData[0])));
     for (let i = 1; i < visibleData.length; i++) {
       ctx.lineTo(px(getX(i)), px(getY(visibleData[i])));
     }
+
     const lastPrice = visibleData[visibleData.length - 1];
     const firstPrice = visibleData[0];
 
     ctx.strokeStyle = lastPrice >= firstPrice ? "#00ff00" : "#ff0055";
-    ctx.lineWidth = 1;
+
+    // 3. 線の太さを物理1pxに設定（最もシャープに見える設定）
+    ctx.lineWidth = 2.5;
+
     ctx.shadowColor = ctx.strokeStyle;
     ctx.shadowBlur = 10;
     ctx.stroke();
     ctx.shadowBlur = 0;
 
+    // --- 移動平均線（MA）の描画 ---
     const maColors = {
       short: "#00e1ff",
       medium: "#e1ff00",
@@ -120,7 +153,7 @@ export class Trading {
       ctx.beginPath();
 
       ctx.strokeStyle = (maColors[type] || "#ffffff") + "80";
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 1.5; // シャープさ優先
 
       let maStarted = false;
 
@@ -144,22 +177,25 @@ export class Trading {
           ctx.moveTo(px(x), px(y));
           maStarted = true;
         } else {
-         ctx.lineTo(px(x), px(y));
+          ctx.lineTo(px(x), px(y));
         }
       }
       ctx.stroke();
     });
 
+    // --- 現在価格ラインの描画 ---
     const currentY = getY(currentPrice);
     ctx.beginPath();
-    ctx.setLineDash([5, 5]);
+    // 点線の間隔もスケーリング
+    ctx.setLineDash([5 * dpr, 5 * dpr]);
     ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 1;
-    ctx.moveTo(px(chartX), px(currentY)); // ★修正
+    ctx.moveTo(px(chartX), px(currentY));
     ctx.lineTo(px(chartX + chartWidth), px(currentY));
     ctx.stroke();
     ctx.setLineDash([]);
 
+    // --- エントリーポジションの描画 ---
     if (playerState && playerState.chargePosition) {
       const entryPrice = playerState.chargePosition.entryPrice;
       const type = playerState.chargePosition.type || "long";
@@ -173,38 +209,40 @@ export class Trading {
       const mark = isShort ? "▼" : "▲";
 
       ctx.strokeStyle = color;
+      // 自分のエントリーラインは少し太く目立たせる
       ctx.lineWidth = 2;
-      ctx.setLineDash([4, 4]);
+      ctx.setLineDash([4 * dpr, 4 * dpr]);
 
-      ctx.moveTo(px(chartX), px(entryY)); // ★修正
-       ctx.lineTo(px(chartX + chartWidth), px(entryY));
+      ctx.moveTo(px(chartX), px(entryY));
+      ctx.lineTo(px(chartX + chartWidth), px(entryY));
       ctx.stroke();
       ctx.setLineDash([]);
 
       ctx.fillStyle = color;
-      ctx.font = "bold 12px sans-serif";
-
+      // 4. フォントサイズをDPR倍する (12px -> 12 * dpr px)
+      ctx.font = `bold ${12 * ratio}px sans-serif`;
+      
       const labelText = `${mark} ${isShort ? "SHORT ENTRY" : "LONG ENTRY"}`;
-      ctx.fillText(labelText, chartX + 5, entryY - 5);
-
+      // オフセット量も ratio
+      ctx.fillText(labelText, chartX + (5 * ratio), entryY - (5 * ratio));
+      
       ctx.textAlign = "right";
-      ctx.fillText(mark, chartX + chartWidth - 5, entryY - 5);
+      ctx.fillText(mark, chartX + chartWidth - (5 * ratio), entryY - (5 * ratio));
       ctx.textAlign = "left";
     }
 
-    ctx.font = "bold 14px 'Roboto Mono', monospace";
+    // --- 現在価格テキストの描画 ---
+    // フォントサイズをDPR倍する (14px -> 14 * dpr px)
+    ctx.font = `bold ${14 * ratio}px 'Roboto Mono', monospace`;
     const priceText = currentPrice.toFixed(0);
-    const textMetrics = ctx.measureText(priceText);
-    const textHeight = 14;
-    const textX = chartX + chartWidth + 5;
+    const textHeight = 14 * ratio;
+    const textX = chartX + chartWidth + (5 * ratio);
     const textY = Math.max(
       chartY + textHeight / 2,
       Math.min(currentY, chartY + chartHeight - textHeight / 2)
     );
 
     ctx.save();
-    
-
     ctx.fillStyle =
       lastPrice >= (chartData[chartData.length - 2] || 0)
         ? "#00ff00"
