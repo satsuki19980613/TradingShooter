@@ -73,18 +73,14 @@ export class UIManager {
     );
     this.btnShowLeaderboard = document.getElementById("btn-show-leaderboard");
     this.btnCloseLeaderboard = document.getElementById("btn-close-leaderboard");
-   
   }
   drawRadar(ctx, w, h, ww, wh, p, e, o, op) {
-      // 新しいレンダラーの draw メソッドを呼び出す
-      this.radarRenderer.draw(ctx, w, h, ww, wh, p, e, o, op);
-    }
+    this.radarRenderer.draw(ctx, w, h, ww, wh, p, e, o, op);
+  }
 
-    // ▼ 3. これも重要です。エラーの原因はこのメソッドがないことです
-    drawChargeUI(ctx, playerState, w, h) {
-      // 新しいレンダラーの draw メソッドを呼び出す
-      this.magazineRenderer.draw(ctx, playerState, w, h);
-    }
+  drawChargeUI(ctx, playerState, w, h) {
+    this.magazineRenderer.draw(ctx, playerState, w, h);
+  }
   tryFullscreen() {
     const doc = window.document;
     const docEl = doc.documentElement;
@@ -168,7 +164,13 @@ export class UIManager {
       .addEventListener("click", () => this.showScreen("home"));
     document
       .getElementById("btn-gameover-home")
-      .addEventListener("click", () => this.showScreen("home"));
+      .addEventListener("click", () => {
+        if (actions.onBackToHome) {
+          actions.onBackToHome();
+        } else {
+          this.showScreen("home");
+        }
+      });
     document
       .getElementById("btn-error-home")
       .addEventListener("click", () => this.showScreen("home"));
@@ -420,7 +422,6 @@ export class UIManager {
     }
     this.debugSimulationContainerEl.innerHTML = serverHtml;
   }
-
 
   setGameOverMessage(message) {
     this.gameoverMessageEl.textContent = message;
