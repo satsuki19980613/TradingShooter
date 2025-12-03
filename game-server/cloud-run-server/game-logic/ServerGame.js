@@ -108,6 +108,10 @@ export class ServerGame {
    */
   initWorld() {
    let mapData = CACHED_MAP_DATA;
+   if (!mapData.definitions && mapData.obstacles && !Array.isArray(mapData.obstacles)) {
+        console.log("[ServerGame] 入れ子になったマップ構造を検出しました。データを補正します。");
+        mapData = mapData.obstacles;
+    }
     this.WORLD_WIDTH =
       (mapData.worldSize && mapData.worldSize.width) || WORLD_WIDTH;
     this.WORLD_HEIGHT =
