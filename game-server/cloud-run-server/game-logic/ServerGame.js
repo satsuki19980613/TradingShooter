@@ -1,32 +1,14 @@
-/**
- * 【ServerGame の役割: 指揮者・状態保持】
- * ゲーム全体のライフサイクル管理と、各サブシステム（Physics, Network）の統合を行います。
- * * ■ 担当する責務 (Do):
- * - ゲームループ (setInterval) の開始と停止
- * - プレイヤー・敵・弾の生成管理 (Spawn/Despawn)
- * - ゲームルールの判定（スコア加算、死亡判定のトリガー）
- * - PhysicsSystem, NetworkSystem の update メソッド呼び出し
- * * ■ 担当しない責務 (Don't):
- * - 具体的な移動計算 (→ ServerPhysicsSystem へ)
- * - 衝突判定の計算ロジック (→ ServerPhysicsSystem へ)
- * - 通信パケットのバイナリ変換や送信処理 (→ ServerNetworkSystem へ)
- * - データベースへの直接アクセス (→ ServerPersistenceManager へ)
- * - アカウント登録や認証処理 (→ index.js / ServerAccountManager へ)
- */
+
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { FieldValue } from "firebase-admin/firestore";
 import { ServerPlayer } from "./ServerPlayer.js";
 import { ServerEnemy } from "./ServerEnemy.js";
 import { ServerBullet } from "./ServerBullet.js";
 import { ServerTrading } from "./ServerTrading.js";
-import { ServerObstacle } from "./ServerObstacle.js";
-import { getDistance } from "./ServerUtils.js";
 import { SpatialGrid } from "./SpatialGrid.js";
 import { WebSocket } from "ws";
 import { ServerConfig, GameConstants } from "./ServerConfig.js";
-import { ServerAccountManager } from "./ServerAccountManager.js";
 import { ServerNetworkSystem } from "./ServerNetworkSystem.js";
 import { ServerPhysicsSystem } from "./ServerPhysicsSystem.js";
 import { ServerPersistenceManager } from "./ServerPersistenceManager.js";

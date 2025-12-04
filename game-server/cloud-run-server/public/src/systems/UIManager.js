@@ -4,7 +4,6 @@ import { MagazineRenderer } from "./MagazineRenderer.js";
 
 export class UIManager {
   constructor() {
-    // 画面定義 (不要な画面IDがあれば削除しても良いですが、安全のため残してもOK)
     this.screens = {
       home: document.getElementById("screen-home"),
       loading: document.getElementById("screen-loading"),
@@ -15,7 +14,6 @@ export class UIManager {
     };
     this.activeScreen = this.screens.home;
 
-    // ゲーム内要素
     this.hpBarInnerEl = document.getElementById("hp-bar-inner");
     this.hpValueEl = document.getElementById("hp-value");
     this.epValueEl = document.getElementById("ep-value");
@@ -27,25 +25,26 @@ export class UIManager {
     this.gameoverScoreEl = document.getElementById("gameover-score");
     this.gameoverMessageEl = document.getElementById("gameover-message");
     this.errorMessageEl = document.getElementById("error-message");
-    
-    // デバッグ系
-    this.debugPanelEl = document.getElementById("debug-panel");
-    this.debugStatsContainerEl = document.getElementById("debug-stats-container");
-    this.debugSimulationContainerEl = document.getElementById("debug-simulation-container");
 
-    // ランキングリスト (HTMLから削除されている場合は null になるためチェックが必要)
+    this.debugPanelEl = document.getElementById("debug-panel");
+    this.debugStatsContainerEl = document.getElementById(
+      "debug-stats-container"
+    );
+    this.debugSimulationContainerEl = document.getElementById(
+      "debug-simulation-container"
+    );
+
     this.leaderboardListEl = document.getElementById("leaderboard-list");
 
     this.isDebugMode = false;
     this.WORLD_WIDTH = 3000;
     this.WORLD_HEIGHT = 3000;
-    
+
     this.mobileControlManager = new MobileControlManager();
     this.radarRenderer = new RadarRenderer();
     this.magazineRenderer = new MagazineRenderer();
   }
 
-  // 描画関連
   drawRadar(ctx, w, h, ww, wh, p, e, o, op) {
     this.radarRenderer.draw(ctx, w, h, ww, wh, p, e, o, op);
   }
@@ -55,19 +54,22 @@ export class UIManager {
   }
 
   tryFullscreen() {
-      const doc = window.document;
-      const docEl = doc.documentElement;
-      const requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
-      if (requestFullScreen) {
-          requestFullScreen.call(docEl).catch((err) => console.warn(err));
-      }
+    const doc = window.document;
+    const docEl = doc.documentElement;
+    const requestFullScreen =
+      docEl.requestFullscreen ||
+      docEl.mozRequestFullScreen ||
+      docEl.webkitRequestFullScreen ||
+      docEl.msRequestFullscreen;
+    if (requestFullScreen) {
+      requestFullScreen.call(docEl).catch((err) => console.warn(err));
+    }
   }
 
   /**
    * アクションのバインド (ゲストプレイに必要な最小限のみ)
    */
   bindActions(actions) {
-    // Join Gameボタン (常にゲストとして開始)
     const btnStartGame = document.getElementById("btn-start-game");
     if (btnStartGame) {
       btnStartGame.addEventListener("click", () => {
@@ -76,7 +78,6 @@ export class UIManager {
       });
     }
 
-    // リトライボタン
     const btnRetry = document.getElementById("btn-gameover-retry");
     if (btnRetry) {
       btnRetry.addEventListener("click", () => {
@@ -84,7 +85,6 @@ export class UIManager {
       });
     }
 
-    // ホームへ戻るボタン
     const btnGameoverHome = document.getElementById("btn-gameover-home");
     if (btnGameoverHome) {
       btnGameoverHome.addEventListener("click", () => {
@@ -95,13 +95,12 @@ export class UIManager {
         }
       });
     }
-    
+
     const btnErrorHome = document.getElementById("btn-error-home");
     if (btnErrorHome) {
       btnErrorHome.addEventListener("click", () => this.showScreen("home"));
     }
 
-    // リタイアボタン
     const btnRetire = document.getElementById("btn-retire");
     if (btnRetire) {
       btnRetire.addEventListener("click", () => {
@@ -114,7 +113,6 @@ export class UIManager {
     this.mobileControlManager.init(true);
   }
 
-  // 画面切り替え
   showScreen(screenId) {
     for (const key in this.screens) {
       if (this.screens[key]) this.screens[key].classList.remove("active");
@@ -128,20 +126,20 @@ export class UIManager {
   }
 
   showGameOverScreen(score) {
-    if (this.gameoverScoreEl) this.gameoverScoreEl.textContent = Math.round(score);
-    if (this.gameoverMessageEl) this.gameoverMessageEl.textContent = "スコアを保存中...";
+    if (this.gameoverScoreEl)
+      this.gameoverScoreEl.textContent = Math.round(score);
+    if (this.gameoverMessageEl)
+      this.gameoverMessageEl.textContent = "スコアを保存中...";
 
     if (this.screens.gameover) {
       this.screens.gameover.classList.add("active");
     }
   }
 
-  // HUD更新
   syncHUD(playerState, tradeState) {
     if (!playerState || !this.hpBarInnerEl) return;
     const currentPrice = tradeState ? tradeState.currentPrice : 1000;
-    
-    // HP
+
     if (playerState.hp !== undefined) {
       const hpPercent = (playerState.hp / 100) * 100;
       this.hpBarInnerEl.style.width = `${hpPercent}%`;
@@ -152,20 +150,17 @@ export class UIManager {
       if (this.hpValueEl) this.hpValueEl.textContent = 0;
     }
 
-    // EP
     if (this.epValueEl) {
       this.epValueEl.textContent =
         playerState.ep !== undefined ? Math.ceil(playerState.ep) : 0;
     }
 
-    // Size (Bet Amount)
     if (this.sizeValueEl) {
       const chargeBetAmount = playerState.chargeBetAmount || 10;
       const chargePosition = playerState.chargePosition || null;
       let betText = Math.ceil(chargeBetAmount);
       let betColor = "white";
-      
-      // 所持EPよりベット額が大きい場合は赤文字にする等の演出
+
       if (!chargePosition && playerState.ep < chargeBetAmount) {
         betColor = "#f44336";
       }
@@ -173,7 +168,6 @@ export class UIManager {
       this.sizeValueEl.style.color = betColor;
     }
 
-    // Power (Profit/Loss)
     if (this.powerValueEl && this.powerLabelEl) {
       const chargePosition = playerState.chargePosition || null;
       let level = 0;
@@ -195,8 +189,10 @@ export class UIManager {
       let intLevel = Math.floor(level);
       if (level > 0) intLevel = Math.ceil(level);
 
-      const levelText = intLevel === 0 ? "0" : (intLevel > 0 ? "+" : "") + intLevel;
-      const levelColor = intLevel > 0 ? "#4caf50" : intLevel < 0 ? "#f44336" : "white";
+      const levelText =
+        intLevel === 0 ? "0" : (intLevel > 0 ? "+" : "") + intLevel;
+      const levelColor =
+        intLevel > 0 ? "#4caf50" : intLevel < 0 ? "#f44336" : "white";
 
       this.powerLabelEl.textContent = "Power";
       this.powerValueEl.textContent = levelText;
@@ -205,7 +201,6 @@ export class UIManager {
     }
   }
 
-  // デバッグHUD
   syncDebugHUD(stats, simStats, serverStats) {
     if (!this.isDebugMode || !this.debugStatsContainerEl) return;
 
@@ -222,17 +217,24 @@ export class UIManager {
       const avgTick = parseFloat(serverStats.avgTickTime);
       const targetTick = serverStats.targetTickTime;
       const loadPercent = (avgTick / targetTick) * 100;
-      const tickColor = loadPercent > 80 ? "#f44336" : loadPercent > 50 ? "#ff9800" : "#4caf50";
-      
-      serverHtml += `<p><span class="stat-key">Avg Tick Time:</span> <span class="stat-value" style="color: ${tickColor}">${avgTick.toFixed(2)} ms</span></p>`;
+      const tickColor =
+        loadPercent > 80 ? "#f44336" : loadPercent > 50 ? "#ff9800" : "#4caf50";
+
+      serverHtml += `<p><span class="stat-key">Avg Tick Time:</span> <span class="stat-value" style="color: ${tickColor}">${avgTick.toFixed(
+        2
+      )} ms</span></p>`;
       serverHtml += `<p><span class="stat-key">(Target):</span> <span class="stat-value">${targetTick} ms</span></p>`;
-      serverHtml += `<p><span class="stat-key">Server Load:</span> <span class="stat-value" style="color: ${tickColor}">${loadPercent.toFixed(1)} %</span></p>`;
+      serverHtml += `<p><span class="stat-key">Server Load:</span> <span class="stat-value" style="color: ${tickColor}">${loadPercent.toFixed(
+        1
+      )} %</span></p>`;
       serverHtml += `<hr>`;
       serverHtml += `<p><span class="stat-key">Players:</span> <span class="stat-value">${serverStats.playerCount}</span></p>`;
       serverHtml += `<p><span class="stat-key">Enemies:</span> <span class="stat-value">${serverStats.enemyCount}</span></p>`;
       serverHtml += `<p><span class="stat-key">Bullets:</span> <span class="stat-value">${serverStats.bulletCount}</span></p>`;
     } else {
-      serverHtml += `<p><span class="stat-key">Avg Speed:</span> <span class="stat-value">${(simStats.avg_bps / 1024).toFixed(1)} KB/s</span></p>`;
+      serverHtml += `<p><span class="stat-key">Avg Speed:</span> <span class="stat-value">${(
+        simStats.avg_bps / 1024
+      ).toFixed(1)} KB/s</span></p>`;
     }
     this.debugSimulationContainerEl.innerHTML = serverHtml;
   }
@@ -244,28 +246,30 @@ export class UIManager {
   showErrorScreen(message, error) {
     console.error(message, error);
     if (this.errorMessageEl) {
-        this.errorMessageEl.textContent = `${message} (${error.code || error.message})`;
+      this.errorMessageEl.textContent = `${message} (${
+        error.code || error.message
+      })`;
     }
     this.showScreen("error");
   }
 
   setLoadingText(text) {
-    if(this.loadingTextEl) this.loadingTextEl.textContent = text;
+    if (this.loadingTextEl) this.loadingTextEl.textContent = text;
   }
 
   setWorldSize(width, height) {
     this.WORLD_WIDTH = width;
     this.WORLD_HEIGHT = height;
     if (this.obstacleLayerEl) {
-        this.obstacleLayerEl.style.width = `${width}px`;
-        this.obstacleLayerEl.style.height = `${height}px`;
+      this.obstacleLayerEl.style.width = `${width}px`;
+      this.obstacleLayerEl.style.height = `${height}px`;
     }
   }
 
   syncDomElements(cameraX, cameraY) {
     if (this.obstacleLayerEl) {
-        const cameraTransform = `translate(${-cameraX}px, ${-cameraY}px)`;
-        this.obstacleLayerEl.style.transform = cameraTransform;
+      const cameraTransform = `translate(${-cameraX}px, ${-cameraY}px)`;
+      this.obstacleLayerEl.style.transform = cameraTransform;
     }
   }
 
@@ -335,18 +339,16 @@ export class UIManager {
       type === "profit" ? "rgba(76, 175, 80, 0.8)" : "rgba(244, 67, 54, 0.8)";
     msg.style.color = "white";
     msg.style.pointerEvents = "none";
-    
+
     const gameScreen = this.screens.game;
     if (gameScreen) {
-        gameScreen.appendChild(msg);
-        setTimeout(() => {
-            msg.remove();
-        }, 1500);
+      gameScreen.appendChild(msg);
+      setTimeout(() => {
+        msg.remove();
+      }, 1500);
     }
   }
 
-  // サーバーからリーダーボード情報が送られてきた場合の処理
-  // (HTMLからリストが削除されている場合は何もしない)
   updateLeaderboard(leaderboardData, myUserId) {
     if (!this.leaderboardListEl) return;
 

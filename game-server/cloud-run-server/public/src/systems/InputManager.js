@@ -104,7 +104,6 @@ export class InputManager {
     }
   }
 
-
   /**
    *Game.js が射撃ボタン(mousedown)を検知したら呼ぶ
    */
@@ -170,18 +169,14 @@ export class InputManager {
     return "N/A";
   }
 
-  // [InputManager.js] クラス内に追加
-
   /**
    * 仮想ジョイスティックやボタンからの入力を適用する (スマホ用)
    * @param {string} action - 'move_up', 'trade_long' などのアクション名
    * @param {boolean} isPressed - 押されているかどうか
    */
   setVirtualInput(action, isPressed) {
-    // 状態を更新
     this.actionStates[action] = isPressed;
-    
-    // 押された瞬間なら pressed にも記録 (クリックイベント相当)
+
     if (isPressed) {
       this.actionPressed[action] = true;
     }
@@ -192,7 +187,7 @@ export class InputManager {
    * 移動キーの入力状態に変換する
    */
   setJoystickVector(x, y) {
-    const threshold = 0.3; // 感度
+    const threshold = 0.3;
 
     this.actionStates["move_right"] = x > threshold;
     this.actionStates["move_left"] = x < -threshold;

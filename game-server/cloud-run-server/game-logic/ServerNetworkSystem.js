@@ -1,5 +1,3 @@
-// game-server/cloud-run-server/game-logic/ServerNetworkSystem.js
-
 import { WebSocket } from "ws";
 import { ServerPlayer } from "./ServerPlayer.js";
 import { ServerEnemy } from "./ServerEnemy.js";
@@ -40,8 +38,6 @@ export class ServerNetworkSystem {
         this.safeSend(player.ws, binaryData);
       }
 
-      // Dirtyフラグのリセット
-      // (Mapのvaluesイテレータを使って直接リセット)
       for (const p of relevantEntityMaps.players.values()) p.isDirty = false;
       for (const e of relevantEntityMaps.enemies.values()) e.isDirty = false;
       for (const b of relevantEntityMaps.bullets.values()) b.isDirty = false;
@@ -50,19 +46,13 @@ export class ServerNetworkSystem {
     });
   }
 
-  /**
-   * バイナリデータの生成（最適化版）
-   * - Array.from() の削除
-   * - getState() の廃止（直接アクセス）
-   */
+
   createBinaryDelta(oldEntityMaps, newEntityMaps, writer, events) {
     writer.u8(MSG_TYPE_DELTA);
 
-    // --- 1. 削除されたエンティティ ---
-    // (ここは削除リストを作る必要があるため配列操作は許容)
     let removedCount = 0;
-    const removedPlayersStart = writer.offset; // 後で個数を書き込む位置
-    writer.u8(0); // 仮の個数
+    const removedPlayersStart = writer.offset;
+    writer.u8(0);
 
     if (oldEntityMaps && oldEntityMaps.players) {
       for (const id of oldEntityMaps.players.keys()) {
@@ -72,7 +62,7 @@ export class ServerNetworkSystem {
         }
       }
     }
-    // 個数を上書き
+
     writer.buffer.writeUInt8(Math.min(removedCount, 255), removedPlayersStart);
 
     removedCount = 0;
@@ -104,16 +94,13 @@ export class ServerNetworkSystem {
       removedBulletsStart
     );
 
-    // --- 2. 更新されたエンティティ (直接ループ・直接アクセス) ---
-
-    // Players
     writer.u8(Math.min(newEntityMaps.players.size, 255));
     for (const p of newEntityMaps.players.values()) {
       writer.string(p.id);
       writer.f32(Math.round(p.x * 100) / 100);
       writer.f32(Math.round(p.y * 100) / 100);
       writer.u8(Math.min(Math.max(0, Math.ceil(p.hp)), 255));
-      writer.f32(Math.round(p.angle * 10) / 10); // aimAngle -> angle (ServerPlayer参照)
+      writer.f32(Math.round(p.angle * 10) / 10);
       writer.string(p.name || "Guest");
       writer.u32(p.lastProcessedInputSeq || 0);
       writer.u8(p.isDead ? 1 : 0);
@@ -130,17 +117,14 @@ export class ServerNetworkSystem {
         writer.u8(0);
       }
 
-      // Stocked Bullets (getStateを使わず直接処理)
       const bullets = p.stockedBullets || [];
       writer.u8(Math.min(bullets.length, 255));
       for (const b of bullets) {
-        // オブジェクトか数値かを判定してダメージ値を取得
         const dmg = typeof b === "object" ? b.damage : b;
         writer.u16(Math.ceil(dmg));
       }
     }
 
-    // Enemies
     writer.u8(Math.min(newEntityMaps.enemies.size, 255));
     for (const e of newEntityMaps.enemies.values()) {
       writer.string(e.id);
@@ -150,14 +134,12 @@ export class ServerNetworkSystem {
       writer.f32(Math.round((e.targetAngle || 0) * 10) / 10);
     }
 
-    // Bullets
     writer.u16(Math.min(newEntityMaps.bullets.size, 65535));
     for (const b of newEntityMaps.bullets.values()) {
       writer.string(b.id);
       writer.f32(Math.round(b.x * 100) / 100);
       writer.f32(Math.round(b.y * 100) / 100);
 
-      // 弾の角度は vx, vy から計算 (getStateを使わないため)
       const angle = Math.atan2(b.vy, b.vx);
       writer.f32(Math.round(angle * 10) / 10);
 
@@ -172,7 +154,6 @@ export class ServerNetworkSystem {
       writer.u8(typeId);
     }
 
-    // --- 3. イベントデータの書き込み ---
     const safeEvents = events || [];
     writer.u8(Math.min(safeEvents.length, 255));
 
@@ -189,7 +170,6 @@ export class ServerNetworkSystem {
     return writer.getData();
   }
 
-  // Helper
   getRelevantEntityMapsFor(player) {
     const viewport = { x: player.x, y: player.y, radius: 500 };
     const nearbyEntities = this.game.grid.getNearbyEntities(viewport);
@@ -211,13 +191,9 @@ export class ServerNetworkSystem {
     return { players: playersMap, enemies: enemiesMap, bullets: bulletsMap };
   }
 
-  // --- 不要になったJSONメソッド群は削除済み ---
-
-  // Snapshot送信 (JSONのまま維持)
-  // 初回接続時や再開時のみなので、ここは最適化の優先度低
   sendSnapshot(player) {
     const entityMaps = this.getRelevantEntityMapsFor(player);
-    // Snapshot用には一時的に簡易オブジェクトを作る(頻度低いため許容)
+
     const snapshotPayload = {
       players: Array.from(entityMaps.players.values()).map((p) => ({
         i: p.id,

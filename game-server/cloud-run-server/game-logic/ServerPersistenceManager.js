@@ -31,7 +31,7 @@ export class ServerPersistenceManager {
     }
 
     const finalScore = Math.round(score);
-    // スコアが0以下の場合は保存しない、などのビジネスロジックをここに集約できる
+
     if (finalScore <= 0) return;
 
     const rankDocRef = this.firestore.collection("ranking").doc(userId);
@@ -43,7 +43,6 @@ export class ServerPersistenceManager {
         const currentHighScore =
           currentData && currentData.highScore ? currentData.highScore : 0;
 
-        // ハイスコア更新時のみ書き込み
         if (finalScore > currentHighScore) {
           const newScoreData = {
             uid: userId,
@@ -52,9 +51,10 @@ export class ServerPersistenceManager {
             lastPlayed: FieldValue.serverTimestamp(),
           };
           transaction.set(rankDocRef, newScoreData, { merge: true });
-          console.log(`[Persistence] High score updated for ${name}: ${finalScore}`);
+          console.log(
+            `[Persistence] High score updated for ${name}: ${finalScore}`
+          );
         } else {
-          // スコア更新がなくてもプレイ日時は更新する
           if (docSnapshot.exists) {
             transaction.update(rankDocRef, {
               lastPlayed: FieldValue.serverTimestamp(),

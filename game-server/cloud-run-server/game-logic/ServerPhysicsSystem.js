@@ -21,6 +21,7 @@ import { ServerObstacle } from "./ServerObstacle.js";
  * 物理演算と衝突判定を担当するシステムクラス
  */
 export class ServerPhysicsSystem {
+  
   constructor(worldWidth, worldHeight) {
     this.worldWidth = worldWidth;
     this.worldHeight = worldHeight;
@@ -146,12 +147,10 @@ export class ServerPhysicsSystem {
             break;
           }
           if (bullet.type === "enemy" && entity instanceof ServerPlayer) {
-            if (entity.isDead) continue; // 死んでいるプレイヤーには当たらない
-            
-            // ダメージ処理 (第3引数はattackerPlayerだが、敵なのでnull)
+            if (entity.isDead) continue;
+
             entity.takeDamage(bullet.damage, game, null);
 
-            // ヒットエフェクト (赤色)
             game.frameEvents.push({
               type: "hit",
               x: bullet.x,
@@ -159,7 +158,6 @@ export class ServerPhysicsSystem {
               color: "#f44336",
             });
 
-            // 弾を削除
             game.removeBullet(bullet, i);
             bulletRemoved = true;
             break;

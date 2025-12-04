@@ -115,6 +115,12 @@ canvas {
 
   margin-right: 0 !important;
   margin-bottom: 5px !important;
+
+  /* ▼▼▼ PC版用にもここに追加してください ▼▼▼ */
+  width: 220px;
+  min-width: 220px;
+  flex-shrink: 0;
+  /* ▲▲▲ 追加ここまで ▲▲▲ */
 }
 
 .status-group .panel-module {
@@ -246,17 +252,16 @@ canvas {
 }
 
 .hud-group.top-right .hud-row {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;             
-    align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
 }
 
-
 .hud-group.top-right .hud-row > .panel-module:nth-child(2) {
-    margin-left: 0 !important;
-    position: relative;
-    z-index: 10;
+  margin-left: 0 !important;
+  position: relative;
+  z-index: 10;
 }
 
 .hud-group.top-right .hud-row > .panel-module:nth-child(2) {
@@ -286,22 +291,20 @@ canvas {
 }
 
 #btn-retire {
-    pointer-events: auto;
-    background-color: #d32f2f;
-    width: auto;
-    opacity: 0.8;
-    font-size: 12px;
-    padding: 8px 20px;
-    
-   
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 100;
-    
-   
-    transform: none; 
-    margin: 0;
+  pointer-events: auto;
+  background-color: #d32f2f;
+  width: auto;
+  opacity: 0.8;
+  font-size: 12px;
+  padding: 8px 20px;
+
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 100;
+
+  transform: none;
+  margin: 0;
 }
 .hud-group.bottom-left {
   bottom: 0;
@@ -750,8 +753,8 @@ canvas {
     display: block !important;
   }
   #hud-status-area .stat-row {
-        font-size: 16px !important;
-    }
+    font-size: 16px !important;
+  }
   #mc-left-bottom {
     transform: scale(0.8);
     transform-origin: bottom left;
@@ -776,7 +779,7 @@ canvas {
 
   #hud-dashboard {
     top: 10px;
-    left: 10px;
+    left: 66px;
     bottom: auto;
     right: auto;
     transform: scale(0.75) !important;
@@ -796,6 +799,9 @@ canvas {
     transform-origin: top left;
     margin-right: 0 !important;
     margin-bottom: 5px !important;
+    width: 220px;
+    min-width: 220px; /* これ以上小さくならないようにする */
+    flex-shrink: 0;
   }
 
   #bottom-chart-panel.dashboard-item {
@@ -808,33 +814,32 @@ canvas {
     transform-origin: top left;
   }
   .hud-group.top-right .hud-row {
-    flex-direction: row !important;  
+    flex-direction: row !important;
     align-items: center !important;
-    gap: 20 !important;               
-}
+    gap: 20 !important;
+  }
 
-
-.hud-group.top-right .hud-row > .panel-module:nth-child(2) {
-    margin-left: -15px !important;   
+  .hud-group.top-right .hud-row > .panel-module:nth-child(2) {
+    margin-left: -15px !important;
     position: relative !important;
     z-index: 10 !important;
-}
+  }
 
   #btn-retire {
     /* 位置合わせの重要設定 */
     position: absolute !important;
-    top: 180px !important;    /* 上からの位置 */
-    right: 10px !important;   /* 右からの位置 */
-    
-    bottom: auto !important;  /* ★重要: これで引き伸ばしを解除します */
-    height: auto !important;  /* ★念のため高さも自動に戻します */
-    
+    top: 180px !important; /* 上からの位置 */
+    right: 10px !important; /* 右からの位置 */
+
+    bottom: auto !important; /* ★重要: これで引き伸ばしを解除します */
+    height: auto !important; /* ★念のため高さも自動に戻します */
+
     /* デザイン調整 */
     padding: 4px 8px !important;
     font-size: 10px !important;
     margin: 0 !important;
     width: auto !important;
-    
+
     /* スケール調整 */
     transform: scale(0.75) !important;
     transform-origin: top right;

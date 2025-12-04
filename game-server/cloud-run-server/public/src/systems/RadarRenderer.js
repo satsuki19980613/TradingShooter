@@ -13,7 +13,9 @@ export class RadarRenderer {
     const dpr = window.devicePixelRatio || 1;
     let uiScale = 1;
     try {
-      const val = getComputedStyle(document.body).getPropertyValue("--ui-scale");
+      const val = getComputedStyle(document.body).getPropertyValue(
+        "--ui-scale"
+      );
       if (val) uiScale = parseFloat(val);
     } catch (e) {}
     if (!uiScale || isNaN(uiScale)) uiScale = 1;
@@ -30,7 +32,6 @@ export class RadarRenderer {
 
     ctx.save();
 
-    // ベース
     ctx.beginPath();
     ctx.arc(centerX, centerY, radarRadius, 0, Math.PI * 2);
     ctx.clip();
@@ -61,7 +62,6 @@ export class RadarRenderer {
     ctx.lineTo(centerX, centerY + radarRadius);
     ctx.stroke();
 
-    // スキャン
     ctx.save();
     ctx.translate(centerX, centerY);
     ctx.rotate(time * 2);
@@ -84,7 +84,6 @@ export class RadarRenderer {
     ctx.stroke();
     ctx.restore();
 
-    // エンティティ描画
     if (!playerState) {
       ctx.restore();
       return;
@@ -131,7 +130,6 @@ export class RadarRenderer {
       });
     }
 
-    // 自分
     ctx.save();
     ctx.translate(centerX, centerY);
     const myRot =
@@ -154,7 +152,6 @@ export class RadarRenderer {
     ctx.fill();
     ctx.restore();
 
-    // 外枠
     ctx.beginPath();
     ctx.arc(centerX, centerY, radarRadius, 0, Math.PI * 2);
     ctx.strokeStyle = "#00bcd4";

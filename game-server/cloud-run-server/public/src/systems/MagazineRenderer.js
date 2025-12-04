@@ -2,11 +2,12 @@ export class MagazineRenderer {
   draw(ctx, playerState, canvasWidth, canvasHeight) {
     if (!playerState) return;
 
-    // 1. スケール比率の計算
     const dpr = window.devicePixelRatio || 1;
     let uiScale = 1;
     try {
-      const val = getComputedStyle(document.body).getPropertyValue("--ui-scale");
+      const val = getComputedStyle(document.body).getPropertyValue(
+        "--ui-scale"
+      );
       if (val) uiScale = parseFloat(val);
     } catch (e) {}
     if (!uiScale || isNaN(uiScale)) uiScale = 1;
@@ -15,7 +16,6 @@ export class MagazineRenderer {
     const stockedBullets = playerState.stockedBullets || [];
     const maxStock = playerState.maxStock || 10;
 
-    // レイアウト計算
     const paddingY = 10 * ratio;
     const availableHeight = canvasHeight - paddingY * 2;
     const gap = 4 * ratio;
@@ -29,7 +29,6 @@ export class MagazineRenderer {
 
     ctx.save();
 
-    // 全体を斜めに傾ける
     ctx.transform(1, 0, -0.2, 1, 0, 0);
 
     for (let i = 0; i < maxStock; i++) {
@@ -40,7 +39,6 @@ export class MagazineRenderer {
       const damageVal =
         typeof bulletInfo === "object" ? bulletInfo.damage : bulletInfo;
 
-      // --- スロットの背景 ---
       ctx.beginPath();
       ctx.rect(startX, currentY, contentWidth, slotHeight);
 
@@ -51,7 +49,6 @@ export class MagazineRenderer {
       ctx.strokeStyle = "rgba(0, 255, 255, 0.1)";
       ctx.stroke();
 
-      // --- 装填済み弾薬 ---
       if (hasBullet) {
         let baseColor, glowColor;
 
@@ -104,7 +101,7 @@ export class MagazineRenderer {
         );
 
         ctx.restore();
-      } 
+      }
     }
 
     ctx.restore();
