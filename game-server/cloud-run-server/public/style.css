@@ -844,6 +844,39 @@ canvas {
     transform: scale(0.75) !important;
     transform-origin: top right;
   }
+/* --- スマホ版BGMテロップの位置調整 --- */
+  .music-notification {
+    /* 親要素(#cockpit-container)に合わせて回転させるため absolute に変更 */
+    position: absolute !important; 
+    
+    /* マガジン(下端約130px)とリタイアボタン(上端180px)の間に配置 */
+    top: 135px !important;
+    
+    /* 画面右外からスライドイン */
+    right: -100% !important; 
+    
+    /* スマホ用にサイズ調整 */
+    max-width: 220px;
+    padding: 6px 12px;
+    border-left-width: 3px;
+    background: rgba(0, 0, 0, 0.85);
+    
+    /* コンテナ内での重なり順を最前面に */
+    z-index: 2000; 
+  }
+
+  .music-notification .music-icon {
+    font-size: 18px;
+  }
+
+  .music-notification .music-title {
+    font-size: 12px;
+  }
+
+  /* 表示時は右端(right: 0)に配置 */
+  .music-notification.show {
+    right: 0 !important;
+  }
 }
 
 @media (max-width: 600px) {
