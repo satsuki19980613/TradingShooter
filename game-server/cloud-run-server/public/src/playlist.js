@@ -1,27 +1,22 @@
-/**
- * BGMプレイリスト定義
- * title: 曲名（テロップ表示用）
- * url: 音源ファイルのパス（URL）
- */
 export const BGM_PLAYLIST = [
-  // 0番目: 固定（オープニング曲）- 既存のまま
+  // 0番目: 固定
   { 
     title: "Stellar Signals", 
     url: "https://trading-charge-shooter.web.app/audio/StellarSignals.mp3" 
   },
-
-  // ▼▼▼ 追加した3曲 (シャッフル再生用) ▼▼▼
-  // ※ファイルは public/audio/ フォルダにある前提です
+  // 1番目
   { 
     title: "Neon Drive", 
     url: "https://trading-charge-shooter.web.app/audio/NeonDrive.mp3" 
   },
+  // 2番目
   { 
     title: "Neon Velocity", 
     url: "https://trading-charge-shooter.web.app/audio/NeonVelocity.mp3" 
   },
+  // 3番目: ★ここを修正（audioを1つ消す）
   { 
     title: "Neon Blitzkrieg", 
-    url: "https://trading-charge-shooter.web.app/audio/audio/NeonBlitzkrieg.mp3" 
+    url: "https://trading-charge-shooter.web.app/audio/NeonBlitzkrieg.mp3" 
   }
 ];
