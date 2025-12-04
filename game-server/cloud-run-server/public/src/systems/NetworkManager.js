@@ -52,6 +52,8 @@ export class NetworkManager {
         this.tempStats.bps_total = 0;
       }
     }, 1000);
+    this.inputSequenceNumber = 0;
+    this.pendingInputs = [];
   }
 
   _estimateJsonBytes(str) {
@@ -214,6 +216,7 @@ export class NetworkManager {
         p.y = reader.f32();
         p.h = reader.u8();
         p.a = reader.f32();
+        p.lastAckSeq = reader.u32();
         p.d = reader.u8();
         p.e = reader.u16();
         p.ba = reader.u16();
@@ -304,8 +307,8 @@ export class NetworkManager {
    */
   sendInput(inputActions) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
-    let mask = 0;
 
+    let mask = 0;
     if (inputActions.states) {
       if (inputActions.states.move_up) mask |= 1;
       if (inputActions.states.move_down) mask |= 2;
@@ -316,20 +319,37 @@ export class NetworkManager {
     if (inputActions.wasPressed) {
       if (inputActions.wasPressed.shoot) mask |= 16;
       if (inputActions.wasPressed.trade_long) mask |= 32;
-      if (inputActions.wasPressed.trade_short) mask |= 1024;
-      if (inputActions.wasPressed.trade_settle) mask |= 2048;
       if (inputActions.wasPressed.bet_up) mask |= 64;
       if (inputActions.wasPressed.bet_down) mask |= 128;
       if (inputActions.wasPressed.bet_all) mask |= 256;
       if (inputActions.wasPressed.bet_min) mask |= 512;
+      if (inputActions.wasPressed.trade_short) mask |= 1024;
+      if (inputActions.wasPressed.trade_settle) mask |= 2048;
     }
 
-    const buffer = new ArrayBuffer(11);
+    this.inputSequenceNumber++;
+
+    this.pendingInputs.push({
+      seq: this.inputSequenceNumber,
+      inputs: inputActions.states,
+      dt: 1.0,
+    });
+
+    const buffer = new ArrayBuffer(15);
     const view = new DataView(buffer);
+
     view.setUint8(0, 2);
     view.setUint16(1, mask, true);
+    view.setUint32(3, this.inputSequenceNumber, true);
+
+    const mx = inputActions.mouseWorldPos ? inputActions.mouseWorldPos.x : 0;
+    const my = inputActions.mouseWorldPos ? inputActions.mouseWorldPos.y : 0;
+
+    view.setFloat32(7, mx, true);
+    view.setFloat32(11, my, true);
+
     this.ws.send(buffer);
-    this.stats.total_bytes += 3;
+    this.stats.total_bytes += 15;
   }
 
   sendPause() {

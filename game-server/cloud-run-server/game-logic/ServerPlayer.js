@@ -42,11 +42,13 @@ export class ServerPlayer extends ServerGameObject {
     this.isPaused = false;
     this.deathCleanupTimer = null;
     this.isDebugPlayer = isDebug;
+    this.lastProcessedInputSeq = 0;
     this.lastBroadcastState = {
       players: new Map(),
       enemies: new Map(),
       bullets: new Map(),
     };
+    this.lastProcessedInputSeq = 0;
   }
 
   /**

@@ -400,7 +400,7 @@ export class ServerGame {
 
     return newPlayer.getState();
   }
-  removePlayer(userId) {
+  handlePlayerInput(userId, inputActions, seq){
     const player = this.players.get(userId);
     if (!player) return;
     if (player.isDebugPlayer) {
@@ -424,6 +424,7 @@ export class ServerGame {
     if (this.players.size === 0 && this.isRunning) {
       this.stopLoops();
     }
+    player.lastProcessedInputSeq = seq;
   }
 
   handlePlayerInput(userId, inputActions) {

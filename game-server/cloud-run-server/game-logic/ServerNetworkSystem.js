@@ -67,8 +67,8 @@ export class ServerNetworkSystem {
     if (oldEntityMaps && oldEntityMaps.players) {
       for (const id of oldEntityMaps.players.keys()) {
         if (!newEntityMaps.players.has(id)) {
-            writer.string(id);
-            removedCount++;
+          writer.string(id);
+          removedCount++;
         }
       }
     }
@@ -81,8 +81,8 @@ export class ServerNetworkSystem {
     if (oldEntityMaps && oldEntityMaps.enemies) {
       for (const id of oldEntityMaps.enemies.keys()) {
         if (!newEntityMaps.enemies.has(id)) {
-            writer.string(id);
-            removedCount++;
+          writer.string(id);
+          removedCount++;
         }
       }
     }
@@ -94,16 +94,18 @@ export class ServerNetworkSystem {
     if (oldEntityMaps && oldEntityMaps.bullets) {
       for (const id of oldEntityMaps.bullets.keys()) {
         if (!newEntityMaps.bullets.has(id)) {
-            writer.string(id);
-            removedCount++;
+          writer.string(id);
+          removedCount++;
         }
       }
     }
-    writer.buffer.writeUInt16LE(Math.min(removedCount, 65535), removedBulletsStart);
-
+    writer.buffer.writeUInt16LE(
+      Math.min(removedCount, 65535),
+      removedBulletsStart
+    );
 
     // --- 2. 更新されたエンティティ (直接ループ・直接アクセス) ---
-    
+
     // Players
     writer.u8(Math.min(newEntityMaps.players.size, 255));
     for (const p of newEntityMaps.players.values()) {
@@ -115,7 +117,8 @@ export class ServerNetworkSystem {
       writer.u8(p.isDead ? 1 : 0);
       writer.u16(Math.floor(p.ep));
       writer.u16(p.chargeBetAmount || 10);
-      
+      writer.buffer.writeUInt32LE(p.lastProcessedInputSeq || 0, writer.offset);
+      writer.offset += 4;
       if (p.chargePosition) {
         writer.u8(1);
         writer.f32(p.chargePosition.entryPrice);
@@ -152,14 +155,15 @@ export class ServerNetworkSystem {
       writer.string(b.id);
       writer.f32(Math.round(b.x * 100) / 100);
       writer.f32(Math.round(b.y * 100) / 100);
-      
+
       // 弾の角度は vx, vy から計算 (getStateを使わないため)
       const angle = Math.atan2(b.vy, b.vx);
       writer.f32(Math.round(angle * 10) / 10);
 
       let typeId = 0;
       if (b.type === "enemy") typeId = 1;
-      else if (b.type === "player_special" || b.type === "player_special_1") typeId = 2;
+      else if (b.type === "player_special" || b.type === "player_special_1")
+        typeId = 2;
       else if (b.type === "item_ep") typeId = 3;
       else if (b.type === "player_special_2") typeId = 4;
       else if (b.type === "player_special_3") typeId = 5;
@@ -169,16 +173,16 @@ export class ServerNetworkSystem {
 
     // --- 3. イベントデータの書き込み ---
     const safeEvents = events || [];
-    writer.u8(Math.min(safeEvents.length, 255)); 
+    writer.u8(Math.min(safeEvents.length, 255));
 
     for (const ev of safeEvents) {
-        let typeId = 1; 
-        if (ev.type === "explosion") typeId = 2;
-        
-        writer.u8(typeId);
-        writer.f32(ev.x);
-        writer.f32(ev.y);
-        writer.string(ev.color || "#ffffff");
+      let typeId = 1;
+      if (ev.type === "explosion") typeId = 2;
+
+      writer.u8(typeId);
+      writer.f32(ev.x);
+      writer.f32(ev.y);
+      writer.string(ev.color || "#ffffff");
     }
 
     return writer.getData();
@@ -188,7 +192,7 @@ export class ServerNetworkSystem {
   getRelevantEntityMapsFor(player) {
     const viewport = { x: player.x, y: player.y, radius: 500 };
     const nearbyEntities = this.game.grid.getNearbyEntities(viewport);
-    
+
     const playersMap = new Map();
     const enemiesMap = new Map();
     const bulletsMap = new Map();
@@ -215,17 +219,40 @@ export class ServerNetworkSystem {
     // Snapshot用には一時的に簡易オブジェクトを作る(頻度低いため許容)
     const snapshotPayload = {
       players: Array.from(entityMaps.players.values()).map((p) => ({
-          i: p.id, x: p.x, y: p.y, h: p.hp, e: p.ep, a: p.angle, n: p.name,
-          ba: p.chargeBetAmount,
-          cp: p.chargePosition ? { ep: p.chargePosition.entryPrice, a: p.chargePosition.amount, t: p.chargePosition.type } : null,
-          sb: p.stockedBullets ? p.stockedBullets.map(b => typeof b === 'object' ? b.damage : b) : [],
-          d: p.isDead ? 1 : 0
+        i: p.id,
+        x: p.x,
+        y: p.y,
+        h: p.hp,
+        e: p.ep,
+        a: p.angle,
+        n: p.name,
+        ba: p.chargeBetAmount,
+        cp: p.chargePosition
+          ? {
+              ep: p.chargePosition.entryPrice,
+              a: p.chargePosition.amount,
+              t: p.chargePosition.type,
+            }
+          : null,
+        sb: p.stockedBullets
+          ? p.stockedBullets.map((b) => (typeof b === "object" ? b.damage : b))
+          : [],
+        d: p.isDead ? 1 : 0,
       })),
       enemies: Array.from(entityMaps.enemies.values()).map((e) => ({
-          i: e.id, x: e.x, y: e.y, h: e.hp, ta: e.targetAngle
+        i: e.id,
+        x: e.x,
+        y: e.y,
+        h: e.hp,
+        ta: e.targetAngle,
       })),
       bullets: Array.from(entityMaps.bullets.values()).map((b) => ({
-          i: b.id, x: b.x, y: b.y, r: b.radius, t: b.type, a: Math.atan2(b.vy, b.vx)
+        i: b.id,
+        x: b.x,
+        y: b.y,
+        r: b.radius,
+        t: b.type,
+        a: Math.atan2(b.vy, b.vx),
       })),
     };
 

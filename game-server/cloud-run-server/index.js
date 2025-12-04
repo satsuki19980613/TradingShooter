@@ -169,14 +169,16 @@ wss.on("connection", (ws, req) => {
       if (isBinary) {
         const buf = Buffer.isBuffer(message) ? message : Buffer.from(message);
 
-        if (buf.length >= 11) {
+        if (buf.length >= 15) {
           const msgType = buf.readUInt8(0);
 
           if (msgType === 2 && game && userId) {
             const mask = buf.readUInt16LE(1);
 
-            const mouseX = buf.readFloatLE(3);
-            const mouseY = buf.readFloatLE(7);
+            const seq = buf.readUInt32LE(3);
+
+            const mouseX = buf.readFloatLE(7);
+            const mouseY = buf.readFloatLE(11);
 
             const reconstructedInput = {
               states: {
@@ -201,7 +203,7 @@ wss.on("connection", (ws, req) => {
               },
             };
 
-            game.handlePlayerInput(userId, reconstructedInput);
+            game.handlePlayerInput(userId, reconstructedInput, seq);
             return;
           }
         }
