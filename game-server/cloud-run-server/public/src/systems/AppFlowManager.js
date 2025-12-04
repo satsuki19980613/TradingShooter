@@ -15,8 +15,56 @@ export class AppFlowManager {
     this.defaultVolume = 0.2;
     this.playlist = BGM_PLAYLIST;
     this.initAudioSystem();
+    this.currentSource = null;
+    this.currentTrackIndex = -1;
+    this.playableIndices = [1, 2, 3];
+    this.shuffledQueue = [];
+    this.isFirstTrackPlayed = false;
   }
+  /**
+   * ★新規追加: 曲名テロップを表示して、数秒後に隠す
+   * (修正版: 表示ロジックをより確実に制御)
+   */
+  showMusicNotification(title) {
+    const container = document.getElementById("music-notification");
+    const titleEl = document.getElementById("music-title");
 
+    if (!container || !titleEl) return;
+
+    titleEl.textContent = title;
+
+    if (this.notificationTimer) clearTimeout(this.notificationTimer);
+
+    container.classList.remove("hidden");
+    container.classList.remove("hide");
+
+    container.offsetWidth;
+
+    requestAnimationFrame(() => {
+      container.classList.add("show");
+    });
+
+    this.notificationTimer = setTimeout(() => {
+      container.classList.remove("show");
+
+      setTimeout(() => container.classList.add("hidden"), 600);
+    }, 5000);
+  }
+  playNextShuffle() {
+    if (this.playableIndices.length === 0) return;
+
+    if (this.shuffledQueue.length === 0) {
+      const arr = [...this.playableIndices];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      this.shuffledQueue = arr;
+    }
+
+    const nextIndex = this.shuffledQueue.shift();
+    this.playTrack(nextIndex);
+  }
   async initAudioSystem() {
     try {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -29,37 +77,69 @@ export class AppFlowManager {
       console.error("[Audio] Init Failed:", e);
     }
   }
+  async loadAudio(url) {
+    try {
+      const response = await fetch(url);
+      const arrayBuffer = await response.arrayBuffer();
 
-  startLoopBGM() {
-    if (!this.audioContext || !this.bgmBuffer || this.isPlaying) return;
-    const source = this.audioContext.createBufferSource();
-    source.buffer = this.bgmBuffer;
-    source.loop = true;
-    source.connect(this.bgmGainNode);
-    source.start(0);
+      return await this.audioContext.decodeAudioData(arrayBuffer);
+    } catch (e) {
+      console.error(`[Audio] Failed to load ${url}:`, e);
+      return null;
+    }
+  }
+
+  async startLoopBGM() {
+    if (!this.audioContext || this.isPlaying) return;
+
+    let trackToLoadIndex;
+    if (!this.isFirstTrackPlayed) {
+      trackToLoadIndex = 0;
+    } else {
+      return;
+    }
+
+    const track = this.playlist[trackToLoadIndex];
+    this.bgmBuffer = await this.loadAudio(track.url);
+
+    if (!this.bgmBuffer) {
+      console.error("[Audio] Failed to load initial BGM track.");
+      return;
+    }
+
+    this.showMusicNotification(track.title);
+
+    this.currentSource = this.audioContext.createBufferSource();
+    this.currentSource.buffer = this.bgmBuffer;
+    this.currentSource.loop = false;
+    this.currentSource.connect(this.bgmGainNode);
+
+    this.currentSource.onended = () => {
+      if (this.isPlaying) {
+        this.isFirstTrackPlayed = true;
+        this.playNextShuffle();
+      }
+    };
+
+    this.currentSource.start(0);
     this.isPlaying = true;
+    this.currentTrackIndex = trackToLoadIndex;
   }
 
   async toggleAudio() {
     if (this.audioContext && this.audioContext.state === "suspended") {
       await this.audioContext.resume();
     }
-    if (!this.isPlaying) this.startLoopBGM();
 
     this.isMuted = !this.isMuted;
+
     const btn = document.getElementById("btn-audio-toggle");
-    if (this.isMuted) {
-      if (this.bgmGainNode)
-        this.bgmGainNode.gain.setTargetAtTime(
-          0,
-          this.audioContext.currentTime,
-          0.1
-        );
-      if (btn) {
-        btn.textContent = "🔇 BGM: OFF";
-        btn.style.opacity = "0.5";
+
+    if (!this.isMuted) {
+      if (!this.isPlaying) {
+        await this.startLoopBGM();
       }
-    } else {
+
       if (this.bgmGainNode)
         this.bgmGainNode.gain.setTargetAtTime(
           this.defaultVolume,
@@ -70,9 +150,19 @@ export class AppFlowManager {
         btn.textContent = "🔊 BGM: ON";
         btn.style.opacity = "1.0";
       }
+    } else {
+      if (this.bgmGainNode)
+        this.bgmGainNode.gain.setTargetAtTime(
+          0,
+          this.audioContext.currentTime,
+          0.1
+        );
+      if (btn) {
+        btn.textContent = "🔇 BGM: OFF";
+        btn.style.opacity = "0.5";
+      }
     }
   }
-
   init() {
     this.ui.bindActions({
       onStartGame: (name) => this.handleStartGame(name),
@@ -149,6 +239,7 @@ export class AppFlowManager {
   /**
    * トラック再生のメイン処理 (修正版)
    */
+
   async playTrack(index) {
     if (!this.audioContext) return;
 
@@ -169,6 +260,8 @@ export class AppFlowManager {
 
     const buffer = await this.loadAudio(url);
     if (!buffer) {
+      console.error("[Audio] Failed to load BGM track:", title);
+
       setTimeout(() => this.playNextShuffle(), 1000);
       return;
     }

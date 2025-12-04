@@ -921,3 +921,56 @@ canvas {
 }
 
 
+/* --- Music Notification Style --- */
+.music-notification {
+  position: fixed;
+  top: 80px; /* HUDの下あたり */
+  right: -300px; /* 最初は画面外(右)に隠す */
+  background: rgba(0, 0, 0, 0.7);
+  border-left: 4px solid #00ffff; /* サイバーパンクなシアン色 */
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  z-index: 1000;
+  transition: right 0.5s cubic-bezier(0.17, 0.84, 0.44, 1); /* シュッと出てくる動き */
+  backdrop-filter: blur(5px);
+  border-radius: 4px 0 0 4px;
+  box-shadow: -5px 5px 15px rgba(0, 255, 255, 0.2);
+}
+
+.music-notification.show {
+  right: 0; /* 画面右端に出てくる */
+}
+
+.music-icon {
+  font-size: 24px;
+  color: #00ffff;
+  animation: pulse-icon 2s infinite;
+}
+
+.music-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.music-label {
+  font-size: 10px;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.music-title {
+  font-size: 14px;
+  color: #fff;
+  font-family: "Roboto Mono", monospace;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+}
+
+@keyframes pulse-icon {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.7; }
+  100% { transform: scale(1); opacity: 1; }
+}

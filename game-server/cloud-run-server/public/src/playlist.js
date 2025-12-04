@@ -18,5 +18,10 @@ export const BGM_PLAYLIST = [
   { 
     title: "Neon Blitzkrieg", 
     url: "https://trading-charge-shooter.web.app/audio/NeonBlitzkrieg.mp3" 
+  },
+  // 4番目
+  { 
+    title: "Fading Neon", 
+    url: "https://trading-charge-shooter.web.app/audio/FadingNeon.mp3" 
   }
 ];
