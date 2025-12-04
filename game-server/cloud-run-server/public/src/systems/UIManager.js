@@ -1,43 +1,21 @@
-/**
- * 【UIManager の役割: ビュー (View)】
- * ユーザーインターフェースの描画と、DOMイベントの仲介を行います。
- * ロジックを持たず、受動的に振る舞います。
- * * ■ 担当する責務 (Do):
- * - DOM要素の表示・非表示切り替え (Show/Hide)
- * - HUD (HPバー、スコアなど) の描画更新
- * - ボタンクリックイベントの検知と、外部アクション(bindActions)の呼び出し
- * * ■ 担当しない責務 (Don't):
- * - アプリケーションのフロー制御 (ゲーム開始手順など)
- * - 通信処理やサーバーへの接続 (NetworkManager へ)
- * - 認証処理 (FirebaseManager へ)
- * - ゲームの描画ループ管理 (Game クラスへ)
- */
 import { MobileControlManager } from "./MobileControlManager.js";
 import { RadarRenderer } from "./RadarRenderer.js";
 import { MagazineRenderer } from "./MagazineRenderer.js";
-import { AccountTransferManager } from "./AccountTransferManager.js";
-import { PlayerRegistrationManager } from "./PlayerRegistrationManager.js";
+
 export class UIManager {
   constructor() {
-    const testEl = document.getElementById("modal-initial");
-    console.log("デバッグ確認:", testEl);
+    // 画面定義 (不要な画面IDがあれば削除しても良いですが、安全のため残してもOK)
     this.screens = {
       home: document.getElementById("screen-home"),
-      ranking: document.getElementById("screen-ranking"),
       loading: document.getElementById("screen-loading"),
       game: document.getElementById("screen-game"),
       gameover: document.getElementById("screen-gameover"),
       error: document.getElementById("screen-error"),
       idleWarning: document.getElementById("screen-idle-warning"),
-      mobileBlock: document.getElementById("screen-mobile-block"),
     };
     this.activeScreen = this.screens.home;
-    this.modalInitial = document.getElementById("modal-initial");
-    this.displayNameEl = document.getElementById("display-player-name");
-    this.initialNameInput = document.getElementById("initial-name-input");
-    this.btnMenuRegister = document.getElementById("btn-menu-register");
-    this.rankingListEl = document.getElementById("ranking-list");
-    this.loadingTextEl = document.getElementById("loading-text");
+
+    // ゲーム内要素
     this.hpBarInnerEl = document.getElementById("hp-bar-inner");
     this.hpValueEl = document.getElementById("hp-value");
     this.epValueEl = document.getElementById("ep-value");
@@ -49,29 +27,25 @@ export class UIManager {
     this.gameoverScoreEl = document.getElementById("gameover-score");
     this.gameoverMessageEl = document.getElementById("gameover-message");
     this.errorMessageEl = document.getElementById("error-message");
+    
+    // デバッグ系
     this.debugPanelEl = document.getElementById("debug-panel");
-    this.debugStatsContainerEl = document.getElementById(
-      "debug-stats-container"
-    );
-    this.debugSimulationContainerEl = document.getElementById(
-      "debug-simulation-container"
-    );
+    this.debugStatsContainerEl = document.getElementById("debug-stats-container");
+    this.debugSimulationContainerEl = document.getElementById("debug-simulation-container");
+
+    // ランキングリスト (HTMLから削除されている場合は null になるためチェックが必要)
     this.leaderboardListEl = document.getElementById("leaderboard-list");
 
     this.isDebugMode = false;
     this.WORLD_WIDTH = 3000;
     this.WORLD_HEIGHT = 3000;
+    
     this.mobileControlManager = new MobileControlManager();
     this.radarRenderer = new RadarRenderer();
     this.magazineRenderer = new MagazineRenderer();
-    this.modalIngameLeaderboard = document.getElementById(
-      "modal-ingame-leaderboard"
-    );
-    this.btnShowLeaderboard = document.getElementById("btn-show-leaderboard");
-    this.btnCloseLeaderboard = document.getElementById("btn-close-leaderboard");
-    this.accountTransferManager = new AccountTransferManager(this);
-    this.playerRegistrationManager = new PlayerRegistrationManager(this);
   }
+
+  // 描画関連
   drawRadar(ctx, w, h, ww, wh, p, e, o, op) {
     this.radarRenderer.draw(ctx, w, h, ww, wh, p, e, o, op);
   }
@@ -79,64 +53,30 @@ export class UIManager {
   drawChargeUI(ctx, playerState, w, h) {
     this.magazineRenderer.draw(ctx, playerState, w, h);
   }
+
   tryFullscreen() {
-    const doc = window.document;
-    const docEl = doc.documentElement;
-
-    const requestFullScreen =
-      docEl.requestFullscreen ||
-      docEl.mozRequestFullScreen ||
-      docEl.webkitRequestFullScreen ||
-      docEl.msRequestFullscreen;
-
-    if (requestFullScreen) {
-      requestFullScreen.call(docEl).catch((err) => {
-        console.warn(
-          "フルスクリーン化できませんでした (ユーザー操作が必要な場合があります):",
-          err
-        );
-      });
-    }
+      const doc = window.document;
+      const docEl = doc.documentElement;
+      const requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+      if (requestFullScreen) {
+          requestFullScreen.call(docEl).catch((err) => console.warn(err));
+      }
   }
 
+  /**
+   * アクションのバインド (ゲストプレイに必要な最小限のみ)
+   */
   bindActions(actions) {
-    const btnInitialStart = document.getElementById("btn-initial-start");
-    if (btnInitialStart) {
-      btnInitialStart.addEventListener("click", () => {
-        const name = this.initialNameInput ? this.initialNameInput.value : "";
-        if (!name) return alert("名前を入力してください");
-        if (name.length < 3 || name.length > 12)
-          return alert("名前は3文字以上12文字以下にしてください");
-        if (name.toLowerCase() === "guest")
-          return alert("その名前は使用できません");
-
-        actions.onRegisterName(name);
-      });
-    }
-
-    const btnInitialGuest = document.getElementById("btn-initial-guest");
-    if (btnInitialGuest) {
-      btnInitialGuest.addEventListener("click", () => {
-        actions.onGuestLogin();
-      });
-    }
-
+    // Join Gameボタン (常にゲストとして開始)
     const btnStartGame = document.getElementById("btn-start-game");
     if (btnStartGame) {
       btnStartGame.addEventListener("click", () => {
         this.tryFullscreen();
-        const playerName = this.displayNameEl.textContent || "Guest";
-        actions.onStartGame(playerName);
+        actions.onStartGame("Guest");
       });
     }
 
-    const btnGotoRanking = document.getElementById("btn-goto-ranking");
-    if (btnGotoRanking) {
-      btnGotoRanking.addEventListener("click", () => {
-        actions.onRankingRequest();
-      });
-    }
-
+    // リトライボタン
     const btnRetry = document.getElementById("btn-gameover-retry");
     if (btnRetry) {
       btnRetry.addEventListener("click", () => {
@@ -144,6 +84,7 @@ export class UIManager {
       });
     }
 
+    // ホームへ戻るボタン
     const btnGameoverHome = document.getElementById("btn-gameover-home");
     if (btnGameoverHome) {
       btnGameoverHome.addEventListener("click", () => {
@@ -154,17 +95,13 @@ export class UIManager {
         }
       });
     }
-
-    const btnRankingBack = document.getElementById("btn-ranking-back");
-    if (btnRankingBack) {
-      btnRankingBack.addEventListener("click", () => this.showScreen("home"));
-    }
-
+    
     const btnErrorHome = document.getElementById("btn-error-home");
     if (btnErrorHome) {
       btnErrorHome.addEventListener("click", () => this.showScreen("home"));
     }
 
+    // リタイアボタン
     const btnRetire = document.getElementById("btn-retire");
     if (btnRetire) {
       btnRetire.addEventListener("click", () => {
@@ -174,113 +111,10 @@ export class UIManager {
       });
     }
 
-    if (this.btnShowLeaderboard) {
-      this.btnShowLeaderboard.addEventListener("click", () => {
-        if (this.modalIngameLeaderboard) {
-          this.modalIngameLeaderboard.classList.remove("hidden");
-        }
-      });
-    }
-
-    if (this.btnCloseLeaderboard) {
-      this.btnCloseLeaderboard.addEventListener("click", () => {
-        if (this.modalIngameLeaderboard) {
-          this.modalIngameLeaderboard.classList.add("hidden");
-        }
-      });
-    }
-
-    if (this.accountTransferManager) {
-      this.accountTransferManager.init(actions);
-    }
-
-    if (this.playerRegistrationManager) {
-      this.playerRegistrationManager.init(actions);
-    }
-
     this.mobileControlManager.init(true);
   }
-  hideInitialModal() {
-    if (this.modalInitial) this.modalInitial.classList.add("hidden");
-  }
 
-  showInitialModal() {
-    if (this.modalInitial) this.modalInitial.classList.remove("hidden");
-  }
-
-  hideRegisterModal() {
-    if (this.playerRegistrationManager) {
-      this.playerRegistrationManager.closeModal();
-    }
-  }
-
-  clearRankingList() {
-    if (this.rankingListEl)
-      this.rankingListEl.innerHTML = "<p>読み込み中...</p>";
-  }
-
-  async openTemporaryConnection(game, firebaseManager, networkManager) {
-    if (!networkManager.ws || networkManager.ws.readyState !== WebSocket.OPEN) {
-      const name = this.displayNameEl.textContent || "Guest";
-      try {
-        const user = await firebaseManager.authenticateAnonymously(name);
-        game.setAuthenticatedPlayer(user);
-        await networkManager.connect(user.uid, name, this.isDebugMode);
-      } catch (e) {
-        console.error("Temp Connect Error", e);
-        alert("通信エラー");
-      }
-    }
-  }
-
-  openTransferModal(actions) {
-    this.accountTransferManager.openModal(actions);
-  }
-
-  async checkInitialLoginStatus(firebaseManager) {
-    firebaseManager.onAuthStateChanged(async (user) => {
-      if (!this.modalInitial) return;
-
-      if (this.isRegistering) return;
-
-      if (user) {
-        if (user.displayName && user.displayName !== "Guest") {
-          this.updateDisplayName(user.displayName);
-          this.modalInitial.classList.add("hidden");
-        } else {
-          this.updateDisplayName("Guest");
-
-          this.modalInitial.classList.add("hidden");
-        }
-      } else {
-        this.updateDisplayName("Guest");
-        this.modalInitial.classList.remove("hidden");
-      }
-    });
-  }
-
-  updateDisplayName(name) {
-    if (this.displayNameEl) {
-      this.displayNameEl.textContent = name;
-    }
-
-    const isGuest = name === "Guest";
-
-    if (this.btnMenuRegister) {
-      if (isGuest) {
-        this.btnMenuRegister.classList.remove("hidden");
-      } else {
-        this.btnMenuRegister.classList.add("hidden");
-      }
-    }
-
-    if (isGuest) {
-      document.body.classList.add("guest-mode");
-    } else {
-      document.body.classList.remove("guest-mode");
-    }
-  }
-
+  // 画面切り替え
   showScreen(screenId) {
     for (const key in this.screens) {
       if (this.screens[key]) this.screens[key].classList.remove("active");
@@ -294,17 +128,20 @@ export class UIManager {
   }
 
   showGameOverScreen(score) {
-    this.gameoverScoreEl.textContent = Math.round(score);
-    this.gameoverMessageEl.textContent = "スコアを保存中...";
+    if (this.gameoverScoreEl) this.gameoverScoreEl.textContent = Math.round(score);
+    if (this.gameoverMessageEl) this.gameoverMessageEl.textContent = "スコアを保存中...";
 
     if (this.screens.gameover) {
       this.screens.gameover.classList.add("active");
     }
   }
 
+  // HUD更新
   syncHUD(playerState, tradeState) {
     if (!playerState || !this.hpBarInnerEl) return;
     const currentPrice = tradeState ? tradeState.currentPrice : 1000;
+    
+    // HP
     if (playerState.hp !== undefined) {
       const hpPercent = (playerState.hp / 100) * 100;
       this.hpBarInnerEl.style.width = `${hpPercent}%`;
@@ -314,35 +151,31 @@ export class UIManager {
       this.hpBarInnerEl.style.width = `0%`;
       if (this.hpValueEl) this.hpValueEl.textContent = 0;
     }
+
+    // EP
     if (this.epValueEl) {
       this.epValueEl.textContent =
         playerState.ep !== undefined ? Math.ceil(playerState.ep) : 0;
     }
+
+    // Size (Bet Amount)
     if (this.sizeValueEl) {
       const chargeBetAmount = playerState.chargeBetAmount || 10;
       const chargePosition = playerState.chargePosition || null;
       let betText = Math.ceil(chargeBetAmount);
       let betColor = "white";
-      if (chargePosition) {
-        const type = chargePosition.type || "long";
-        let priceDiff;
-
-        if (type === "short") {
-          priceDiff = chargePosition.entryPrice - currentPrice;
-        } else {
-          priceDiff = currentPrice - chargePosition.entryPrice;
-        }
-
-        const betAmount = chargePosition.amount;
-      } else if (playerState.ep < chargeBetAmount) {
+      
+      // 所持EPよりベット額が大きい場合は赤文字にする等の演出
+      if (!chargePosition && playerState.ep < chargeBetAmount) {
         betColor = "#f44336";
       }
       this.sizeValueEl.textContent = betText;
       this.sizeValueEl.style.color = betColor;
     }
+
+    // Power (Profit/Loss)
     if (this.powerValueEl && this.powerLabelEl) {
       const chargePosition = playerState.chargePosition || null;
-      const currentPrice = tradeState ? tradeState.currentPrice : 1000;
       let level = 0;
 
       if (chargePosition) {
@@ -359,17 +192,11 @@ export class UIManager {
         level = priceDiff * betAmount;
       }
 
-      let intLevel;
-      if (level > 0) {
-        intLevel = Math.ceil(level);
-      } else {
-        intLevel = Math.floor(level);
-      }
+      let intLevel = Math.floor(level);
+      if (level > 0) intLevel = Math.ceil(level);
 
-      const levelText =
-        intLevel === 0 ? "0" : (intLevel > 0 ? "+" : "") + intLevel;
-      const levelColor =
-        intLevel > 0 ? "#4caf50" : intLevel < 0 ? "#f44336" : "white";
+      const levelText = intLevel === 0 ? "0" : (intLevel > 0 ? "+" : "") + intLevel;
+      const levelColor = intLevel > 0 ? "#4caf50" : intLevel < 0 ? "#f44336" : "white";
 
       this.powerLabelEl.textContent = "Power";
       this.powerValueEl.textContent = levelText;
@@ -378,8 +205,9 @@ export class UIManager {
     }
   }
 
+  // デバッグHUD
   syncDebugHUD(stats, simStats, serverStats) {
-    if (!this.isDebugMode) return;
+    if (!this.isDebugMode || !this.debugStatsContainerEl) return;
 
     let statsHtml = "";
     statsHtml += `<p><span class="stat-key">PPS Total:</span> <span class="stat-value">${stats.pps_total}</span></p>`;
@@ -394,89 +222,59 @@ export class UIManager {
       const avgTick = parseFloat(serverStats.avgTickTime);
       const targetTick = serverStats.targetTickTime;
       const loadPercent = (avgTick / targetTick) * 100;
-      const tickColor =
-        loadPercent > 80 ? "#f44336" : loadPercent > 50 ? "#ff9800" : "#4caf50";
-      serverHtml += `<p><span class="stat-key">Avg Tick Time:</span> <span class="stat-value" style="color: ${tickColor}">${avgTick.toFixed(
-        2
-      )} ms</span></p>`;
+      const tickColor = loadPercent > 80 ? "#f44336" : loadPercent > 50 ? "#ff9800" : "#4caf50";
+      
+      serverHtml += `<p><span class="stat-key">Avg Tick Time:</span> <span class="stat-value" style="color: ${tickColor}">${avgTick.toFixed(2)} ms</span></p>`;
       serverHtml += `<p><span class="stat-key">(Target):</span> <span class="stat-value">${targetTick} ms</span></p>`;
-      serverHtml += `<p><span class="stat-key">Server Load:</span> <span class="stat-value" style="color: ${tickColor}">${loadPercent.toFixed(
-        1
-      )} %</span></p>`;
+      serverHtml += `<p><span class="stat-key">Server Load:</span> <span class="stat-value" style="color: ${tickColor}">${loadPercent.toFixed(1)} %</span></p>`;
       serverHtml += `<hr>`;
       serverHtml += `<p><span class="stat-key">Players:</span> <span class="stat-value">${serverStats.playerCount}</span></p>`;
       serverHtml += `<p><span class="stat-key">Enemies:</span> <span class="stat-value">${serverStats.enemyCount}</span></p>`;
       serverHtml += `<p><span class="stat-key">Bullets:</span> <span class="stat-value">${serverStats.bulletCount}</span></p>`;
     } else {
-      serverHtml += `<p><span class="stat-key">Avg Speed:</span> <span class="stat-value">${(
-        simStats.avg_bps / 1024
-      ).toFixed(1)} KB/s</span></p>`;
-      serverHtml += `<p><span class="stat-key">Est. (1 min):</span> <span class="stat-value">${simStats.mb_per_minute} MB</span></p>`;
-      serverHtml += `<p><span class="stat-key">Est. (1 hour):</span> <span class="stat-value">${simStats.mb_per_hour} MB</span></p>`;
+      serverHtml += `<p><span class="stat-key">Avg Speed:</span> <span class="stat-value">${(simStats.avg_bps / 1024).toFixed(1)} KB/s</span></p>`;
     }
     this.debugSimulationContainerEl.innerHTML = serverHtml;
   }
 
   setGameOverMessage(message) {
-    this.gameoverMessageEl.textContent = message;
+    if (this.gameoverMessageEl) this.gameoverMessageEl.textContent = message;
   }
 
   showErrorScreen(message, error) {
     console.error(message, error);
-    this.errorMessageEl.textContent = `${message} (${
-      error.code || error.message
-    })`;
+    if (this.errorMessageEl) {
+        this.errorMessageEl.textContent = `${message} (${error.code || error.message})`;
+    }
     this.showScreen("error");
   }
 
   setLoadingText(text) {
-    this.loadingTextEl.textContent = text;
-  }
-
-  displayRanking(rankingData) {
-    this.rankingListEl.innerHTML = "";
-    if (!rankingData || rankingData.length === 0) {
-      this.rankingListEl.innerHTML =
-        "<p>ランキングデータがまだありません。</p>";
-      return;
-    }
-    rankingData.forEach((data, index) => {
-      const rank = index + 1;
-      const row = document.createElement("div");
-      row.className = `ranking-row rank-${rank}`;
-      const rankEl = document.createElement("span");
-      rankEl.className = "rank";
-      rankEl.textContent = rank;
-      const nameEl = document.createElement("span");
-      nameEl.className = "name";
-      nameEl.textContent = data.name || "No Name";
-      const scoreEl = document.createElement("span");
-      scoreEl.className = "score";
-      scoreEl.textContent = data.highScore.toLocaleString();
-      row.appendChild(rankEl);
-      row.appendChild(nameEl);
-      row.appendChild(scoreEl);
-      this.rankingListEl.appendChild(row);
-    });
+    if(this.loadingTextEl) this.loadingTextEl.textContent = text;
   }
 
   setWorldSize(width, height) {
     this.WORLD_WIDTH = width;
     this.WORLD_HEIGHT = height;
-    this.obstacleLayerEl.style.width = `${width}px`;
-    this.obstacleLayerEl.style.height = `${height}px`;
+    if (this.obstacleLayerEl) {
+        this.obstacleLayerEl.style.width = `${width}px`;
+        this.obstacleLayerEl.style.height = `${height}px`;
+    }
   }
 
   syncDomElements(cameraX, cameraY) {
-    const cameraTransform = `translate(${-cameraX}px, ${-cameraY}px)`;
-    this.obstacleLayerEl.style.transform = cameraTransform;
+    if (this.obstacleLayerEl) {
+        const cameraTransform = `translate(${-cameraX}px, ${-cameraY}px)`;
+        this.obstacleLayerEl.style.transform = cameraTransform;
+    }
   }
 
   clearObstacleLayer() {
-    this.obstacleLayerEl.innerHTML = "";
+    if (this.obstacleLayerEl) this.obstacleLayerEl.innerHTML = "";
   }
 
   addObstacleDOM(entity) {
+    if (!this.obstacleLayerEl) return null;
     let el = null;
     if (entity.type === "obstacle_wall") {
       el = document.createElement("div");
@@ -537,43 +335,18 @@ export class UIManager {
       type === "profit" ? "rgba(76, 175, 80, 0.8)" : "rgba(244, 67, 54, 0.8)";
     msg.style.color = "white";
     msg.style.pointerEvents = "none";
-    this.screens.game.appendChild(msg);
-
-    setTimeout(() => {
-      msg.remove();
-    }, 1500);
+    
+    const gameScreen = this.screens.game;
+    if (gameScreen) {
+        gameScreen.appendChild(msg);
+        setTimeout(() => {
+            msg.remove();
+        }, 1500);
+    }
   }
 
-  async checkInitialLoginStatus(firebaseManager) {
-    firebaseManager.onAuthStateChanged(async (user) => {
-      if (!this.modalInitial) {
-        console.error(
-          "エラー: id='modal-initial' の要素が見つかりません。HTMLを確認してください。"
-        );
-        return;
-      }
-
-      if (user) {
-        if (!user.displayName) {
-          try {
-            await user.reload();
-          } catch (e) {
-            console.warn("User reload failed:", e);
-          }
-        }
-        if (user.displayName && user.displayName !== "Guest") {
-          this.updateDisplayName(user.displayName);
-          this.modalInitial.classList.add("hidden");
-        } else {
-          this.updateDisplayName("Guest");
-          this.modalInitial.classList.add("hidden");
-        }
-      } else {
-        this.modalInitial.classList.remove("hidden");
-      }
-    });
-  }
-
+  // サーバーからリーダーボード情報が送られてきた場合の処理
+  // (HTMLからリストが削除されている場合は何もしない)
   updateLeaderboard(leaderboardData, myUserId) {
     if (!this.leaderboardListEl) return;
 
