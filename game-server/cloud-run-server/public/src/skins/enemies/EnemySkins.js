@@ -8,9 +8,9 @@ export const EnemySkins = {
       const darkColor = "#3c0808";
 
       ctx.translate(cx, cy);
-
-      ctx.shadowColor = mainColor;
-      ctx.shadowBlur = 15;
+      
+      // ▼▼▼ 修正: 背景の円形グラデーション（当たり判定に見えるもの）を削除 ▼▼▼
+      // （ここに書いてあった createRadialGradient や ctx.arc の処理を削除しました）
 
       ctx.fillStyle = darkColor;
       ctx.strokeStyle = mainColor;
@@ -49,11 +49,18 @@ export const EnemySkins = {
       ctx.lineTo(25, 3);
       ctx.stroke();
 
-      ctx.shadowColor = "#ffeb3b";
-      ctx.shadowBlur = 20;
+      // ライト (これは装飾として残しますが、小さく控えめに)
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
       ctx.fillStyle = "#ffeb3b";
       ctx.beginPath();
-      ctx.arc(5, 0, 4, 0, Math.PI * 2);
+      ctx.arc(5, 0, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      
+      ctx.fillStyle = "#ffeb3b";
+      ctx.beginPath();
+      ctx.arc(5, 0, 3, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.strokeStyle = mainColor;

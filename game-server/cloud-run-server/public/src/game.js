@@ -41,7 +41,7 @@ export class Game {
     this.networkManager = null;
     this.trading = new Trading();
     this.renderSystem = new RenderSystem();
-
+    this.particleSystem = new ParticleSystem();
     this.inputManager = new InputManager();
     this.isGameOver = false;
     if (this.gameCanvas) {

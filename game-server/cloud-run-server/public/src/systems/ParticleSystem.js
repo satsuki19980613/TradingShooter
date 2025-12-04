@@ -32,7 +32,7 @@ export class ParticleSystem {
     this.particles.push(p);
   }
 
-  pdate(deltaFrames = 1.0) {
+  update(deltaFrames = 1.0) {
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
       p.update(deltaFrames); // 引数を渡す

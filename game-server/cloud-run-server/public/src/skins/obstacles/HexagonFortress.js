@@ -1,5 +1,5 @@
 /**
- * Hexagon Fortress (アニメーション対応版)
+ * Hexagon Fortress (アニメーション対応版・軽量化)
  * @param {number} progress 0.0 〜 1.0 のアニメーション進行度
  * @param {string} color テーマカラー
  */
@@ -9,7 +9,7 @@ export const HexagonFortressSkin = (progress, color = "#00ffea") => {
     const cy = h / 2;
     const size = (Math.min(w, h) / 2) * 0.85;
 
-    // s11079
+    // ポリゴン描画ヘルパー
     const drawPolygon = (g, x, y, r, sides) => {
       if (sides < 3) return;
       const a = (Math.PI * 2) / sides;
@@ -31,20 +31,29 @@ export const HexagonFortressSkin = (progress, color = "#00ffea") => {
     ctx.translate(cx, cy);
 
     // 1. メインボディ
-    ctx.shadowBlur = 20 + pulse * 5;
-    ctx.shadowColor = color;
+    // 背景のグロー表現 (lighter合成で代用)
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.2 + pulse * 0.1; // 脈動する透明度
+    ctx.beginPath();
+    drawPolygon(ctx, 0, 0, size, 6);
+    ctx.fill();
+    ctx.restore();
+
+    // 本体の塗り
     ctx.fillStyle = "#1a1a24";
     ctx.beginPath();
     drawPolygon(ctx, 0, 0, size, 6);
     ctx.fill();
 
+    // 枠線
     ctx.strokeStyle = color;
     ctx.lineWidth = 4;
     ctx.lineJoin = "round";
     ctx.stroke();
 
     // 2. 内部構造
-    ctx.shadowBlur = 0;
     ctx.fillStyle = "#0f0f14";
     ctx.beginPath();
     drawPolygon(ctx, 0, 0, size * 0.75, 6);
@@ -63,38 +72,58 @@ export const HexagonFortressSkin = (progress, color = "#00ffea") => {
     // 3. 回転リング
     ctx.save();
     ctx.rotate(angleBase);
+    
+    // リング本体
     ctx.strokeStyle = color;
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = color;
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(0, 0, size * 0.55, 0, Math.PI * 2);
     ctx.stroke();
     
-    // 装飾
+    // リングの発光 (重ね描き)
+    ctx.globalCompositeOperation = "lighter";
+    ctx.globalAlpha = 0.5;
+    ctx.stroke();
+    ctx.globalCompositeOperation = "source-over"; // 合成モードを戻す
+    ctx.globalAlpha = 1.0;
+
+    // 装飾（白い点）
     for (let i = 0; i < 3; i++) {
       const a = ((Math.PI * 2) / 3) * i;
       ctx.fillStyle = "#fff";
       ctx.beginPath();
       ctx.arc(Math.cos(a) * size * 0.55, Math.sin(a) * size * 0.55, 3, 0, Math.PI * 2);
       ctx.fill();
+      
+      // 点の周りの光
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.fillStyle = color;
+      ctx.globalAlpha = 0.5;
+      ctx.beginPath();
+      ctx.arc(Math.cos(a) * size * 0.55, Math.sin(a) * size * 0.55, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
     }
     ctx.restore();
 
     // 4. コア
-    ctx.shadowBlur = 15;
-    ctx.shadowColor = color;
     ctx.fillStyle = "#000";
     ctx.beginPath();
     drawPolygon(ctx, 0, 0, size * 0.3, 6);
     ctx.fill();
 
+    // コアの発光
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
     ctx.fillStyle = color;
-    ctx.globalAlpha = 0.5 + rapidPulse * 0.3;
+    ctx.globalAlpha = 0.5 + rapidPulse * 0.3; // 素早く明滅
     ctx.beginPath();
     drawPolygon(ctx, 0, 0, size * 0.2, 6);
     ctx.fill();
+    ctx.restore();
 
+    // 中心点
     ctx.globalAlpha = 1.0;
     ctx.fillStyle = "#ffffff";
     ctx.beginPath();

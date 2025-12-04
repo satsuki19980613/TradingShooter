@@ -4,13 +4,19 @@ export const BulletSkins = {
       const cx = w / 2;
       const cy = h / 2;
       ctx.translate(cx, cy);
-      ctx.shadowColor = "#00ffff";
-      ctx.shadowBlur = 10;
+
+      ctx.globalCompositeOperation = "lighter";
+
+      ctx.fillStyle = "#00ffff";
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 14, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+
       ctx.fillStyle = "#ffffff";
       ctx.beginPath();
-      ctx.ellipse(0, 0, 12, 4, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, 0, 10, 3, 0, 0, Math.PI * 2);
       ctx.fill();
-      ctx.shadowBlur = 0;
+
       ctx.globalAlpha = 0.8;
       ctx.fillStyle = "#00bcd4";
       ctx.beginPath();
@@ -18,6 +24,8 @@ export const BulletSkins = {
       ctx.lineTo(-18, 0);
       ctx.lineTo(-5, 3);
       ctx.fill();
+
+      ctx.globalCompositeOperation = "source-over";
     };
   },
 
@@ -26,13 +34,19 @@ export const BulletSkins = {
       const cx = w / 2;
       const cy = h / 2;
       ctx.translate(cx, cy);
-      ctx.shadowColor = "#ff5722";
-      ctx.shadowBlur = 10;
+
+      ctx.globalCompositeOperation = "lighter";
+
+      ctx.fillStyle = "rgba(255, 152, 0, 0.5)";
+      ctx.beginPath();
+      ctx.arc(0, 0, 10, 0, Math.PI * 2);
+      ctx.fill();
+
       ctx.fillStyle = "#ffffff";
       ctx.beginPath();
       ctx.arc(0, 0, 5, 0, Math.PI * 2);
       ctx.fill();
-      ctx.shadowBlur = 0;
+
       ctx.strokeStyle = "#ff9800";
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -42,6 +56,8 @@ export const BulletSkins = {
       ctx.lineTo(-8, 5);
       ctx.closePath();
       ctx.stroke();
+
+      ctx.globalCompositeOperation = "source-over";
     };
   },
 
@@ -50,18 +66,27 @@ export const BulletSkins = {
       const cx = w / 2;
       const cy = h / 2;
       ctx.translate(cx, cy);
-      ctx.shadowColor = "#00ff00";
-      ctx.shadowBlur = 15;
+
+      ctx.globalCompositeOperation = "lighter";
+
+      ctx.fillStyle = "rgba(0, 255, 0, 0.4)";
+      ctx.beginPath();
+      ctx.arc(0, 0, 15, 0, Math.PI * 2);
+      ctx.fill();
+
       ctx.fillStyle = "#ccffcc";
       ctx.beginPath();
       ctx.arc(0, 0, 8, 0, Math.PI * 2);
       ctx.fill();
-      ctx.shadowBlur = 5;
+
       ctx.strokeStyle = "#00ff00";
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(0, 0, 12, 0, Math.PI * 2);
       ctx.stroke();
+
+      ctx.globalCompositeOperation = "source-over";
+
       ctx.fillStyle = "#00ff00";
       ctx.font = "bold 10px sans-serif";
       ctx.textAlign = "center";
@@ -74,15 +99,19 @@ export const BulletSkins = {
       const cx = w / 2;
       const cy = h / 2;
       ctx.translate(cx, cy);
+
       const gradient = ctx.createRadialGradient(0, 0, 5, 0, 0, 25);
       gradient.addColorStop(0, "rgba(0, 255, 128, 0.8)");
       gradient.addColorStop(1, "rgba(0, 255, 128, 0)");
+
+      ctx.globalCompositeOperation = "lighter";
       ctx.fillStyle = gradient;
       ctx.beginPath();
       ctx.arc(0, 0, 30, 0, Math.PI * 2);
       ctx.fill();
-      ctx.shadowColor = "#00ff00";
-      ctx.shadowBlur = 5;
+
+      ctx.globalCompositeOperation = "source-over";
+
       ctx.fillStyle = "#ffffff";
       ctx.font = "bold 11px 'Verdana', sans-serif";
       ctx.textAlign = "center";
@@ -96,16 +125,19 @@ export const BulletSkins = {
       const cx = w / 2;
       const cy = h / 2;
       ctx.translate(cx, cy);
+
+      ctx.globalCompositeOperation = "lighter";
       ctx.strokeStyle = "#00ffaa";
       ctx.lineWidth = 2;
-      ctx.shadowColor = "#00ffaa";
-      ctx.shadowBlur = 10;
+
       const size = 12;
       ctx.beginPath();
       ctx.rect(-size, -size, size * 2, size * 2);
       ctx.stroke();
-      ctx.fillStyle = "rgba(0, 255, 170, 0.2)";
+      ctx.fillStyle = "rgba(0, 255, 170, 0.4)";
       ctx.fill();
+
+      ctx.globalCompositeOperation = "source-over";
     };
   },
 
@@ -123,157 +155,157 @@ export const BulletSkins = {
     };
   },
 
-  // -----------------------------------------------------------
-  // ▼▼▼ 新エフェクト: Tier 1〜4 ▼▼▼
-  // -----------------------------------------------------------
-
-  // Tier 1: Standard
   player_special_1: () => {
     return (ctx, w, h) => {
       const cx = w / 2;
       const cy = h / 2;
       ctx.translate(cx, cy);
-      const color = '#00aaff';
-      ctx.shadowBlur = 15;
-      ctx.shadowColor = color;
-      ctx.fillStyle = '#fff';
+
+      ctx.globalCompositeOperation = "lighter";
+      const color = "#00aaff";
+
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(14, 0);
+      ctx.lineTo(-6, -6);
+      ctx.lineTo(-6, 6);
+      ctx.fill();
+
+      ctx.fillStyle = "#fff";
       ctx.beginPath();
       ctx.moveTo(12, 0);
       ctx.lineTo(-4, -4);
       ctx.lineTo(-4, 4);
       ctx.fill();
+
+      ctx.globalCompositeOperation = "source-over";
     };
   },
 
-  // Tier 2: Plasma
   player_special_2: () => {
     return (ctx, w, h) => {
       const cx = w / 2;
       const cy = h / 2;
       ctx.translate(cx, cy);
-      const color = '#ff00ff';
+      const color = "#ff00ff";
       const time = Date.now();
       const wobble = Math.sin(time * 0.02) * 2;
-      ctx.globalCompositeOperation = 'lighter';
-      ctx.shadowBlur = 20;
-      ctx.shadowColor = color;
+
+      ctx.globalCompositeOperation = "lighter";
+
+      ctx.fillStyle = "rgba(255, 0, 255, 0.5)";
+      ctx.beginPath();
+      ctx.arc(0, 0, 12 + wobble, 0, Math.PI * 2);
+      ctx.fill();
+
       ctx.fillStyle = color;
       ctx.beginPath();
       ctx.arc(0, 0, 8 + wobble, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#fff';
+
+      ctx.fillStyle = "#fff";
       ctx.beginPath();
       ctx.arc(0, 0, 5, 0, Math.PI * 2);
       ctx.fill();
+
+      ctx.globalCompositeOperation = "source-over";
     };
   },
 
-  // Tier 3: Nova (サイズアップ & 脈動強化)
   player_special_3: () => {
     return (ctx, w, h) => {
       const cx = w / 2;
       const cy = h / 2;
       ctx.translate(cx, cy);
 
-      const mainColor = '#ffeb3b';
-      const subColor = '#ff5722';
+      const mainColor = "#ffeb3b";
+      const subColor = "#ff5722";
       const time = Date.now();
-      const pulse = Math.sin(time * 0.05) * 5; // 脈動幅アップ
+      const pulse = Math.sin(time * 0.05) * 5;
 
-      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalCompositeOperation = "lighter";
 
-      // 1. アウターグロー
-      ctx.shadowBlur = 50;
-      ctx.shadowColor = subColor;
+      ctx.fillStyle = "rgba(255, 87, 34, 0.4)";
+      ctx.beginPath();
+      ctx.arc(0, 0, 40 + pulse, 0, Math.PI * 2);
+      ctx.fill();
+
       ctx.fillStyle = mainColor;
       ctx.beginPath();
-      // サイズ: 10 -> 25 (大幅アップ)
       ctx.arc(0, 0, 25 + pulse, 0, Math.PI * 2);
       ctx.fill();
 
-      // 2. コア
-      ctx.shadowBlur = 15;
-      ctx.shadowColor = '#fff';
-      ctx.fillStyle = '#fff';
+      ctx.fillStyle = "#fff";
       ctx.beginPath();
       ctx.arc(0, 0, 15, 0, Math.PI * 2);
       ctx.fill();
+
+      ctx.globalCompositeOperation = "source-over";
     };
   },
 
-  // Tier 4: Gamma (完全再現レーザー)
-  // Tier 4: Gamma (完全再現レーザー) - 修正版
-  // ... (他のスキン定義) ...
-
-  // Tier 4: Gamma (一本の線 + 稲妻)
-  // Tier 4: Gamma (修正版: 長さを動的に反映)
-  // 引数に currentLength を追加 (デフォルトは十分な長さ)
   player_special_4: (currentLength = 3000) => {
     return (ctx, w, h) => {
-      // 弾の先端(0,0)が現在の弾丸位置。
-      // そこから -currentLength 分だけ後ろ（発射位置）まで線を引く。
-      
-      const color = '#b300ff'; // Purple
-      const secColor = '#ccff00'; // Lime
-      
-      ctx.globalCompositeOperation = 'lighter';
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
+      const color = "#b300ff";
+      const secColor = "#ccff00";
 
-      // 1. コアビーム
+      ctx.globalCompositeOperation = "lighter";
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
       const jitter = Math.random() * 1;
-      ctx.shadowBlur = 20;
-      ctx.shadowColor = color;
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 3 + jitter; 
-      
-      ctx.beginPath();
-      ctx.moveTo(-currentLength, 0); // 発射位置から
-      ctx.lineTo(0, 0);              // 先端まで
-      ctx.stroke();
 
-      // 2. ヘイズ
-      ctx.shadowBlur = 40;
       ctx.strokeStyle = color;
-      ctx.lineWidth = 8;
-      ctx.globalAlpha *= 0.8;
+      ctx.lineWidth = 10;
+      ctx.globalAlpha = 0.3;
       ctx.beginPath();
       ctx.moveTo(-currentLength, 0);
       ctx.lineTo(0, 0);
       ctx.stroke();
-      ctx.globalAlpha /= 0.8;
 
-      // 3. 稲妻エフェクト
-      // 長さに応じて分割数を調整 (100pxあたり1セグメントなど)
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 3 + jitter;
+      ctx.globalAlpha = 1.0;
+      ctx.beginPath();
+      ctx.moveTo(-currentLength, 0);
+      ctx.lineTo(0, 0);
+      ctx.stroke();
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 15;
+      ctx.globalAlpha = 0.2;
+      ctx.beginPath();
+      ctx.moveTo(-currentLength, 0);
+      ctx.lineTo(0, 0);
+      ctx.stroke();
+      ctx.globalAlpha = 1.0;
+
       const segments = Math.max(5, Math.floor(currentLength / 50));
       const amplitude = 8;
       const lightningCount = 2;
 
       for (let i = 0; i < lightningCount; i++) {
-          const isSecondary = i % 2 === 0;
-          ctx.strokeStyle = isSecondary ? secColor : '#fff'; 
-          ctx.lineWidth = Math.random() * 1.5 + 0.5;
-          ctx.shadowBlur = 10;
-          ctx.shadowColor = secColor;
+        const isSecondary = i % 2 === 0;
+        ctx.strokeStyle = isSecondary ? secColor : "#fff";
+        ctx.lineWidth = Math.random() * 1.5 + 0.5;
 
-          ctx.beginPath();
-          
-          let currX = -currentLength;
-          let currY = 0;
-          ctx.moveTo(currX, currY);
+        ctx.beginPath();
 
-          const step = currentLength / segments;
-          for (let s = 0; s <= segments; s++) {
-              currX += step;
-              // 先端(0)付近以外でランダムに揺らす
-              // (先端は弾の当たり判定と一致させたいので揺らさない)
-              const offset = (Math.random() - 0.5) * amplitude * 2;
-              const taper = Math.min(1.0, Math.abs(currX) / 200); 
+        let currX = -currentLength;
+        let currY = 0;
+        ctx.moveTo(currX, currY);
 
-              ctx.lineTo(currX, offset * taper);
-          }
-          ctx.stroke();
+        const step = currentLength / segments;
+        for (let s = 0; s <= segments; s++) {
+          currX += step;
+          const offset = (Math.random() - 0.5) * amplitude * 2;
+          const taper = Math.min(1.0, Math.abs(currX) / 200);
+          ctx.lineTo(currX, offset * taper);
+        }
+        ctx.stroke();
       }
+
+      ctx.globalCompositeOperation = "source-over";
     };
   },
 };

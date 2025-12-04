@@ -58,7 +58,6 @@ export class Particle extends GameObject {
 
   draw(ctx) {
     if (this.alpha <= 0) return;
-
     const baseSize = 32;
 
     const skin = skinManager.getSkin(
@@ -70,8 +69,6 @@ export class Particle extends GameObject {
         const cy = h / 2;
         const r = w / 4;
 
-        g.shadowBlur = 10;
-        g.shadowColor = this.color;
         g.fillStyle = this.color;
 
         if (this.type === "rect" || this.type === "bolt") {

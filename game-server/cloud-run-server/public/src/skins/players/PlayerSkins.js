@@ -1,18 +1,16 @@
 export const PlayerSkins = {
-  /**
-   * ホバータンクの車体 (Chassis)
-   * @param {string} primaryColor - メインカラー (例: "#00ffddcb")
-   */
   chassis: (primaryColor) => {
     const secondaryColor = "#006064";
-
     return (ctx, w, h) => {
       const cx = w / 2;
       const cy = h / 2;
 
-      ctx.shadowColor = primaryColor;
-      ctx.shadowBlur = 15;
       ctx.translate(cx, cy);
+      
+      // ▼▼▼ 修正: 背景の円形グラデーション（当たり判定に見えるもの）を削除 ▼▼▼
+      // （ここに書いてあった createRadialGradient や ctx.arc の処理を削除しました）
+
+      // ボディ本体
       ctx.fillStyle = secondaryColor;
       ctx.strokeStyle = primaryColor;
       ctx.lineWidth = 2;
@@ -32,6 +30,7 @@ export const PlayerSkins = {
 
       drawPod(-1);
       drawPod(1);
+      
       ctx.fillStyle = "rgba(0, 20, 30, 0.9)";
       ctx.beginPath();
       ctx.moveTo(0, -30);
@@ -43,11 +42,13 @@ export const PlayerSkins = {
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
+      
       ctx.strokeStyle = primaryColor;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.arc(0, 0, 8, 0, Math.PI * 2);
       ctx.stroke();
+      
       ctx.beginPath();
       ctx.moveTo(0, -8);
       ctx.lineTo(0, 8);
@@ -57,10 +58,6 @@ export const PlayerSkins = {
     };
   },
 
-  /**
-   * 砲塔 (Turret)
-   * @param {string} primaryColor
-   */
   turret: (primaryColor) => {
     const secondaryColor = "#006064";
     const coreColor = "#ffffff";
@@ -69,16 +66,17 @@ export const PlayerSkins = {
       const cx = w / 2;
       const cy = h / 2;
       ctx.translate(cx, cy);
-      ctx.shadowColor = primaryColor;
-      ctx.shadowBlur = 10;
+      
       ctx.fillStyle = "#000";
       ctx.strokeStyle = primaryColor;
       ctx.lineWidth = 2;
+      
       ctx.beginPath();
       ctx.rect(4, -3, 35, 6);
       ctx.rect(4, -10, 25, 4);
       ctx.fill();
       ctx.stroke();
+      
       ctx.fillStyle = secondaryColor;
       ctx.beginPath();
       ctx.moveTo(-10, -12);
@@ -89,9 +87,18 @@ export const PlayerSkins = {
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
+      
+      // コアの光 (ここは小さいので残しても良いですが、念のため控えめに)
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
       ctx.fillStyle = coreColor;
-      ctx.shadowColor = coreColor;
-      ctx.shadowBlur = 20;
+      ctx.globalAlpha = 0.3;
+      ctx.beginPath();
+      ctx.arc(0, 0, 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.fillStyle = coreColor;
       ctx.beginPath();
       ctx.arc(0, 0, 4, 0, Math.PI * 2);
       ctx.fill();
