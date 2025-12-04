@@ -400,9 +400,10 @@ export class ServerGame {
 
     return newPlayer.getState();
   }
-  handlePlayerInput(userId, inputActions, seq){
+  removePlayer(userId) {
     const player = this.players.get(userId);
     if (!player) return;
+
     if (player.isDebugPlayer) {
       this.debugPlayerCount--;
       console.log(
@@ -420,11 +421,9 @@ export class ServerGame {
     console.log(
       `[ServerGame ${this.roomId}] プレイヤー退出: ${name} (現在 ${this.players.size} 人)`
     );
-
     if (this.players.size === 0 && this.isRunning) {
       this.stopLoops();
     }
-    player.lastProcessedInputSeq = seq;
   }
 
   handlePlayerInput(userId, inputActions) {

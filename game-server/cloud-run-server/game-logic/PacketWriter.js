@@ -1,121 +1,49 @@
 /**
- * 【PacketWriter / PacketReader の役割: バイナリ変換】
- * データをネットワーク転送用に軽量なバイナリ形式へ変換（および復元）します。
- * * ■ 担当する責務 (Do):
- * - 数値、文字列、ブール値のバイト列へのエンコード/デコード
- * - バッファの管理
- * * ■ 担当しない責務 (Don't):
- * - 送信するデータの「意味」の理解
- * - ネットワークソケットの操作
+ * バイナリデータの書き込み用クラス
  */
-export class PacketReader {
-  constructor(arrayBuffer) {
-    this.view = new DataView(arrayBuffer);
+export class PacketWriter {
+  constructor(size = 16384) {
+    this.buffer = Buffer.alloc(size);
     this.offset = 0;
-    this.decoder = new TextDecoder("utf-8");
   }
 
-  u8() {
-    // ★ここが範囲外アクセスエラーの原因になりやすい
-    // オフセットがバッファサイズを超えていないかチェック
-    if (this.offset >= this.view.byteLength) {
-        console.error(`[PacketReader] Buffer overflow reading u8 at ${this.offset}/${this.view.byteLength}`);
-        return 0; 
-    }
-    const val = this.view.getUint8(this.offset);
-    this.offset += 1;
-    return val;
-  }
-
-  u16() {
-    const val = this.view.getUint16(this.offset, true); // Little Endian
-    this.offset += 2;
-    return val;
-  }
-
-  f32() {
-    const val = this.view.getFloat32(this.offset, true); // Little Endian
-    this.offset += 4;
-    return val;
-  }
-  
-  // ★重要：サーバーで writeUInt32LE を使っているなら、クライアントも u32 で読む必要がある
-  u32() { 
-    const val = this.view.getUint32(this.offset, true); // Little Endian
-    this.offset += 4;
-    return val;
-  }
-
-  string() {
-    const len = this.u8(); // 長さを読む
-    
-    // ★ここもエラー箇所
-    if (this.offset + len > this.view.byteLength) {
-        console.error(`[PacketReader] String length overflow: len=${len}, offset=${this.offset}, total=${this.view.byteLength}`);
-        return "";
-    }
-
-    const bytes = new Uint8Array(
-      this.view.buffer,
-      this.view.byteOffset + this.offset,
-      len
-    );
-    this.offset += len;
-    return this.decoder.decode(bytes);
-  }
-}export class PacketReader {
-  constructor(arrayBuffer) {
-    this.view = new DataView(arrayBuffer);
+  reset() {
     this.offset = 0;
-    this.decoder = new TextDecoder("utf-8");
   }
 
-  u8() {
-    // ★ここが範囲外アクセスエラーの原因になりやすい
-    // オフセットがバッファサイズを超えていないかチェック
-    if (this.offset >= this.view.byteLength) {
-        console.error(`[PacketReader] Buffer overflow reading u8 at ${this.offset}/${this.view.byteLength}`);
-        return 0; 
-    }
-    const val = this.view.getUint8(this.offset);
+  u8(val) {
+    this.buffer.writeUInt8(val, this.offset);
     this.offset += 1;
-    return val;
   }
 
-  u16() {
-    const val = this.view.getUint16(this.offset, true); // Little Endian
+  u16(val) {
+    this.buffer.writeUInt16LE(val, this.offset);
     this.offset += 2;
-    return val;
   }
 
-  f32() {
-    const val = this.view.getFloat32(this.offset, true); // Little Endian
+  // ★重要: ServerNetworkSystemで使用しているため追加
+  u32(val) {
+    this.buffer.writeUInt32LE(val, this.offset);
     this.offset += 4;
-    return val;
   }
-  
-  // ★重要：サーバーで writeUInt32LE を使っているなら、クライアントも u32 で読む必要がある
-  u32() { 
-    const val = this.view.getUint32(this.offset, true); // Little Endian
+
+  f32(val) {
+    this.buffer.writeFloatLE(val, this.offset);
     this.offset += 4;
-    return val;
   }
 
-  string() {
-    const len = this.u8(); // 長さを読む
-    
-    // ★ここもエラー箇所
-    if (this.offset + len > this.view.byteLength) {
-        console.error(`[PacketReader] String length overflow: len=${len}, offset=${this.offset}, total=${this.view.byteLength}`);
-        return "";
-    }
-
-    const bytes = new Uint8Array(
-      this.view.buffer,
-      this.view.byteOffset + this.offset,
-      len
-    );
+  string(str) {
+    const len = Buffer.byteLength(str);
+    this.u8(len); // 長さを1バイトで書き込み
+    this.buffer.write(str, this.offset, len, "utf8");
     this.offset += len;
-    return this.decoder.decode(bytes);
+  }
+
+  /**
+   * 書き込んだ分のバッファを切り出して返す
+   */
+  getData() {
+    // Node.jsのwsライブラリはBufferをそのまま送信可能
+    return this.buffer.subarray(0, this.offset);
   }
 }

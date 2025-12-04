@@ -216,6 +216,7 @@ export class NetworkManager {
         p.y = reader.f32();
         p.h = reader.u8();
         p.a = reader.f32();
+        p.n = reader.string();
         p.lastAckSeq = reader.u32();
         p.d = reader.u8();
         p.e = reader.u16();

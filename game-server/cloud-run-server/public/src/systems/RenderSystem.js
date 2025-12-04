@@ -61,23 +61,11 @@ export class RenderSystem {
       this.PLAYER_SKIN_SIZE,
       PlayerSkins.turret(color)
     );
-
+    
     ctx.save();
     ctx.translate(player.x, player.y);
 
-    ctx.fillStyle = "white";
-    ctx.font = "bold 12px 'Roboto Mono', monospace";
-    ctx.textAlign = "center";
-    ctx.shadowColor = "black";
-    ctx.shadowBlur = 4;
-
-    ctx.fillText(player.name, 0, -55);
-    ctx.shadowBlur = 0;
-
-    if (!player.isMe) {
-      this.drawHPBar(ctx, -70, player.hp, 100, 60, 6);
-    }
-
+    // --- 1. 先に機体（Chassis）を描画 ---
     ctx.save();
     ctx.rotate(player.rotationAngle + Math.PI / 2);
     ctx.drawImage(
@@ -87,27 +75,48 @@ export class RenderSystem {
     );
     ctx.restore();
 
+    // --- 2. 次に砲塔（Turret）を描画 ---
     ctx.save();
     const turretAngle =
       player.aimAngle !== undefined ? player.aimAngle : player.rotationAngle;
     ctx.rotate(turretAngle);
-
     ctx.drawImage(
       turretSkin,
       -this.PLAYER_SKIN_SIZE / 2,
       -this.PLAYER_SKIN_SIZE / 2
     );
-
-    ctx.globalAlpha = 0.2;
-    ctx.strokeStyle = color;
-    ctx.setLineDash([10, 10]);
-    ctx.beginPath();
-    ctx.moveTo(40, 0);
-    ctx.lineTo(300, 0);
-    ctx.stroke();
-
+    
+    // 射線ガイド（自分のみ）
+    if (player.isMe) {
+        ctx.globalAlpha = 0.2;
+        ctx.strokeStyle = color;
+        ctx.setLineDash([10, 10]);
+        ctx.beginPath();
+        ctx.moveTo(40, 0);
+        ctx.lineTo(300, 0);
+        ctx.stroke();
+    }
     ctx.restore();
 
+    // --- 3. 最後にUI（名前・HPバー）を最前面に描画 ---
+    // 機体サイズ(半径75px)より外側に配置するため座標を調整
+    
+    ctx.fillStyle = "white";
+    ctx.font = "bold 12px 'Roboto Mono', monospace";
+    ctx.textAlign = "center";
+    ctx.shadowColor = "black";
+    ctx.shadowBlur = 4;
+
+    // 名前を機体の上(-90px)に表示
+    ctx.fillText(player.name, 0, -90);
+    ctx.shadowBlur = 0;
+
+    // HPバーをさらにその上(-105px)に表示
+    if (!player.isMe) {
+      this.drawHPBar(ctx, -105, player.hp, 100, 60, 6);
+    }
+
+    // ロックオンサイト
     if (player.isMe && player.lockedTarget) {
       this.renderLockOnSight(ctx, player.lockedTarget, player);
     }

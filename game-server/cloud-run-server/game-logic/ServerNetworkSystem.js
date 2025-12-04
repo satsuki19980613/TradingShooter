@@ -114,6 +114,8 @@ export class ServerNetworkSystem {
       writer.f32(Math.round(p.y * 100) / 100);
       writer.u8(Math.min(Math.max(0, Math.ceil(p.hp)), 255));
       writer.f32(Math.round(p.angle * 10) / 10); // aimAngle -> angle (ServerPlayer参照)
+      writer.string(p.name || "Guest");
+      writer.u32(p.lastProcessedInputSeq || 0);
       writer.u8(p.isDead ? 1 : 0);
       writer.u16(Math.floor(p.ep));
       writer.u16(p.chargeBetAmount || 10);

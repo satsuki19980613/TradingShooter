@@ -163,20 +163,22 @@ wss.on("connection", (ws, req) => {
   }
   ws.on("message", async (message) => {
     try {
-      const isBinary =
-        Buffer.isBuffer(message) || message instanceof ArrayBuffer;
+      const isBinary = Buffer.isBuffer(message) || message instanceof ArrayBuffer;
 
       if (isBinary) {
         const buf = Buffer.isBuffer(message) ? message : Buffer.from(message);
 
+        // 15バイト (Type:1 + Mask:2 + Seq:4 + X:4 + Y:4) 以上かチェック
         if (buf.length >= 15) {
           const msgType = buf.readUInt8(0);
 
           if (msgType === 2 && game && userId) {
             const mask = buf.readUInt16LE(1);
-
+            
+            // シーケンス番号 (Offset 3)
             const seq = buf.readUInt32LE(3);
 
+            // マウス座標 (Offset 7, 11)
             const mouseX = buf.readFloatLE(7);
             const mouseY = buf.readFloatLE(11);
 
@@ -203,18 +205,22 @@ wss.on("connection", (ws, req) => {
               },
             };
 
+            // 第3引数に seq を渡す
             game.handlePlayerInput(userId, reconstructedInput, seq);
             return;
           }
         }
       }
 
+      // JSONメッセージの処理
       const data = JSON.parse(message.toString());
+      // ... (以下既存のJSON処理) ...
       if (data.type === "account_action" && userId) {
         await handleAccountRequest(data.payload);
         return;
       }
       if (data.type === "input" && game && userId) {
+        // JSON版入力処理（後方互換性のため残す場合）
         game.handlePlayerInput(userId, data.payload);
       } else if (data.type === "pause" && game && userId) {
         game.pausePlayer(userId);
