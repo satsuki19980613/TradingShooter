@@ -189,27 +189,22 @@ export class NetworkManager {
     const reader = new PacketReader(arrayBuffer);
 
     const msgType = reader.u8();
-
     if (msgType === 1) {
       const delta = {
         updated: { players: [], enemies: [], bullets: [] },
         removed: { players: [], enemies: [], bullets: [] },
+        events: [],
       };
 
       const remPlayerCount = reader.u8();
-      for (let i = 0; i < remPlayerCount; i++) {
+      for (let i = 0; i < remPlayerCount; i++)
         delta.removed.players.push(reader.string());
-      }
-
       const remEnemyCount = reader.u8();
-      for (let i = 0; i < remEnemyCount; i++) {
+      for (let i = 0; i < remEnemyCount; i++)
         delta.removed.enemies.push(reader.string());
-      }
-
       const remBulletCount = reader.u16();
-      for (let i = 0; i < remBulletCount; i++) {
+      for (let i = 0; i < remBulletCount; i++)
         delta.removed.bullets.push(reader.string());
-      }
 
       const playerCount = reader.u8();
       for (let i = 0; i < playerCount; i++) {
@@ -222,28 +217,19 @@ export class NetworkManager {
         p.d = reader.u8();
         p.e = reader.u16();
         p.ba = reader.u16();
-
         const hasCharge = reader.u8();
         if (hasCharge === 1) {
-          const ep = reader.f32();
-          const amt = reader.f32();
-
-          const typeId = reader.u8();
-
           p.cp = {
-            ep: ep,
-            a: amt,
-            t: typeId === 1 ? "short" : "long",
+            ep: reader.f32(),
+            a: reader.f32(),
+            t: reader.u8() === 1 ? "short" : "long",
           };
         } else {
           p.cp = null;
         }
-
         const stockCount = reader.u8();
         p.sb = [];
-        for (let j = 0; j < stockCount; j++) {
-          p.sb.push(reader.u16());
-        }
+        for (let j = 0; j < stockCount; j++) p.sb.push(reader.u16());
 
         delta.updated.players.push(p);
       }
@@ -266,19 +252,32 @@ export class NetworkManager {
         b.x = reader.f32();
         b.y = reader.f32();
         b.a = reader.f32();
-
         const typeId = reader.u8();
         let type = "player";
         if (typeId === 1) type = "enemy";
-        else if (typeId === 2) type = "player_special_1"; // Tier 1
+        else if (typeId === 2) type = "player_special_1";
         else if (typeId === 3) type = "item_ep";
-        else if (typeId === 4) type = "player_special_2"; // ★Tier 2
-        else if (typeId === 5) type = "player_special_3"; // ★Tier 3
-        else if (typeId === 6) type = "player_special_4"; // ★Tier 4
-
+        else if (typeId === 4) type = "player_special_2";
+        else if (typeId === 5) type = "player_special_3";
+        else if (typeId === 6) type = "player_special_4";
         b.t = type;
         delta.updated.bullets.push(b);
       }
+
+      try {
+        const eventCount = reader.u8();
+        for (let i = 0; i < eventCount; i++) {
+          const typeId = reader.u8();
+          const x = reader.f32();
+          const y = reader.f32();
+          const color = reader.string();
+
+          let type = "hit";
+          if (typeId === 2) type = "explosion";
+
+          delta.events.push({ type, x, y, color });
+        }
+      } catch (e) {}
 
       this.game.applyDelta(delta);
     }

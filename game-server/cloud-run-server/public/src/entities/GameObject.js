@@ -1,3 +1,5 @@
+// public/src/entities/GameObject.js
+
 import { ClientConfig } from "../ClientConfig.js";
 
 /**
@@ -17,12 +19,16 @@ export class GameObject {
   }
 
   /**
-   * 描画ループ (renderLoop) で毎フレーム呼ばれる
-   * 現在の座標を目標座標に滑らかに近づける
+   * 描画ループで毎フレーム呼ばれる
+   * @param {number} deltaFrames - 60FPS基準の経過フレーム数 (1.0 = 1/60秒)
    */
-  update() {
-    this.x += (this.targetX - this.x) * this.lerpRate;
-    this.y += (this.targetY - this.y) * this.lerpRate;
+  update(deltaFrames = 1.0) {
+    // フレームレート非依存のLerp計算
+    // 公式: current + (target - current) * (1 - (1 - rate)^delta)
+    const adjust = 1 - Math.pow(1 - this.lerpRate, deltaFrames);
+
+    this.x += (this.targetX - this.x) * adjust;
+    this.y += (this.targetY - this.y) * adjust;
 
     if (Math.abs(this.targetX - this.x) < 0.1) this.x = this.targetX;
     if (Math.abs(this.targetY - this.y) < 0.1) this.y = this.targetY;

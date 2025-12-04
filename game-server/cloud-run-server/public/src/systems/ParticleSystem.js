@@ -32,17 +32,17 @@ export class ParticleSystem {
     this.particles.push(p);
   }
 
-  update() {
+  pdate(deltaFrames = 1.0) {
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
-      p.update();
+      p.update(deltaFrames); // 引数を渡す
+      
       if (p.alpha <= 0) {
         this.particlePool.push(p);
         this.particles.splice(i, 1);
       }
     }
   }
-
   draw(ctx) {
     this.particles.forEach((p) => p.draw(ctx));
   }

@@ -87,10 +87,6 @@ export class Game {
     this.gameScale = 1.0;
   }
 
- 
-
-
-
   sendPause() {
     if (this.networkManager) {
       this.networkManager.sendPause();
@@ -133,6 +129,7 @@ export class Game {
       );
     }
     this.particles = [];
+    this.lastFrameTime = performance.now();
     this.inputManager.resetActionStates();
     requestAnimationFrame(() => {
       this.resizeCanvas();
@@ -289,28 +286,27 @@ export class Game {
   }
 
   renderLoop() {
-    this.particleSystem.update();
+    const now = performance.now();
+
+    const dt = Math.min((now - this.lastFrameTime) / 1000, 0.1);
+    this.lastFrameTime = now;
+
+    const deltaFrames = dt * 60;
+    if (this.particleSystem) {
+        this.particleSystem.update(deltaFrames);
+    }
+
     this.renderLoopId = requestAnimationFrame(this.renderLoop.bind(this));
+
     if (this.gameCanvas.width === 0 || this.chartCanvas.width === 0) {
       this.resizeCanvas();
     }
-    for (let i = this.particles.length - 1; i >= 0; i--) {
-      const p = this.particles[i];
-      p.update();
 
-      if (p.alpha <= 0) {
-        this.particlePool.push(p);
-
-        this.particles.splice(i, 1);
-      }
-    }
-    this.particleSystem.draw(ctx);
-    this.playerEntities.forEach((p) => {
-      p.update(this);
-    });
-    this.enemyEntities.forEach((e) => e.update());
-    this.bulletEntities.forEach((b) => b.update(this));
+    this.playerEntities.forEach((p) => p.update(this, deltaFrames));
+    this.enemyEntities.forEach((e) => e.update(deltaFrames));
+    this.bulletEntities.forEach((b) => b.update(this, deltaFrames));
     this.updateCamera();
+
     const ctx = this.gameCtx;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.drawBackground(ctx);
@@ -330,94 +326,86 @@ export class Game {
       }
     });
 
-    this.particles.forEach((p) => {
-      p.draw(ctx);
-    });
+    if (this.particleSystem) {
+      this.particleSystem.draw(ctx);
+    }
 
-    this.bulletEntities.forEach((b) => {
-      b.draw(ctx);
-    });
-
-    this.playerEntities.forEach((p) => {
-      this.renderSystem.renderPlayer(ctx, p);
-    });
-
-    this.enemyEntities.forEach((e) => {
-      this.renderSystem.renderEnemy(ctx, e);
-    });
+    this.bulletEntities.forEach((b) => b.draw(ctx));
+    this.playerEntities.forEach((p) => this.renderSystem.renderPlayer(ctx, p));
+    this.enemyEntities.forEach((e) => this.renderSystem.renderEnemy(ctx, e));
 
     ctx.restore();
 
     this.uiCtx.clearRect(0, 0, this.uiCanvas.width, this.uiCanvas.height);
+    if (this.uiManager) {
+      this.uiManager.syncDomElements(this.cameraX, this.cameraY);
+      const myPlayerState = this.playerEntities.get(this.userId);
+      this.uiManager.syncHUD(myPlayerState, this.trading.tradeState);
 
-    this.uiManager.syncDomElements(this.cameraX, this.cameraY);
-
-    const myPlayerState = this.playerEntities.get(this.userId);
-    this.uiManager.syncHUD(myPlayerState, this.trading.tradeState);
-
-    if (this.chartCtx) {
-      this.chartCtx.clearRect(
-        0,
-        0,
-        this.chartCanvas.width,
-        this.chartCanvas.height
-      );
-      const dpr = window.devicePixelRatio || 1;
-      this.trading.drawChart(
-        this.chartCtx,
-        this.chartCanvas.width,
-        this.chartCanvas.height,
-        myPlayerState
-      );
-    }
-
-    if (this.magazineCtx) {
-      this.magazineCtx.clearRect(
-        0,
-        0,
-        this.magazineCanvas.width,
-        this.magazineCanvas.height
-      );
-      this.uiManager.drawChargeUI(
-        this.magazineCtx,
-        myPlayerState,
-        this.magazineCanvas.width,
-        this.magazineCanvas.height
-      );
-    }
-
-    if (this.radarCtx) {
-      this.radarCtx.clearRect(
-        0,
-        0,
-        this.radarCanvas.width,
-        this.radarCanvas.height
-      );
-      const enemiesState = Array.from(this.enemyEntities.values());
-      const otherPlayersState = [];
-      for (const [id, player] of this.playerEntities.entries()) {
-        if (id !== this.userId && !player.isDead) {
-          otherPlayersState.push(player);
+      if (this.chartCtx) {
+        this.chartCtx.clearRect(
+          0,
+          0,
+          this.chartCanvas.width,
+          this.chartCanvas.height
+        );
+        this.trading.drawChart(
+          this.chartCtx,
+          this.chartCanvas.width,
+          this.chartCanvas.height,
+          myPlayerState
+        );
+      }
+      if (this.magazineCtx) {
+        this.magazineCtx.clearRect(
+          0,
+          0,
+          this.magazineCanvas.width,
+          this.magazineCanvas.height
+        );
+        this.uiManager.drawChargeUI(
+          this.magazineCtx,
+          myPlayerState,
+          this.magazineCanvas.width,
+          this.magazineCanvas.height
+        );
+      }
+      if (this.radarCtx) {
+        this.radarCtx.clearRect(
+          0,
+          0,
+          this.radarCanvas.width,
+          this.radarCanvas.height
+        );
+        const enemiesState = Array.from(this.enemyEntities.values());
+        const otherPlayersState = [];
+        for (const [id, player] of this.playerEntities.entries()) {
+          if (id !== this.userId && !player.isDead) {
+            otherPlayersState.push(player);
+          }
         }
+        this.uiManager.drawRadar(
+          this.radarCtx,
+          this.radarCanvas.width,
+          this.radarCanvas.height,
+          this.WORLD_WIDTH,
+          this.WORLD_HEIGHT,
+          myPlayerState,
+          enemiesState,
+          this.obstacleStateArray,
+          otherPlayersState
+        );
       }
 
-      this.uiManager.drawRadar(
-        this.radarCtx,
-        this.radarCanvas.width,
-        this.radarCanvas.height,
-        this.WORLD_WIDTH,
-        this.WORLD_HEIGHT,
-        myPlayerState,
-        enemiesState,
-        this.obstacleStateArray,
-        otherPlayersState
-      );
-    }
-
-    if (this.uiManager.isDebugMode) {
-      const stats = this.networkManager.getStats();
-      const simStats = this.networkManager.getSimulationStats();
-      this.uiManager.syncDebugHUD(stats, simStats, this.serverPerformanceStats);
+      if (this.uiManager.isDebugMode && this.networkManager) {
+        const stats = this.networkManager.getStats();
+        const simStats = this.networkManager.getSimulationStats();
+        this.uiManager.syncDebugHUD(
+          stats,
+          simStats,
+          this.serverPerformanceStats
+        );
+      }
     }
   }
 
@@ -464,9 +452,15 @@ export class Game {
     if (delta.events && delta.events.length > 0) {
       delta.events.forEach((ev) => {
         if (ev.type === "hit") {
-          this.createHitEffect(ev.x, ev.y, ev.color, 8, "hit");
+          this.particleSystem.createHitEffect(ev.x, ev.y, ev.color, 8, "hit");
         } else if (ev.type === "explosion") {
-          this.createHitEffect(ev.x, ev.y, ev.color, 30, "explosion");
+          this.particleSystem.createHitEffect(
+            ev.x,
+            ev.y,
+            ev.color,
+            30,
+            "explosion"
+          );
         }
       });
     }
@@ -487,7 +481,7 @@ export class Game {
           }
 
           if (!player.isDead && pState.d) {
-            this.createHitEffect(
+            this.particleSystem.createHitEffect(
               player.x,
               player.y,
               "#ffffff",
@@ -585,7 +579,9 @@ export class Game {
       this.obstacleStateArray = Array.from(this.obstacleEntities.values());
     }
   }
-
+  spawnParticle(x, y, radius, color, vx, vy, type) {
+    this.particleSystem.spawn(x, y, radius, color, vx, vy, type);
+  }
   setTradeState(chartDelta) {
     if (!chartDelta) return;
     this.trading.addNewChartPoint(chartDelta);
@@ -662,14 +658,6 @@ export class Game {
     );
 
     ctx.restore();
-  }
-  createParticles(x, y, color, count) {
-    for (let i = 0; i < count; i++) {
-      const vx = (Math.random() - 0.5) * 5;
-      const vy = (Math.random() - 0.5) * 5 - 2;
-      const radius = Math.random() * 3 + 1;
-      this.particles.push(new Particle(x, y, radius, color, vx, vy));
-    }
   }
 
   async gameOver(score) {

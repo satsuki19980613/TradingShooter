@@ -29,15 +29,17 @@ export class Player extends GameObject {
     this.hoverOffset = 0;
   }
 
-  update(gameInstance) {
-    super.update();
+  update(gameInstance, deltaFrames = 1.0) {
+    super.update(deltaFrames);
 
     const dx = this.targetX - this.x;
     const dy = this.targetY - this.y;
 
     if (dx * dx + dy * dy > 1) {
       const moveAngle = Math.atan2(dy, dx);
-      this.rotationAngle = lerpAngle(this.rotationAngle, moveAngle, 0.1);
+
+      const rotAdjust = 1 - Math.pow(1 - 0.1, deltaFrames);
+      this.rotationAngle = lerpAngle(this.rotationAngle, moveAngle, rotAdjust);
     }
 
     this.hoverOffset = Math.sin(Date.now() / 200) * 3;

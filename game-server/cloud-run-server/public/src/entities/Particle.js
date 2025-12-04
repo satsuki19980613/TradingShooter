@@ -27,31 +27,32 @@ export class Particle extends GameObject {
     this.vx = vx;
     this.vy = vy;
     this.type = type;
-    
-    // パラメータを初期状態に戻す
+
     this.alpha = 1.0;
     this.decay = Math.random() * 0.03 + 0.02;
-    
-    // スキンキーの再生成（色がかわる可能性があるため）
+
     this.skinKey = `particle_${this.type}_${this.color}`;
 
-    // bolt（稲妻）タイプなどの特殊処理があればここでも初期化
-    if (this.type === 'bolt') {
-        this.decay = 0.1;
-        this.boltSegments = []; 
-        this.generateBolt();
+    if (this.type === "bolt") {
+      this.decay = 0.1;
+      this.boltSegments = [];
+      this.generateBolt();
     }
   }
 
-  update() {
-    this.x += this.vx;
-    this.y += this.vy;
-    this.vx *= this.friction;
-    this.vy *= this.friction;
-    this.alpha -= this.decay;
+  update(deltaFrames = 1.0) {
+    this.x += this.vx * deltaFrames;
+    this.y += this.vy * deltaFrames;
+
+    const frictionAdjust = Math.pow(this.friction, deltaFrames);
+    this.vx *= frictionAdjust;
+    this.vy *= frictionAdjust;
+
+    this.alpha -= this.decay * deltaFrames;
+
     if (this.type === "smoke") {
-      this.radius *= 0.96;
-      this.y -= 0.5;
+      this.radius *= Math.pow(0.96, deltaFrames);
+      this.y -= 0.5 * deltaFrames;
     }
   }
 

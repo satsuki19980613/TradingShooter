@@ -28,10 +28,6 @@ export class ServerNetworkSystem {
   }
 
   broadcastGameState(players, frameEvents) {
-    const eventsToSend = frameEvents.length > 0 ? frameEvents : null;
-
-    const useBinary = !eventsToSend;
-
     players.forEach((player) => {
       if (!player.ws || player.ws.readyState !== WebSocket.OPEN) {
         return;
@@ -39,47 +35,22 @@ export class ServerNetworkSystem {
 
       const relevantEntityMaps = this.getRelevantEntityMapsFor(player);
 
-      if (useBinary) {
-        let writer = this.playerWriters.get(player);
-        if (!writer) {
-          writer = new PacketWriter();
-          this.playerWriters.set(player, writer);
-        }
-        writer.reset();
+      let writer = this.playerWriters.get(player);
+      if (!writer) {
+        writer = new PacketWriter();
+        this.playerWriters.set(player, writer);
+      }
+      writer.reset();
 
-        const binaryData = this.createBinaryDelta(
-          player.lastBroadcastState,
-          relevantEntityMaps,
-          writer
-        );
+      const binaryData = this.createBinaryDelta(
+        player.lastBroadcastState,
+        relevantEntityMaps,
+        writer,
+        frameEvents
+      );
 
-        if (binaryData.length > 0) {
-          this.safeSend(player.ws, binaryData);
-        }
-      } else {
-        const delta = this.createDeltaPayload_Dirty(
-          player.lastBroadcastState,
-          relevantEntityMaps
-        );
-        if (eventsToSend) delta.events = eventsToSend;
-
-        if (
-          (delta.events && delta.events.length > 0) ||
-          delta.updated.players.length > 0 ||
-          delta.updated.enemies.length > 0 ||
-          delta.updated.bullets.length > 0 ||
-          delta.removed.players.length > 0 ||
-          delta.removed.enemies.length > 0 ||
-          delta.removed.bullets.length > 0
-        ) {
-          this.safeSend(
-            player.ws,
-            JSON.stringify({
-              type: "game_state_delta",
-              payload: delta,
-            })
-          );
-        }
+      if (binaryData.length > 0) {
+        this.safeSend(player.ws, binaryData);
       }
 
       relevantEntityMaps.players.forEach((p) => (p.isDirty = false));
@@ -126,8 +97,7 @@ export class ServerNetworkSystem {
   /**
    * バイナリデータの生成（削除情報とトレード情報を含む完全版）
    */
-  createBinaryDelta(oldEntityMaps, newEntityMaps, writer) {
-
+  createBinaryDelta(oldEntityMaps, newEntityMaps, writer, events) {
     writer.u8(MSG_TYPE_DELTA);
 
     const removedPlayers = [];
@@ -162,14 +132,13 @@ export class ServerNetworkSystem {
     for (const p of players) {
       const s = p.getState();
       writer.string(s.id);
-      writer.f32(R(s.x));
-      writer.f32(R(s.y));
+      writer.f32(Math.round(s.x * 100) / 100);
+      writer.f32(Math.round(s.y * 100) / 100);
       writer.u8(Math.min(Math.max(0, Math.ceil(s.hp)), 255));
-      writer.f32(R1(s.aimAngle));
+      writer.f32(Math.round(s.aimAngle * 10) / 10);
       writer.u8(s.isDead ? 1 : 0);
       writer.u16(Math.floor(s.ep));
       writer.u16(s.chargeBetAmount || 10);
-
       if (s.chargePosition) {
         writer.u8(1);
         writer.f32(s.chargePosition.entryPrice);
@@ -179,7 +148,6 @@ export class ServerNetworkSystem {
       } else {
         writer.u8(0);
       }
-
       const bullets = s.stockedBullets || [];
       writer.u8(Math.min(bullets.length, 255));
       for (const dmg of bullets) {
@@ -192,10 +160,10 @@ export class ServerNetworkSystem {
     for (const e of enemies) {
       const s = e.getState();
       writer.string(s.id);
-      writer.f32(R(s.x));
-      writer.f32(R(s.y));
+      writer.f32(Math.round(s.x * 100) / 100);
+      writer.f32(Math.round(s.y * 100) / 100);
       writer.u8(Math.min(Math.max(0, Math.ceil(s.hp)), 255));
-      writer.f32(R1(s.targetAngle || 0));
+      writer.f32(Math.round(s.targetAngle || 0 * 10) / 10);
     }
 
     const bullets = Array.from(newEntityMaps.bullets.values());
@@ -203,31 +171,36 @@ export class ServerNetworkSystem {
     for (const b of bullets) {
       const s = b.getState();
       writer.string(s.id);
-      writer.f32(R(s.x));
-      writer.f32(R(s.y));
-      writer.f32(R1(s.angle));
-
-    let typeId = 0; // デフォルト (player normal)
-
-    if (s.type === "enemy") {
-        typeId = 1;
-    } else if (s.type === "player_special" || s.type === "player_special_1") {
-        typeId = 2; // Tier 1
-    } else if (s.type === "item_ep") {
-        typeId = 3;
-    } else if (s.type === "player_special_2") {
-        typeId = 4; // ★Tier 2
-    } else if (s.type === "player_special_3") {
-        typeId = 5; // ★Tier 3
-    } else if (s.type === "player_special_4") {
-        typeId = 6; // ★Tier 4
+      writer.f32(Math.round(s.x * 100) / 100);
+      writer.f32(Math.round(s.y * 100) / 100);
+      writer.f32(Math.round(s.angle * 10) / 10);
+      let typeId = 0;
+      if (s.type === "enemy") typeId = 1;
+      else if (s.type === "player_special" || s.type === "player_special_1")
+        typeId = 2;
+      else if (s.type === "item_ep") typeId = 3;
+      else if (s.type === "player_special_2") typeId = 4;
+      else if (s.type === "player_special_3") typeId = 5;
+      else if (s.type === "player_special_4") typeId = 6;
+      writer.u8(typeId);
     }
 
-    writer.u8(typeId);
+    const safeEvents = events || [];
+    writer.u8(Math.min(safeEvents.length, 255));
+
+    for (const ev of safeEvents) {
+      let typeId = 1;
+      if (ev.type === "explosion") typeId = 2;
+
+      writer.u8(typeId);
+      writer.f32(ev.x);
+      writer.f32(ev.y);
+      writer.string(ev.color || "#ffffff");
     }
 
     return writer.getData();
   }
+  
 
   writeString(str, offset) {
     const len = Buffer.byteLength(str);

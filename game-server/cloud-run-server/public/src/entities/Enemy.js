@@ -11,8 +11,8 @@ export class Enemy extends GameObject {
     this.animationTick = 0;
   }
 
-  update() {
-    super.update();
+  update(deltaFrames = 1.0) {
+    super.update(deltaFrames); // 親クラスに渡す
     this.animationTick++;
   }
 

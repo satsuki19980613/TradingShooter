@@ -1,20 +1,20 @@
 import { GameObject } from "./GameObject.js";
 import { skinManager } from "../systems/SkinManager.js";
 import { BulletSkins } from "../skins/bullets/BulletSkins.js";
-import { getDistance } from "../utils.js"; 
+import { getDistance } from "../utils.js";
 
 export class Bullet extends GameObject {
   constructor(x, y, angle, type) {
     let size = 8;
     let color = "#00ffff";
 
-    if (type === "player_special_2") { // Plasma
+    if (type === "player_special_2") {
       size = 12;
       color = "#ff00ff";
-    } else if (type === "player_special_3") { // Nova
+    } else if (type === "player_special_3") {
       size = 16;
       color = "#ffeb3b";
-    } else if (type === "player_special_4") { // Gamma
+    } else if (type === "player_special_4") {
       size = 40;
       color = "#b300ff";
     } else if (type === "enemy") {
@@ -27,7 +27,6 @@ export class Bullet extends GameObject {
     this.type = type;
     this.isInitialized = false;
 
-    // エフェクト方向計算用
     this.vx = Math.cos(angle) * 10;
     this.vy = Math.sin(angle) * 10;
     this.age = 0;
@@ -35,11 +34,10 @@ export class Bullet extends GameObject {
     this.initialY = y;
   }
 
-  update(gameInstance) {
-    super.update();
-    this.age += 16;
+  update(gameInstance, deltaFrames = 1.0) {
+    super.update(deltaFrames);
+    this.age += 16 * deltaFrames;
 
-    // --- パーティクルエフェクト (軌跡) ---
     if (!gameInstance) return;
 
     if (this.type.startsWith("player")) {
@@ -52,78 +50,60 @@ export class Bullet extends GameObject {
    * ★修正箇所: Particleコンストラクタの引数順序を (x, y, radius, color, vx, vy, type) に統一
    */
   spawnTrailParticles(gameInstance) {
-    // Tier 1: Standard (青い火花)
     if (this.type === "player_special_4") {
-        return;
+      return;
     }
     if (this.type === "player_special_1" || this.type === "player") {
       if (Math.random() < 0.3) {
-        gameInstance.spawnParticle(
-            this.x, 
-            this.y, 
-            2, 
-            "#00aaff", 
-            0, 
-            0, 
-            "spark"
-        );
+        gameInstance.spawnParticle(this.x, this.y, 2, "#00aaff", 0, 0, "spark");
       }
-    }
-    // Tier 2: Plasma (紫の煙)
-    else if (this.type === "player_special_2") {
+    } else if (this.type === "player_special_2") {
       if (Math.random() < 0.5) {
         const spread = 2;
-        const pX = this.x - Math.cos(this.angle) * 5 + (Math.random() - 0.5) * spread;
-        const pY = this.y - Math.sin(this.angle) * 5 + (Math.random() - 0.5) * spread;
-        
-        gameInstance.particles.push(
-          new Particle(
-            pX,
-            pY,
-            5,                      // radius
-            "#9d00ff",              // color
-            Math.random() - 0.5,    // vx (ランダムな動き)
-            Math.random() - 0.5,    // vy
-            "smoke"                 // type
-          )
+        const pX =
+          this.x - Math.cos(this.angle) * 5 + (Math.random() - 0.5) * spread;
+        const pY =
+          this.y - Math.sin(this.angle) * 5 + (Math.random() - 0.5) * spread;
+
+        gameInstance.particleSystem.spawn(
+          pX,
+          pY,
+          5,
+          "#9d00ff",
+          Math.random() - 0.5,
+          Math.random() - 0.5,
+          "smoke"
         );
       }
-    }
-    // Tier 3: Nova (オレンジの煙)
-    else if (this.type === "player_special_3") {
+    } else if (this.type === "player_special_3") {
       if (Math.random() < 0.5) {
-        gameInstance.particles.push(
-          new Particle(
-            this.x,
-            this.y,
-            8,                          // radius
-            "#ff5722",                  // color
-            (Math.random() - 0.5) * 0.5,// vx
-            (Math.random() - 0.5) * 0.5,// vy
-            "smoke"                     // type
-          )
+        gameInstance.particleSystem.spawn(
+          pX,
+          pY,
+          5,
+          "#9d00ff",
+          Math.random() - 0.5,
+          Math.random() - 0.5,
+          "smoke"
         );
       }
-    }
-    // Tier 4: Gamma (ビーム周囲の稲妻/粒子)
-    else if (this.type === "player_special_4") {
+    } else if (this.type === "player_special_4") {
       for (let i = 0; i < 2; i++) {
         const speed = Math.random() * 3 + 1;
-        const anglePerp = this.angle + (Math.random() > 0.5 ? Math.PI / 2 : -Math.PI / 2);
+        const anglePerp =
+          this.angle + (Math.random() > 0.5 ? Math.PI / 2 : -Math.PI / 2);
         const vx = Math.cos(anglePerp) * speed;
         const vy = Math.sin(anglePerp) * speed;
         const color = Math.random() > 0.5 ? "#b300ff" : "#ccff00";
 
-        gameInstance.particles.push(
-          new Particle(
-            this.x,
-            this.y,
-            Math.random() * 4 + 2, // radius (size)
-            color,                 // color
-            vx,                    // vx
-            vy,                    // vy
-            "rect"                 // type
-          )
+        gameInstance.particleSystem.spawn(
+          pX,
+          pY,
+          5,
+          "#9d00ff",
+          Math.random() - 0.5,
+          Math.random() - 0.5,
+          "smoke"
         );
       }
     }
@@ -155,11 +135,11 @@ export class Bullet extends GameObject {
     }
     let alpha = 1.0;
     if (this.type === "player_special_4") {
-        if (this.age < 100) {
-            alpha = this.age / 100; 
-        } else if (this.age > 800) {
-            alpha = Math.max(0, 1 - (this.age - 800) / 200); 
-        }
+      if (this.age < 100) {
+        alpha = this.age / 100;
+      } else if (this.age > 800) {
+        alpha = Math.max(0, 1 - (this.age - 800) / 200);
+      }
     }
 
     if (BulletSkins[this.type]) {
@@ -168,18 +148,14 @@ export class Bullet extends GameObject {
       ctx.rotate(this.angle);
       ctx.globalAlpha = alpha;
 
-      // ★修正: Tier 4 の場合だけ、発射位置からの距離を計算して渡す
       if (this.type === "player_special_4") {
-          // 現在位置(this.x, this.y) と 初期位置(this.initialX, this.initialY) の距離
-          const dist = getDistance(this.x, this.y, this.initialX, this.initialY);
-          
-          // 距離(dist)を引数として渡す
-          const drawFunc = BulletSkins[this.type](dist);
-          drawFunc(ctx, 0, 0);
+        const dist = getDistance(this.x, this.y, this.initialX, this.initialY);
+
+        const drawFunc = BulletSkins[this.type](dist);
+        drawFunc(ctx, 0, 0);
       } else {
-          // 他の弾は通常通り
-          const drawFunc = BulletSkins[this.type]();
-          drawFunc(ctx, 0, 0);
+        const drawFunc = BulletSkins[this.type]();
+        drawFunc(ctx, 0, 0);
       }
 
       ctx.restore();
@@ -188,15 +164,29 @@ export class Bullet extends GameObject {
     this.drawNormalBullet(ctx);
   }
 
-
   drawItemEp(ctx) {
     const baseSize = 64;
     const crystalSize = 48;
     const ringSize = 48;
-    const baseSkin = skinManager.getSkin("item_ep_base", baseSize, baseSize, BulletSkins.item_ep_base());
-    const crystalSkin = skinManager.getSkin("item_ep_crystal", crystalSize, crystalSize, BulletSkins.item_ep_crystal());
-    const ringSkin = skinManager.getSkin("item_ep_ring", ringSize, ringSize, BulletSkins.item_ep_ring());
-    
+    const baseSkin = skinManager.getSkin(
+      "item_ep_base",
+      baseSize,
+      baseSize,
+      BulletSkins.item_ep_base()
+    );
+    const crystalSkin = skinManager.getSkin(
+      "item_ep_crystal",
+      crystalSize,
+      crystalSize,
+      BulletSkins.item_ep_crystal()
+    );
+    const ringSkin = skinManager.getSkin(
+      "item_ep_ring",
+      ringSize,
+      ringSize,
+      BulletSkins.item_ep_ring()
+    );
+
     ctx.save();
     ctx.translate(this.x, this.y);
     const time = Date.now();
