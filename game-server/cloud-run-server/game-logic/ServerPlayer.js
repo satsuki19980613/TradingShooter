@@ -100,7 +100,11 @@ export class ServerPlayer extends ServerGameObject {
     }
 
     if (this.shootCooldown > 0) this.shootCooldown--;
-    this.score = Math.floor(this.ep - 100);
+    if (this.ep > 100) {
+        this.score = Math.floor(this.ep - 100);
+    } else {
+        this.score = 0;
+    }
   }
 
   shoot(game) {

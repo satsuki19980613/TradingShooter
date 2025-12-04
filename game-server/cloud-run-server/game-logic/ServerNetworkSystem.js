@@ -119,8 +119,7 @@ export class ServerNetworkSystem {
       writer.u8(p.isDead ? 1 : 0);
       writer.u16(Math.floor(p.ep));
       writer.u16(p.chargeBetAmount || 10);
-      writer.buffer.writeUInt32LE(p.lastProcessedInputSeq || 0, writer.offset);
-      writer.offset += 4;
+
       if (p.chargePosition) {
         writer.u8(1);
         writer.f32(p.chargePosition.entryPrice);

@@ -609,7 +609,7 @@ export class ServerGame {
       };
     }
     const leaderboard = Array.from(this.players.values())
-      .filter((p) => !p.isDead)
+      .filter((p) => !p.isDead && p.score > 0) // ★ p.score > 0 を追加
       .sort((a, b) => b.score - a.score)
       .slice(0, 5)
       .map((p) => ({ id: p.id, name: p.name, score: p.score }));

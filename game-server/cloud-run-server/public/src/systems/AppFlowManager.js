@@ -1,6 +1,6 @@
 /**
  * 【AppFlowManager】
- * 計算コスト削減・常時ループ再生特化版
+ * 計算コスト削減・常時ループ再生特化版 + アカウント引継ぎ実装
  */
 export class AppFlowManager {
   constructor(game, uiManager, firebaseManager, networkManager) {
@@ -10,36 +10,29 @@ export class AppFlowManager {
     this.network = networkManager;
     this.isDebugMode = uiManager.isDebugMode;
 
-    // --- Web Audio API 管理用 ---
+    
     this.audioContext = null;
     this.bgmGainNode = null;
     this.bgmBuffer = null;
     this.bgmSource = null;
     
-    // 状態管理
-    this.isPlaying = false; // 再生中かどうか
-    this.isMuted = true;    // 初期状態はミュート（ボタンを押すまで鳴らさない）
+    
+    this.isPlaying = false;
+    this.isMuted = true;
     this.defaultVolume = 0.2;
 
-    // BGMパス (Cloud Run内の public/audio/StellarSignals.mp3 を想定)
-   this.bgmUrl = "https://trading-charge-shooter.web.app/audio/StellarSignals.mp3";
-
-    // 起動時にオーディオシステムを準備
+    this.bgmUrl =  "https://trading-charge-shooter.web.app/audio/StellarSignals.mp3";
     this.initAudioSystem();
   }
 
-  // 初期化とロード (デコードは最初の一回だけ行う)
   async initAudioSystem() {
     try {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       this.audioContext = new AudioContext();
-
-      // 音量調整ノード
       this.bgmGainNode = this.audioContext.createGain();
-      this.bgmGainNode.gain.value = 0; // 最初は音量0
+      this.bgmGainNode.gain.value = 0;
       this.bgmGainNode.connect(this.audioContext.destination);
 
-      // ファイルをロード
       console.log("[Audio] Loading BGM...");
       const response = await fetch(this.bgmUrl);
       if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
@@ -53,38 +46,28 @@ export class AppFlowManager {
     }
   }
 
-  // ★ BGMループ再生開始 (一度呼べばずっと回り続ける)
   startLoopBGM() {
     if (!this.audioContext || !this.bgmBuffer || this.isPlaying) return;
-
-    // ソース作成
     const source = this.audioContext.createBufferSource();
     source.buffer = this.bgmBuffer;
-    source.loop = true; // 永遠にループ
+    source.loop = true;
     source.connect(this.bgmGainNode);
-    
     source.start(0);
     this.isPlaying = true;
     console.log("[Audio] BGM Loop Started.");
   }
 
-  // ★ オーディオボタンが押された時の処理
   async toggleAudio() {
-    // まだコンテキストがサスペンド(停止)していたら起こす (スマホ対策)
     if (this.audioContext && this.audioContext.state === 'suspended') {
       await this.audioContext.resume();
     }
-
-    // まだ再生が始まっていなければ開始する
     if (!this.isPlaying) {
         this.startLoopBGM();
     }
-
     this.isMuted = !this.isMuted;
     const btn = document.getElementById("btn-audio-toggle");
 
     if (this.isMuted) {
-      // OFF: 音量を0にする (再生は止めない＝負荷が低い)
       if (this.bgmGainNode) {
         this.bgmGainNode.gain.setTargetAtTime(0, this.audioContext.currentTime, 0.1);
       }
@@ -93,7 +76,6 @@ export class AppFlowManager {
         btn.style.opacity = "0.5";
       }
     } else {
-      // ON: 音量を上げる
       if (this.bgmGainNode) {
         this.bgmGainNode.gain.setTargetAtTime(this.defaultVolume, this.audioContext.currentTime, 0.1);
       }
@@ -113,17 +95,23 @@ export class AppFlowManager {
       onRetry: () => this.handleRetry(),
       onRetire: () => this.handleRetire(),
       onBackToHome: () => this.handleBackToHome(),
+      
+      
+      onTransferRequest: () => this.handleTransferRequest(), 
       onIssueCode: () => this.handleIssueCode(),
       onRecoverAccount: (code) => this.handleRecoverAccount(code),
     });
 
-    // オーディオボタンのイベント
     const audioBtn = document.getElementById("btn-audio-toggle");
     if (audioBtn) {
       audioBtn.addEventListener("click", () => {
         this.toggleAudio();
       });
     }
+
+    
+    
+    this.network.onAccountResponse = (res) => this.handleAccountResponse(res);
 
     this.firebase.onAuthStateChanged(async (user) => {
       if (this.ui.isRegistering) return;
@@ -141,6 +129,91 @@ export class AppFlowManager {
       }
     });
   }
+
+  
+
+  /**
+   * 引継ぎ画面が開かれた時の処理
+   * サーバー未接続なら、一時的に接続してアカウント操作を行えるようにする
+   */
+  async handleTransferRequest() {
+    
+    if (this.network.ws && this.network.ws.readyState === WebSocket.OPEN) {
+      return;
+    }
+
+    
+    const name = this.ui.displayNameEl.textContent || "Guest";
+    try {
+        const user = await this.firebase.authenticateAnonymously(name);
+        this.game.setAuthenticatedPlayer(user);
+        
+        await this.network.connect(user.uid, name, this.isDebugMode);
+        console.log("[AppFlow] Account Action Connection Established.");
+    } catch (e) {
+        console.error("Temp Connect Error", e);
+        alert("サーバー接続エラー: " + e.message);
+    }
+  }
+
+  /**
+   * 引継ぎコード発行リクエスト
+   */
+  handleIssueCode() {
+    
+    this.network.sendAccountAction("issue_code", {}, (res) => this.handleAccountResponse(res));
+  }
+
+  /**
+   * アカウント復旧リクエスト
+   */
+  handleRecoverAccount(code) {
+    this.network.sendAccountAction("recover", { code: code }, (res) => this.handleAccountResponse(res));
+  }
+
+  /**
+   * サーバーからのアカウント操作レスポンスを一括ハンドリング
+   */
+  handleAccountResponse(response) {
+    if (!response) return;
+
+    
+    if (response.subtype === "issue_code") {
+      if (response.success) {
+        
+        if (this.ui.accountTransferManager) {
+            this.ui.accountTransferManager.displayIssuedCode(response.code);
+        } else {
+            
+            const display = document.getElementById("transfer-code-display");
+            if (display) display.textContent = response.code;
+        }
+      } else {
+        alert("コード発行エラー: " + response.message);
+      }
+    }
+    
+    
+    else if (response.subtype === "recover") {
+      if (response.success) {
+        alert("復旧成功: " + response.name + " さんとしてログインします。");
+        
+        location.reload();
+      } else {
+        alert("復旧エラー: " + response.message);
+      }
+    }
+
+    
+    else if (response.subtype === "register_name") {
+        if (!response.success) {
+            
+            console.warn("Register Name Error via handler:", response.message);
+        }
+    }
+  }
+
+  
 
   async handleStartGame(playerName) {
     this.ui.setLoadingText("接続中...");
@@ -179,6 +252,8 @@ export class AppFlowManager {
       const user = await this.firebase.authenticateAnonymously(name);
       this.game.setAuthenticatedPlayer(user);
       await this.network.connect(user.uid, name, this.isDebugMode);
+      
+      
       this.network.sendAccountAction("register_name", { name: name }, async (res) => {
         this.ui.isRegistering = false;
         if (res.success) {
@@ -233,21 +308,12 @@ export class AppFlowManager {
 
     this.game.stopGameLoop();
     this.network.stopListening();
-    
-    // BGM停止処理は削除しました (流しっぱなし)
-
     this.ui.showScreen("home");
   }
 
   handleBackToHome() {
     const bgVideo = document.getElementById("bg-video");
     if (bgVideo) bgVideo.style.display = "block";
-
-    // BGM停止処理は削除しました (流しっぱなし)
-
     this.ui.showScreen("home");
   }
-
-  handleIssueCode() { /* ... */ }
-  handleRecoverAccount(code) { /* ... */ }
 }

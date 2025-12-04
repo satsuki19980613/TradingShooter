@@ -883,7 +883,8 @@ canvas {
 @media only screen and (orientation: portrait) {
   #cockpit-container,
   #screen-ranking,
-  #screen-gameover {
+  #screen-gameover,
+  #modal-ingame-leaderboard {
     width: 100vh;
     height: 100vw;
     position: absolute;

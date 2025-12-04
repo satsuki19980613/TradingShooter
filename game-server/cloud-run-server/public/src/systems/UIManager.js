@@ -15,6 +15,8 @@
 import { MobileControlManager } from "./MobileControlManager.js";
 import { RadarRenderer } from "./RadarRenderer.js";
 import { MagazineRenderer } from "./MagazineRenderer.js";
+import { AccountTransferManager } from "./AccountTransferManager.js";
+import { PlayerRegistrationManager } from "./PlayerRegistrationManager.js";
 export class UIManager {
   constructor() {
     const testEl = document.getElementById("modal-initial");
@@ -31,14 +33,9 @@ export class UIManager {
     };
     this.activeScreen = this.screens.home;
     this.modalInitial = document.getElementById("modal-initial");
-    this.modalTransfer = document.getElementById("modal-transfer");
-    this.modalRegister = document.getElementById("modal-register");
     this.displayNameEl = document.getElementById("display-player-name");
     this.initialNameInput = document.getElementById("initial-name-input");
-    this.regNameInput = document.getElementById("reg-name-input");
     this.btnMenuRegister = document.getElementById("btn-menu-register");
-    this.recoverCodeInput = document.getElementById("recover-code-input");
-    this.transferCodeDisplay = document.getElementById("transfer-code-display");
     this.rankingListEl = document.getElementById("ranking-list");
     this.loadingTextEl = document.getElementById("loading-text");
     this.hpBarInnerEl = document.getElementById("hp-bar-inner");
@@ -53,7 +50,6 @@ export class UIManager {
     this.gameoverMessageEl = document.getElementById("gameover-message");
     this.errorMessageEl = document.getElementById("error-message");
     this.debugPanelEl = document.getElementById("debug-panel");
-    this.isTransferFromInitial = false;
     this.debugStatsContainerEl = document.getElementById(
       "debug-stats-container"
     );
@@ -73,6 +69,8 @@ export class UIManager {
     );
     this.btnShowLeaderboard = document.getElementById("btn-show-leaderboard");
     this.btnCloseLeaderboard = document.getElementById("btn-close-leaderboard");
+    this.accountTransferManager = new AccountTransferManager(this);
+    this.playerRegistrationManager = new PlayerRegistrationManager(this);
   }
   drawRadar(ctx, w, h, ww, wh, p, e, o, op) {
     this.radarRenderer.draw(ctx, w, h, ww, wh, p, e, o, op);
@@ -102,11 +100,10 @@ export class UIManager {
   }
 
   bindActions(actions) {
-    document
-      .getElementById("btn-initial-start")
-      .addEventListener("click", () => {
-        const name = this.initialNameInput.value;
-
+    const btnInitialStart = document.getElementById("btn-initial-start");
+    if (btnInitialStart) {
+      btnInitialStart.addEventListener("click", () => {
+        const name = this.initialNameInput ? this.initialNameInput.value : "";
         if (!name) return alert("名前を入力してください");
         if (name.length < 3 || name.length > 12)
           return alert("名前は3文字以上12文字以下にしてください");
@@ -115,40 +112,58 @@ export class UIManager {
 
         actions.onRegisterName(name);
       });
+    }
 
-    document
-      .getElementById("btn-initial-guest")
-      .addEventListener("click", () => {
+    const btnInitialGuest = document.getElementById("btn-initial-guest");
+    if (btnInitialGuest) {
+      btnInitialGuest.addEventListener("click", () => {
         actions.onGuestLogin();
       });
+    }
 
-    document.getElementById("btn-start-game").addEventListener("click", () => {
-      this.tryFullscreen();
+    const btnStartGame = document.getElementById("btn-start-game");
+    if (btnStartGame) {
+      btnStartGame.addEventListener("click", () => {
+        this.tryFullscreen();
+        const playerName = this.displayNameEl.textContent || "Guest";
+        actions.onStartGame(playerName);
+      });
+    }
 
-      const playerName = this.displayNameEl.textContent || "Guest";
-      actions.onStartGame(playerName);
-    });
-
-    document
-      .getElementById("btn-goto-ranking")
-      .addEventListener("click", () => {
+    const btnGotoRanking = document.getElementById("btn-goto-ranking");
+    if (btnGotoRanking) {
+      btnGotoRanking.addEventListener("click", () => {
         actions.onRankingRequest();
       });
+    }
 
-    document.getElementById("btn-do-register").addEventListener("click", () => {
-      const name = this.regNameInput.value;
-      if (!name) return alert("名前を入力してください");
-      if (name.length < 3 || name.length > 12)
-        return alert("3〜12文字で入力してください");
-
-      actions.onRegisterName(name);
-    });
-
-    document
-      .getElementById("btn-gameover-retry")
-      .addEventListener("click", () => {
+    const btnRetry = document.getElementById("btn-gameover-retry");
+    if (btnRetry) {
+      btnRetry.addEventListener("click", () => {
         actions.onRetry();
       });
+    }
+
+    const btnGameoverHome = document.getElementById("btn-gameover-home");
+    if (btnGameoverHome) {
+      btnGameoverHome.addEventListener("click", () => {
+        if (actions.onBackToHome) {
+          actions.onBackToHome();
+        } else {
+          this.showScreen("home");
+        }
+      });
+    }
+
+    const btnRankingBack = document.getElementById("btn-ranking-back");
+    if (btnRankingBack) {
+      btnRankingBack.addEventListener("click", () => this.showScreen("home"));
+    }
+
+    const btnErrorHome = document.getElementById("btn-error-home");
+    if (btnErrorHome) {
+      btnErrorHome.addEventListener("click", () => this.showScreen("home"));
+    }
 
     const btnRetire = document.getElementById("btn-retire");
     if (btnRetire) {
@@ -159,27 +174,6 @@ export class UIManager {
       });
     }
 
-    document
-      .getElementById("btn-ranking-back")
-      .addEventListener("click", () => this.showScreen("home"));
-    document
-      .getElementById("btn-gameover-home")
-      .addEventListener("click", () => {
-        if (actions.onBackToHome) {
-          actions.onBackToHome();
-        } else {
-          this.showScreen("home");
-        }
-      });
-    document
-      .getElementById("btn-error-home")
-      .addEventListener("click", () => this.showScreen("home"));
-    document
-      .getElementById("btn-close-register")
-      .addEventListener("click", () => {
-        this.modalRegister.classList.add("hidden");
-      });
-    this.mobileControlManager.init(true);
     if (this.btnShowLeaderboard) {
       this.btnShowLeaderboard.addEventListener("click", () => {
         if (this.modalIngameLeaderboard) {
@@ -195,6 +189,16 @@ export class UIManager {
         }
       });
     }
+
+    if (this.accountTransferManager) {
+      this.accountTransferManager.init(actions);
+    }
+
+    if (this.playerRegistrationManager) {
+      this.playerRegistrationManager.init(actions);
+    }
+
+    this.mobileControlManager.init(true);
   }
   hideInitialModal() {
     if (this.modalInitial) this.modalInitial.classList.add("hidden");
@@ -205,7 +209,9 @@ export class UIManager {
   }
 
   hideRegisterModal() {
-    if (this.modalRegister) this.modalRegister.classList.add("hidden");
+    if (this.playerRegistrationManager) {
+      this.playerRegistrationManager.closeModal();
+    }
   }
 
   clearRankingList() {
@@ -227,20 +233,8 @@ export class UIManager {
     }
   }
 
-  openTransferModal(game, firebaseManager, networkManager) {
-    this.modalTransfer.classList.remove("hidden");
-
-    if (this.isTransferFromInitial) {
-      document.getElementById(
-        "transfer-code-display"
-      ).parentElement.style.display = "none";
-    } else {
-      document.getElementById(
-        "transfer-code-display"
-      ).parentElement.style.display = "block";
-    }
-
-    this.openTemporaryConnection(game, firebaseManager, networkManager);
+  openTransferModal(actions) {
+    this.accountTransferManager.openModal(actions);
   }
 
   async checkInitialLoginStatus(firebaseManager) {
@@ -616,9 +610,6 @@ export class UIManager {
   }
 
   isMobileDevice() {
-    const ua = navigator.userAgent;
-    const isStandardMobile =
-      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
-    return isStandardMobile;
+    return false;
   }
 }
