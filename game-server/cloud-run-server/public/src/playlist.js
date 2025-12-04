@@ -14,14 +14,14 @@ export const BGM_PLAYLIST = [
   // ※ファイルは public/audio/ フォルダにある前提です
   { 
     title: "Neon Drive", 
-    url: "./audio/Neon Drive.mp3" 
+    url: "https://trading-charge-shooter.web.app/audio/NeonDrive.mp3" 
   },
   { 
     title: "Neon Velocity", 
-    url: "./audio/Neon Velocity.mp3" 
+    url: "https://trading-charge-shooter.web.app/audio/NeonVelocity.mp3" 
   },
   { 
     title: "Neon Blitzkrieg", 
-    url: "./audio/Neon Blitzkrieg.mp3" 
+    url: "https://trading-charge-shooter.web.app/audio/audio/NeonBlitzkrieg.mp3" 
   }
 ];
