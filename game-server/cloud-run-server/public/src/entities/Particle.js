@@ -56,42 +56,4 @@ export class Particle extends GameObject {
     }
   }
 
-  draw(ctx) {
-    if (this.alpha <= 0) return;
-    const baseSize = 32;
-
-    const skin = skinManager.getSkin(
-      this.skinKey,
-      baseSize,
-      baseSize,
-      (g, w, h) => {
-        const cx = w / 2;
-        const cy = h / 2;
-        const r = w / 4;
-
-        g.fillStyle = this.color;
-
-        if (this.type === "rect" || this.type === "bolt") {
-          g.fillRect(cx - r, cy - r, r * 2, r * 2);
-        } else {
-          g.beginPath();
-          g.arc(cx, cy, r, 0, Math.PI * 2);
-          g.fill();
-        }
-      }
-    );
-
-    ctx.save();
-    ctx.translate(this.x, this.y);
-    ctx.globalAlpha = this.alpha;
-
-    ctx.globalCompositeOperation = "lighter";
-
-    const scale = this.radius / (baseSize / 4);
-    ctx.scale(scale, scale);
-
-    ctx.drawImage(skin, -baseSize / 2, -baseSize / 2);
-
-    ctx.restore();
-  }
 }

@@ -31,22 +31,5 @@ export class Enemy extends GameObject {
     this.targetAngle = state.ta;
     this.hp = state.h;
   }
-  draw(ctx) {
-    const skinSize = 120;
 
-    const enemySkin = skinManager.getSkin(
-      "enemy_heavy_tank",
-      skinSize,
-      skinSize,
-      EnemySkins.heavyTank()
-    );
-
-    ctx.save();
-    ctx.translate(this.x, this.y);
-    ctx.rotate(this.targetAngle);
-
-    ctx.drawImage(enemySkin, -skinSize / 2, -skinSize / 2);
-
-    ctx.restore();
-  }
 }

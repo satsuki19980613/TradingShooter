@@ -20,7 +20,6 @@ export class UIManager {
     this.sizeValueEl = document.getElementById("size-value");
     this.powerLabelEl = document.getElementById("power-label");
     this.powerValueEl = document.getElementById("power-value");
-    this.obstacleLayerEl = document.getElementById("obstacle-layer");
     this.gameCanvas = document.getElementById("game-field");
     this.gameoverScoreEl = document.getElementById("gameover-score");
     this.gameoverMessageEl = document.getElementById("gameover-message");
@@ -266,62 +265,7 @@ export class UIManager {
     }
   }
 
-  syncDomElements(cameraX, cameraY) {
-    if (this.obstacleLayerEl) {
-      const cameraTransform = `translate(${-cameraX}px, ${-cameraY}px)`;
-      this.obstacleLayerEl.style.transform = cameraTransform;
-    }
-  }
 
-  clearObstacleLayer() {
-    if (this.obstacleLayerEl) this.obstacleLayerEl.innerHTML = "";
-  }
-
-  addObstacleDOM(entity) {
-    if (!this.obstacleLayerEl) return null;
-    let el = null;
-    if (entity.type === "obstacle_wall") {
-      el = document.createElement("div");
-      el.className = "obs-base";
-      if (entity.styleType) {
-        el.classList.add(entity.styleType);
-      }
-      el.style.width = `${entity.width}px`;
-      el.style.height = `${entity.height}px`;
-      el.style.left = `${entity.x}px`;
-      el.style.top = `${entity.y}px`;
-
-      if (entity.rotation) {
-        el.style.transform = `rotate(${entity.rotation}rad)`;
-      }
-      if (entity.borderRadius > 0) {
-        el.style.borderRadius = `${entity.borderRadius}px`;
-      } else if (
-        entity.individualRadii &&
-        Object.keys(entity.individualRadii).length > 0
-      ) {
-        const {
-          borderBottomLeftRadius = 0,
-          borderBottomRightRadius = 0,
-          borderTopLeftRadius = 0,
-          borderTopRightRadius = 0,
-        } = entity.individualRadii;
-        el.style.borderRadius = `${borderTopLeftRadius}px ${borderTopRightRadius}px ${borderBottomRightRadius}px ${borderBottomLeftRadius}px`;
-      }
-    }
-    if (el) {
-      entity.domElement = el;
-      this.obstacleLayerEl.appendChild(el);
-      return el;
-    }
-    return null;
-  }
-
-  removeObstacleDOM(obstacle) {
-    if (obstacle.domElement) {
-      obstacle.domElement.remove();
-    }
-  }
 
   showFloatingMessage(text, type) {
     const msg = document.createElement("div");

@@ -33,11 +33,4 @@ export class GameObject {
     if (Math.abs(this.targetX - this.x) < 0.1) this.x = this.targetX;
     if (Math.abs(this.targetY - this.y) < 0.1) this.y = this.targetY;
   }
-
-  draw(ctx) {
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
-    ctx.fillStyle = this.color;
-    ctx.fill();
-  }
 }

@@ -14,9 +14,8 @@ import { Player } from "./entities/Player.js";
 import { ParticleSystem } from "./systems/ParticleSystem.js";
 import { Enemy } from "./entities/Enemy.js";
 import { Bullet } from "./entities/Bullet.js";
-import { Particle } from "./entities/Particle.js";
+import { PixiManager } from "./systems/PixiManager.js";
 import { Obstacle } from "./entities/Obstacle.js";
-import { UIManager } from "./systems/UIManager.js";
 import { Trading } from "./systems/Trading.js";
 import { InputManager } from "./systems/InputManager.js";
 import { ClientConfig } from "./ClientConfig.js";
@@ -33,15 +32,18 @@ const INPUT_SEND_INTERVAL = ClientConfig.INPUT_SEND_INTERVAL;
 export class Game {
   constructor(canvasId) {
     this.gameCanvas = document.getElementById(canvasId);
-    this.gameCtx = this.gameCanvas.getContext("2d");
+    this.pixiManager = new PixiManager(canvasId);
+    this.pixiManager.init();
     this.uiCanvas = document.getElementById("ui-field");
     this.uiCtx = this.uiCanvas.getContext("2d");
     this.uiManager = null;
     this.firebaseManager = null;
     this.networkManager = null;
     this.trading = new Trading();
-    this.renderSystem = new RenderSystem();
-    this.particleSystem = new ParticleSystem();
+    this.renderSystem = new RenderSystem(this.pixiManager.getLayer("game"));
+    this.particleSystem = new ParticleSystem(
+      this.pixiManager.getLayer("effect")
+    );
     this.inputManager = new InputManager();
     this.isGameOver = false;
     if (this.gameCanvas) {
@@ -180,8 +182,7 @@ export class Game {
       fieldContainer.style.width = `${width}px`;
       fieldContainer.style.height = `${height}px`;
 
-      this.gameCanvas.width = width;
-      this.gameCanvas.height = height;
+      this.pixiManager.resize(width, height);
 
       if (this.uiCanvas) {
         this.uiCanvas.width = width;
@@ -292,8 +293,9 @@ export class Game {
     this.lastFrameTime = now;
 
     const deltaFrames = dt * 60;
+
     if (this.particleSystem) {
-        this.particleSystem.update(deltaFrames);
+      this.particleSystem.update(deltaFrames);
     }
 
     this.renderLoopId = requestAnimationFrame(this.renderLoop.bind(this));
@@ -306,39 +308,17 @@ export class Game {
     this.enemyEntities.forEach((e) => e.update(deltaFrames));
     this.bulletEntities.forEach((b) => b.update(this, deltaFrames));
     this.updateCamera();
-
-    const ctx = this.gameCtx;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    this.drawBackground(ctx);
-
-    ctx.save();
-    ctx.scale(this.gameScale, this.gameScale);
-    ctx.translate(-this.cameraX, -this.cameraY);
-
-    this.obstacleEntities.forEach((obs) => {
-      if (
-        obs.x + obs.width > this.cameraX &&
-        obs.x < this.cameraX + this.gameCanvas.width &&
-        obs.y + obs.height > this.cameraY &&
-        obs.y < this.cameraY + this.gameCanvas.height
-      ) {
-        obs.draw(ctx);
-      }
-    });
-
-    if (this.particleSystem) {
-      this.particleSystem.draw(ctx);
-    }
-
-    this.bulletEntities.forEach((b) => b.draw(ctx));
-    this.playerEntities.forEach((p) => this.renderSystem.renderPlayer(ctx, p));
-    this.enemyEntities.forEach((e) => this.renderSystem.renderEnemy(ctx, e));
-
-    ctx.restore();
+    this.renderSystem.render(
+      this.playerEntities,
+      this.enemyEntities,
+      this.bulletEntities,
+      this.obstacleEntities 
+    );
 
     this.uiCtx.clearRect(0, 0, this.uiCanvas.width, this.uiCanvas.height);
     if (this.uiManager) {
       this.uiManager.syncDomElements(this.cameraX, this.cameraY);
+
       const myPlayerState = this.playerEntities.get(this.userId);
       this.uiManager.syncHUD(myPlayerState, this.trading.tradeState);
 
@@ -579,9 +559,7 @@ export class Game {
       this.obstacleStateArray = Array.from(this.obstacleEntities.values());
     }
   }
-  spawnParticle(x, y, radius, color, vx, vy, type) {
-    this.particleSystem.spawn(x, y, radius, color, vx, vy, type);
-  }
+
   setTradeState(chartDelta) {
     if (!chartDelta) return;
     this.trading.addNewChartPoint(chartDelta);
@@ -626,39 +604,7 @@ export class Game {
     this.mouseWorldPos.y = this.mousePos.y / this.gameScale + this.cameraY;
   }
 
-  drawBackground(ctx) {
-    ctx.fillStyle = "#213135";
-    ctx.fillRect(0, 0, this.gameCanvas.width, this.gameCanvas.height);
 
-    const gridSize = 50;
-    const tileCanvas = skinManager.getSkin(
-      "grid_tile_50",
-      gridSize,
-      gridSize,
-      GridSkin.drawTile("rgba(0, 255, 255, 0.1)", 1)
-    );
-    const pattern = skinManager.getPattern(ctx, "grid_tile_50", tileCanvas);
-
-    ctx.save();
-
-    const scale = this.gameScale || 1;
-    ctx.scale(scale, scale);
-
-    const offsetX = -this.cameraX;
-    const offsetY = -this.cameraY;
-    ctx.translate(offsetX, offsetY);
-
-    ctx.fillStyle = pattern;
-
-    ctx.fillRect(
-      this.cameraX,
-      this.cameraY,
-      this.gameCanvas.width / scale,
-      this.gameCanvas.height / scale
-    );
-
-    ctx.restore();
-  }
 
   async gameOver(score) {
     if (this.isGameOver) return;
