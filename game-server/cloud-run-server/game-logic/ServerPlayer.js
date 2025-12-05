@@ -12,6 +12,7 @@
  */
 import { ServerGameObject } from "./ServerGameObject.js";
 import { ServerBullet } from "./ServerBullet.js";
+import { processPlayerInput } from "../common/PlayerPhysics.js";
 
 /**
  * サーバー側のプレイヤークラス (ロジックのみ)
@@ -19,6 +20,7 @@ import { ServerBullet } from "./ServerBullet.js";
 export class ServerPlayer extends ServerGameObject {
   constructor(id, name, x, y, ws, isDebug = false) {
     super(x, y, 45);
+    this.protocol = { name: 'Player' };
     this.vx = 0;
     this.vy = 0;
     this.ws = ws;
@@ -62,6 +64,31 @@ export class ServerPlayer extends ServerGameObject {
     }
     this.inputs = inputActions.states || {};
     this.inputPressed = inputActions.wasPressed || {};
+  }
+
+  processMove(command) {
+    // 共通物理ロジックで x, y, rotation を更新
+    processPlayerInput(this, command);
+    
+    // 既存の角度プロパティとも同期させておく（既存ロジック互換のため）
+    this.angle = this.rotation;
+
+    // アクション入力の処理（射撃など）
+    if (command.shoot) {
+        // 既存の shoot メソッドを呼び出す
+        // ※ serverGame インスタンスへの参照が必要な場合、引数で渡すか設計調整が必要ですが
+        // 一旦フラグだけ立てて update() で処理する形も可能です。
+        // ここでは単純化のため、ServerGame側でコマンドを参照して処理する形を想定します。
+        this.isShooting = true; 
+    }
+    
+    // トレード操作などのコマンドもここでフラグを受け取れます
+    if (command.trade_long) this.wantsTradeLong = true;
+    if (command.trade_short) this.wantsTradeShort = true;
+    if (command.trade_settle) this.wantsTradeSettle = true;
+    
+    // 変更があったことを通知（nengiは自動検知しますが、既存システム用）
+    this.isDirty = true;
   }
 
   /**

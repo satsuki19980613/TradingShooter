@@ -33,14 +33,27 @@ export class Bullet extends GameObject {
     this.initialX = x;
     this.initialY = y;
   }
+  updateFromNengi() {
+    if (this.nengiEntity) {
+      this.x = this.nengiEntity.x;
+      this.y = this.nengiEntity.y;
+      this.angle = this.nengiEntity.rotation;
+      
+      // タイプIDから文字列へ変換（初回のみでも良いが、念のため）
+      const typeStr = BULLET_ID_TO_TYPE[this.nengiEntity.typeId];
+      if (typeStr && this.type !== typeStr) {
+          this.type = typeStr;
+          // タイプが変わったら見た目（スキン）も更新が必要かもしれません
+      }
+    }
+  }
 
   update(gameInstance, deltaFrames = 1.0) {
-    super.update(deltaFrames);
+    // 座標更新はnengiが行うため、ここではエフェクト生成のみ行う
     this.age += 16 * deltaFrames;
 
     if (!gameInstance) return;
-
-    if (this.type.startsWith("player")) {
+    if (this.type && this.type.startsWith("player")) {
       this.spawnTrailParticles(gameInstance);
     }
   }
