@@ -97,20 +97,58 @@ export class AppFlowManager {
       }
     }
   }
+// AppFlowManager.js
+
+// AppFlowManager.js
+
   async startLoadingSequence(btn) {
     this.isAudioLoading = true;
     if (btn) btn.textContent = "⏳ LOADING...";
 
+    // --- UI操作: ゲーム開始をブロックし、注意文を出す ---
+    
+    // 1. ローディングバーを表示
     const barContainer = document.getElementById("audio-loading-container");
     const barFill = document.getElementById("audio-loading-bar");
     if (barContainer) barContainer.style.display = "block";
 
+    // 2. 「Join Game」ボタンを取得して無効化する
+    const startBtn = document.getElementById("btn-start-game");
+    if (startBtn) {
+        startBtn.disabled = true;       // クリック不可にする
+        startBtn.style.opacity = "0.5"; // 半透明にして無効感を出す
+        startBtn.style.cursor = "not-allowed";
+    }
+
+    // 3. 注意文を動的に生成して表示する
+    // (HTMLをいじらなくて済むよう、ここで生成します)
+    let warningEl = document.getElementById("bgm-warning-text");
+    if (!warningEl && barContainer) {
+        warningEl = document.createElement("p");
+        warningEl.id = "bgm-warning-text";
+        warningEl.style.color = "#ff9800"; // オレンジ色
+        warningEl.style.fontSize = "12px";
+        warningEl.style.marginTop = "8px";
+        warningEl.style.textAlign = "center";
+        warningEl.textContent = "※ BGMデータをダウンロード中です。完了するまで開始できません。";
+        // バーの下（コンテナの直後）に挿入
+        barContainer.parentNode.insertBefore(warningEl, barContainer.nextSibling);
+    }
+    if (warningEl) warningEl.style.display = "block";
+
+
+    // --- ダウンロード処理 (変更なし) ---
     let loadedCount = 0;
     const totalCount = this.playlist.length;
 
     for (const track of this.playlist) {
       try {
-        await fetch(track.url, { method: "HEAD" });
+        const response = await fetch(track.url);
+        if (!response.ok) throw new Error(`Failed to load ${track.title}`);
+        
+        const blob = await response.blob();
+        track.blobUrl = URL.createObjectURL(blob);
+
       } catch (e) {
         console.warn(`Pre-fetch failed for ${track.title}`, e);
       }
@@ -118,34 +156,50 @@ export class AppFlowManager {
       loadedCount++;
       const percent = (loadedCount / totalCount) * 100;
       if (barFill) barFill.style.width = `${percent}%`;
-
-      await new Promise((r) => setTimeout(r, 50));
+      
+      await new Promise((r) => setTimeout(r, 10));
     }
 
-    console.log("[Audio] Ready to stream.");
+    console.log("[Audio] Ready to stream (Cached in Memory).");
     this.isAudioLoaded = true;
     this.isAudioLoading = false;
     this.isMuted = false;
 
+    // --- 完了後のUI復帰 ---
+
+    // バーを隠す
     setTimeout(() => {
       if (barContainer) barContainer.style.display = "none";
     }, 500);
 
+    // 注意文を隠す
+    if (warningEl) warningEl.style.display = "none";
+
+    // 「Join Game」ボタンを有効化
+    if (startBtn) {
+        startBtn.disabled = false;
+        startBtn.style.opacity = "1.0";
+        startBtn.style.cursor = "pointer";
+    }
+
+    // BGMボタンの表記を戻す
     if (btn) {
       btn.textContent = "🔊 BGM: ON";
       btn.style.opacity = "1.0";
     }
 
+    // 再生開始
     this.bgmAudio.volume = this.defaultVolume;
     this.startLoopBGM();
 
+    // もし「Join Game」を押した流れでロードが始まった場合のみ自動遷移
+    // (ホームでBGMボタンを押しただけなら、ホームに留まる)
     if (this.pendingGameStartName) {
       this.ui.setLoadingText("音楽の準備完了。接続中...");
       this.handleStartGame(this.pendingGameStartName);
       this.pendingGameStartName = null;
     }
   }
-
 // AppFlowManager.js 内の playTrack メソッドを修正
 
 playTrack(index) {

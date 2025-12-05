@@ -27,8 +27,6 @@ window.addEventListener("load", () => {
   
   networkManager.init(game);
   game.setupEventListeners();
-  appFlowManager.init();
-
   const bgVideo = document.getElementById('bg-video');
   if (bgVideo) {
     bgVideo.muted = true;
