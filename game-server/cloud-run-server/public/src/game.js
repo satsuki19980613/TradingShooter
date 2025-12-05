@@ -527,7 +527,6 @@ export class Game {
   setStaticState(staticData) {
     if (!staticData) return;
 
-    this.uiManager.clearObstacleLayer();
     this.obstacleEntities.clear();
 
     if (staticData.obstacles && staticData.obstacles.length > 0) {
@@ -602,6 +601,7 @@ export class Game {
 
     this.mouseWorldPos.x = this.mousePos.x / this.gameScale + this.cameraX;
     this.mouseWorldPos.y = this.mousePos.y / this.gameScale + this.cameraY;
+    this.pixiManager.updateCamera(this.cameraX, this.cameraY, this.gameScale);
   }
 
 
