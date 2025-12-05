@@ -7,6 +7,9 @@ import { ObstacleSkins } from "../skins/ObstacleSkins.js";
 export class RenderSystem {
   constructor(gameLayer) {
     this.gameLayer = gameLayer;
+    // ★重要: 重なり順（Z-Index）を有効にする設定
+    this.gameLayer.sortableChildren = true;
+    
     this.PLAYER_SKIN_SIZE = 150;
     this.ENEMY_SKIN_SIZE = 120;
     this.sprites = new Map();
@@ -56,12 +59,19 @@ export class RenderSystem {
     const container = new PIXI.Container();
     const hpBar = new PIXI.Graphics();
 
+    // ★重要: ここで重なり順（Z-Index）を指定します
+    // 数字が小さいほど奥、大きいほど手前に表示されます
+    if (type === "obstacle") container.zIndex = 10;
+    else if (type === "enemy") container.zIndex = 50;
+    else if (type === "player") container.zIndex = 100;
+    else if (type === "bullet") container.zIndex = 200;
+
     if (type === "player") {
-        // ... (プレイヤー生成処理は変更なし) ...
         const color = entity.color || "#00e5ff";
         const chassisTex = skinManager.getTexture(`player_chassis_${color}`, this.PLAYER_SKIN_SIZE, this.PLAYER_SKIN_SIZE, PlayerSkins.chassis(color));
         const turretTex = skinManager.getTexture(`player_turret_${color}`, this.PLAYER_SKIN_SIZE, this.PLAYER_SKIN_SIZE, PlayerSkins.turret(color));
-        const chassis = new PIXI.Sprite(chassisTex); chassis.anchor.set(0.5);
+        const chassis = new PIXI.Sprite(chassisTex);
+        chassis.anchor.set(0.5);
         const turret = new PIXI.Sprite(turretTex); turret.anchor.set(0.5);
         const textStyle = new PIXI.TextStyle({ fontFamily: "'Roboto Mono', monospace", fontSize: 12, fontWeight: "bold", fill: "#ffffff", stroke: "#000000", strokeThickness: 4 });
         const text = new PIXI.Text({ text: entity.name || "Guest", style: textStyle });
@@ -71,14 +81,12 @@ export class RenderSystem {
         return { container, chassis, turret, text, hpBar, type };
 
     } else if (type === "enemy") {
-        // ... (敵生成処理は変更なし) ...
         const bodyTex = skinManager.getTexture("enemy_heavy_tank", this.ENEMY_SKIN_SIZE, this.ENEMY_SKIN_SIZE, EnemySkins.heavyTank());
         const body = new PIXI.Sprite(bodyTex); body.anchor.set(0.5);
         hpBar.y = -60; container.addChild(body, hpBar);
         return { container, body, hpBar, type };
 
     } else if (type === "bullet") {
-        // ... (弾生成処理は変更なし) ...
         const size = entity.radius ? entity.radius * 4 : 32;
         const bulletType = entity.type || "player";
         const drawFunc = BulletSkins[bulletType] || BulletSkins["player"];
@@ -89,17 +97,11 @@ export class RenderSystem {
         return { container, sprite, type };
 
     } else if (type === "obstacle") {
-      // ★修正: 障害物用のスプライトを初期作成
-      // テクスチャは updateObstacleTexture で設定されますが、
-      // ここで一旦空のスプライトを作っておきます。
       const sprite = new PIXI.Sprite();
       sprite.anchor.set(0.5);
       container.addChild(sprite);
-      
-      // 生成直後に一度更新をかける
       const visual = { container, sprite, type, currentSkinKey: null };
       this.updateObstacleTexture(visual, entity);
-      
       return visual;
     }
   }
@@ -108,36 +110,59 @@ export class RenderSystem {
     const styleType = entity.styleType || "default";
     const width = entity.width || 100;
     const height = entity.height || 100;
-    const skinKey = `obs_${styleType}_${width}_${height}`; // アニメーション簡略化のため固定キーを使用
+    
+    // アニメーション判定
+    const isAnimated = styleType.includes("animated");
 
-    // スキンがまだセットされていない、または変更された場合のみ更新
-    if (visual.currentSkinKey !== skinKey) {
-        
-        // スキン関数の取得 (なければデフォルト)
-        let drawFunc = ObstacleSkins[styleType];
-        
-        // アニメーション関数の場合、frame 0 (progress 0.0) を取得
-        if (typeof drawFunc === 'function' && drawFunc.length >= 1) {
-            drawFunc = drawFunc(0.0);
+    // アニメーションしない場合（通常のキャッシュ使用）
+    if (!isAnimated) {
+        const skinKey = `obs_${styleType}_${width}_${height}`;
+        if (visual.currentSkinKey !== skinKey) {
+            let drawFunc = ObstacleSkins[styleType];
+            if (typeof drawFunc === 'function' && drawFunc.length >= 1) {
+                drawFunc = drawFunc(0.0);
+            }
+            if (typeof drawFunc !== 'function') {
+                drawFunc = ObstacleSkins["default"];
+            }
+            const texture = skinManager.getTexture(skinKey, width, height, drawFunc);
+            visual.sprite.texture = texture;
+            visual.currentSkinKey = skinKey;
+            visual.sprite.width = width;
+            visual.sprite.height = height;
         }
+    } 
+    // アニメーションする場合（毎フレーム更新）
+    else {
+        // 時間経過で 0.0 ~ 1.0 を繰り返す (2秒周期)
+        const progress = (Date.now() % 4000) / 4000;
         
-        // それでも関数でなければデフォルト
-        if (typeof drawFunc !== 'function') {
-            // console.warn(`Skin not found: ${styleType}, using default.`);
-            drawFunc = ObstacleSkins["default"];
-        }
+        // スキン関数を取得
+        const skinFactory = ObstacleSkins[styleType];
+        if (typeof skinFactory === 'function') {
+            const drawFunc = skinFactory(progress);
+            
+            // Canvasを生成して描画
+            const canvas = document.createElement("canvas");
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            drawFunc(ctx, width, height);
 
-        const texture = skinManager.getTexture(skinKey, width, height, drawFunc);
-        visual.sprite.texture = texture;
-        visual.currentSkinKey = skinKey;
-        
-        // 明示的にサイズを設定 (PixiJSのスプライトサイズ補正)
-        visual.sprite.width = width;
-        visual.sprite.height = height;
+            // メモリリーク防止のため古いテクスチャを破棄
+            if (visual.sprite.texture) {
+                visual.sprite.texture.destroy(true); 
+            }
+            
+            // 新しいテクスチャを適用
+            visual.sprite.texture = PIXI.Texture.from(canvas);
+            visual.sprite.width = width;
+            visual.sprite.height = height;
+            visual.currentSkinKey = "animated"; // キャッシュキーは使わない
+        }
     }
   }
 
-  // ... (updateHPBar, cleanupSprites は変更なし) ...
   updateHPBar(graphics, currentHp, maxHp, width) {
     if (!graphics) return;
     graphics.clear();
@@ -160,6 +185,7 @@ export class RenderSystem {
       else if (visual.type === "enemy") exists = enemies.has(id);
       else if (visual.type === "bullet") exists = bullets.has(id);
       else if (visual.type === "obstacle") exists = obstacles.has(id);
+      
       if (!exists) {
         this.gameLayer.removeChild(visual.container);
         visual.container.destroy({ children: true });

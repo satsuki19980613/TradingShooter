@@ -430,7 +430,8 @@ export class Game {
         delta.updated.enemies.forEach((eState) => {
           let enemy = this.enemyEntities.get(eState.i);
           if (!enemy) {
-            enemy = new Enemy(eState.x, e.x, eState.y);
+            // ▼ "e.x" を削除し、x と y だけにします
+            enemy = new Enemy(eState.x, eState.y);
             this.enemyEntities.set(eState.i, enemy);
           }
           enemy.setState(eState);
@@ -469,6 +470,7 @@ export class Game {
           obsState.height
         );
         obs.setState(obsState);
+        obs.id = obsId;
         obs.type = "obstacle_wall";
         this.obstacleEntities.set(obsId, obs);
       });
