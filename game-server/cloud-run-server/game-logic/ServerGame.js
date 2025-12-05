@@ -1,4 +1,3 @@
-
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -13,6 +12,7 @@ import { ServerNetworkSystem } from "./ServerNetworkSystem.js";
 import { ServerPhysicsSystem } from "./ServerPhysicsSystem.js";
 import { ServerPersistenceManager } from "./ServerPersistenceManager.js";
 import { ServerMapLoader } from "./ServerMapLoader.js";
+import { GameWarmupManager } from "./GameWarmupManager.js";
 
 const IDLE_WARNING_TIME = 180000;
 const IDLE_TIMEOUT_TIME = 300000;
@@ -80,7 +80,8 @@ export class ServerGame {
     this.tickTimes = [];
     this.avgTickTime = 0;
     this.debugPlayerCount = 0;
-    this.initWorld();
+    this.isReady = false;
+    this.warmupManager = new GameWarmupManager(this);
   }
 
   /**
@@ -314,17 +315,15 @@ export class ServerGame {
     return { x: this.WORLD_WIDTH / 2, y: this.WORLD_HEIGHT / 2 };
   }
   addPlayer(userId, playerName, ws, isDebug = false) {
-    if (!this.isRunning) {
-      console.log(
-        `[ServerGame ${this.roomId}] 最初のプレイヤーが入室。ループを起動します。`
-      );
-      this.startLoop();
+    if (!this.isReady) {
+      this.warmupManager.addPendingPlayer(userId, playerName, ws, isDebug);
+
+      return null;
     }
-    if (isDebug) {
-      this.debugPlayerCount++;
-      console.log(
-        `[ServerGame ${this.roomId}] デバッグプレイヤー ${playerName} が参加。`
-      );
+
+    if (!this.isRunning) {
+      console.log(`[ServerGame ${this.roomId}] ループを起動します。`);
+      this.startLoop();
     }
 
     const existingPlayer = this.players.get(userId);
@@ -591,7 +590,7 @@ export class ServerGame {
       };
     }
     const leaderboard = Array.from(this.players.values())
-      .filter((p) => !p.isDead && p.score > 0) // ★ p.score > 0 を追加
+      .filter((p) => !p.isDead && p.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, 5)
       .map((p) => ({ id: p.id, name: p.name, score: p.score }));

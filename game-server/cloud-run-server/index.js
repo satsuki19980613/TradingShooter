@@ -69,7 +69,11 @@ function onRoomEmpty(roomId) {
  */
 function findOrCreateRoom() {
   for (const [roomId, game] of activeRooms.entries()) {
-    if (game.players.size < MAX_PLAYERS_PER_ROOM && game.isRunning) {
+    if (
+      game.players.size < MAX_PLAYERS_PER_ROOM &&
+      game.isRunning &&
+      game.isReady
+    ) {
       console.log(`[Manager] 既存ルーム ${roomId} に空きを発見。`);
       return game;
     }
@@ -77,11 +81,15 @@ function findOrCreateRoom() {
   const newRoomId = `room_${Date.now()}`;
   console.log(`[Manager] 新しいルーム ${newRoomId} を作成します。`);
   const newGame = new ServerGame(newRoomId, firestore, onRoomEmpty);
+
+  newGame.warmupManager.start().catch((err) => {
+    console.error(`[Manager] Room ${newRoomId} warmup failed:`, err);
+  });
+
   activeRooms.set(newRoomId, newGame);
   console.log(`[Manager] 現在のアクティブルーム数: ${activeRooms.size}`);
   return newGame;
 }
-
 wss.on("connection", (ws, req) => {
   let userId = null;
   let game = null;
@@ -97,18 +105,22 @@ wss.on("connection", (ws, req) => {
     }
     console.log(`[WebSocket] 接続要求: ${playerName} (ID: ${userId})`);
     game = findOrCreateRoom();
+
     const playerState = game.addPlayer(userId, playerName, ws, isDebug);
-    console.log(`プレイヤーが参加: ${playerName} (Room: ${game.roomId})`);
-    const joinData = {
-      type: "join_success",
-      roomId: game.roomId,
-      playerState: playerState,
-      worldConfig: {
-        width: game.WORLD_WIDTH,
-        height: game.WORLD_HEIGHT,
-      },
-    };
-    ws.send(JSON.stringify(joinData));
+
+    if (playerState) {
+      console.log(`プレイヤーが参加: ${playerName} (Room: ${game.roomId})`);
+      const joinData = {
+        type: "join_success",
+        roomId: game.roomId,
+        playerState: playerState,
+        worldConfig: {
+          width: game.WORLD_WIDTH,
+          height: game.WORLD_HEIGHT,
+        },
+      };
+      ws.send(JSON.stringify(joinData));
+    }
   } catch (error) {
     console.error("[WebSocket] 接続処理中にエラー:", error);
     ws.close(1011, "Server error during connection");
