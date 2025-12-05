@@ -18,13 +18,10 @@ export class GameWarmupManager {
     console.log(`[Warmup] Room ${this.game.roomId}: ウォームアップを開始します...`);
     this.isWarmingUp = true;
 
-    // 1. ワールドの初期化（マップ読み込み、敵・障害物の配置）
-    // ※ ServerGameのコンストラクタでinitWorldしている場合は二重呼び出しに注意が必要ですが、
-    //   ここで明示的に呼ぶ設計にします。
+    // 1. ワールドの初期化
     this.game.initWorld();
 
     // 2. 物理演算の空回し (Pre-warm)
-    // 通信処理を行わず、敵の移動や物理衝突だけを高速に進めます。
     const startTime = Date.now();
     
     for (let i = 0; i < this.WARMUP_FRAMES; i++) {
@@ -46,31 +43,24 @@ export class GameWarmupManager {
    * 1フレーム分のシミュレーション（通信なし）
    */
   simulateFrame() {
-    // 敵の思考更新
     this.game.enemies.forEach((enemy) => {
       enemy.update(this.game);
     });
 
-    // グリッドシステムの更新（衝突判定のため必須）
     this.game.grid.clear();
     this.game.obstacles.forEach((obs) => this.game.grid.insert(obs));
-    // プレイヤーはまだいないので敵だけ登録
     this.game.enemies.forEach((e) => this.game.grid.insert(e)); 
     
-    // 物理演算の更新（衝突解決）
     this.game.physicsSystem.update(this.game);
   }
 
-  /**
-   * 準備中に来た接続リクエストをキューに入れる
-   */
   addPendingPlayer(userId, playerName, ws, isDebug) {
     console.log(`[Warmup] 準備中のためプレイヤー ${playerName} (ID: ${userId}) を待機させます。`);
     this.pendingConnections.push({ userId, playerName, ws, isDebug });
   }
 
   /**
-   * 待機中のプレイヤーを正式に参加させる
+   * ★重要修正: ここで join_success を送信する
    */
   processPendingConnections() {
     if (this.pendingConnections.length === 0) return;
@@ -80,14 +70,32 @@ export class GameWarmupManager {
     this.pendingConnections.forEach(({ userId, playerName, ws, isDebug }) => {
       // 切断されていないか確認
       if (ws.readyState === ws.OPEN) {
-        this.game.addPlayer(userId, playerName, ws, isDebug);
+        // プレイヤーを追加
+        const playerState = this.game.addPlayer(userId, playerName, ws, isDebug);
+        
+        // ★修正: 遅延参加したプレイヤーに開始合図を送る
+        if (playerState) {
+            const joinData = {
+                type: "join_success",
+                roomId: this.game.roomId,
+                playerState: playerState,
+                worldConfig: {
+                    width: this.game.WORLD_WIDTH,
+                    height: this.game.WORLD_HEIGHT,
+                },
+            };
+            try {
+                ws.send(JSON.stringify(joinData));
+            } catch(e) {
+                console.error("[Warmup] Failed to send join_success:", e);
+            }
+        }
       }
     });
 
-    // キューを空にする
     this.pendingConnections = [];
 
-    // ループが回っていなければ開始（念のため）
+    // ループが回っていなければ開始
     if (!this.game.isRunning && this.game.players.size > 0) {
       this.game.startLoop();
     }
