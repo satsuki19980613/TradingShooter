@@ -522,7 +522,7 @@ export class Game {
     if (myPlayer && myPlayer.isDead) {
       this.gameOver(myPlayer.score || 0);
     }
-  }
+  }//よふかしうた２
 
   setStaticState(staticData) {
     if (!staticData) return;
