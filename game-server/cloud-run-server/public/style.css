@@ -1007,3 +1007,23 @@ canvas {
   50% { transform: scale(1.2); opacity: 0.7; }
   100% { transform: scale(1); opacity: 1; }
 }
+
+/* --- Audio Loading Bar --- */
+.audio-loader {
+  display: none; /* 初期状態は非表示 */
+  width: 260px;  /* ボタンと同じくらいの幅 */
+  height: 4px;
+  background: #111;
+  border: 1px solid #333;
+  margin-bottom: 15px; /* 下のボタンとの間隔 */
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.audio-loader-fill {
+  width: 0%;
+  height: 100%;
+  background-color: #00ffff;
+  box-shadow: 0 0 5px #00ffff;
+  transition: width 0.1s linear;
+}
