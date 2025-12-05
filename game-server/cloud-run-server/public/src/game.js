@@ -1,15 +1,3 @@
-/**
- * 【Game (Client) の役割: クライアント状態保持・レンダリングループ】
- * サーバーから送られてきた状態を保持し、描画ループを回す「ダム端末（Dumb Client）」としてのコンテナです。
- * * ■ 担当する責務 (Do):
- * - 描画ループ (requestAnimationFrame) の管理
- * - サーバー座標への補間（Lerp）処理
- * - 各マネージャー (Input, UI, Network) の保持と初期化
- * * ■ 担当しない責務 (Don't):
- * - ゲームの勝敗判定や衝突判定（サーバー権威）
- * - UIの直接操作 (UIManager へ)
- * - 通信パケットの解析 (NetworkManager/PacketReader へ)
- */
 import { Player } from "./entities/Player.js";
 import { ParticleSystem } from "./systems/ParticleSystem.js";
 import { Enemy } from "./entities/Enemy.js";
@@ -19,47 +7,50 @@ import { Obstacle } from "./entities/Obstacle.js";
 import { Trading } from "./systems/Trading.js";
 import { InputManager } from "./systems/InputManager.js";
 import { ClientConfig } from "./ClientConfig.js";
-import { skinManager } from "./systems/SkinManager.js";
-import { GridSkin } from "./skins/environment/GridSkin.js";
 import { RenderSystem } from "./systems/RenderSystem.js";
+import { GridSkin } from "./skins/environment/GridSkin.js";
+import { skinManager } from "./systems/SkinManager.js";
+
 const RENDER_LOOP_INTERVAL = ClientConfig.RENDER_LOOP_INTERVAL;
 const INPUT_SEND_INTERVAL = ClientConfig.INPUT_SEND_INTERVAL;
 
-/**
- * ゲーム全体を管理するクラス (Dumb クライアント・レンダラー)
- * エディタ機能は削除され、プレイ専用になりました。
- */
+const GRID_SIZE = ClientConfig.GRID_SIZE || 150;
+const TARGET_VISIBLE_CELLS = ClientConfig.VIEWPORT_GRID_WIDTH || 10;
+
 export class Game {
   constructor(canvasId) {
     this.gameCanvas = document.getElementById(canvasId);
+
     this.pixiManager = new PixiManager(canvasId);
-    this.pixiManager.init();
+
+    this.pixiManager.init().then(() => {
+      this.setupBackground(3000, 3000);
+    });
+
     this.uiCanvas = document.getElementById("ui-field");
     this.uiCtx = this.uiCanvas.getContext("2d");
     this.uiManager = null;
     this.firebaseManager = null;
     this.networkManager = null;
     this.trading = new Trading();
+
     this.renderSystem = new RenderSystem(this.pixiManager.getLayer("game"));
     this.particleSystem = new ParticleSystem(
       this.pixiManager.getLayer("effect")
     );
     this.inputManager = new InputManager();
     this.isGameOver = false;
-    if (this.gameCanvas) {
-      this.gameCanvas.focus();
-    }
-    this.serverState = {
-      players: [],
-      enemies: [],
-      bullets: [],
-    };
 
+    if (this.gameCanvas) this.gameCanvas.focus();
+
+    this.serverState = { players: [], enemies: [], bullets: [] };
     this.tradeState = {};
     this.playerEntities = new Map();
     this.enemyEntities = new Map();
     this.bulletEntities = new Map();
     this.obstacleEntities = new Map();
+    this.obstacleStateArray = [];
+
     this.cameraX = 0;
     this.cameraY = 0;
     this.mousePos = { x: 0, y: 0 };
@@ -70,78 +61,90 @@ export class Game {
     this.playerName = "Guest";
     this.WORLD_WIDTH = 3000;
     this.WORLD_HEIGHT = 3000;
-    this.clientTickLoopInterval = null;
-    this.lastTickTime = 0;
-    this.obstacleStateArray = [];
     this.serverPerformanceStats = {};
+
     this.chartCanvas = document.getElementById("chart-canvas");
     this.chartCtx = this.chartCanvas ? this.chartCanvas.getContext("2d") : null;
-
     this.radarCanvas = document.getElementById("radar-canvas");
     this.radarCtx = this.radarCanvas ? this.radarCanvas.getContext("2d") : null;
-
     this.magazineCanvas = document.getElementById("magazine-canvas");
     this.magazineCtx = this.magazineCanvas
       ? this.magazineCanvas.getContext("2d")
       : null;
+
     this.BASE_WIDTH = 900;
     this.BASE_HEIGHT = 450;
     this.gameScale = 1.0;
+    this.lastFrameTime = 0;
+    this.gridSprite = null;
   }
 
-  sendPause() {
-    if (this.networkManager) {
-      this.networkManager.sendPause();
-    }
-  }
-  setServerPerformanceStats(stats) {
-    this.serverPerformanceStats = stats;
-  }
-  sendResume() {
-    if (this.networkManager) {
-      this.networkManager.sendResume();
-    }
+  setupBackground(worldW, worldH) {
+    const bgLayer = this.pixiManager.getLayer("background");
+    if (!bgLayer) return;
+
+    bgLayer.removeChildren();
+
+    const cellSize = GRID_SIZE;
+    const drawFn = GridSkin.drawTile("rgba(0, 100, 100, 0.2)", 2);
+    const gridTexture = skinManager.getTexture(
+      "bg_grid",
+      cellSize,
+      cellSize,
+      drawFn
+    );
+
+    this.gridSprite = new PIXI.TilingSprite(gridTexture, worldW, worldH);
+
+    this.gridSprite.position.set(0, 0);
+
+    bgLayer.addChild(this.gridSprite);
+
+    const border = new PIXI.Graphics();
+    border.rect(0, 0, worldW, worldH);
+    border.stroke({ width: 4, color: 0x00ffff, alpha: 0.5 });
+    bgLayer.addChild(border);
   }
 
   setUIManager(uiManager) {
     this.uiManager = uiManager;
   }
-
   setFirebaseManager(firebaseManager) {
     this.firebaseManager = firebaseManager;
   }
-
   setNetworkManager(networkManager) {
     this.networkManager = networkManager;
   }
-
   setAuthenticatedPlayer(user) {
     this.userId = user.uid;
     this.playerName = user.displayName || "Guest";
   }
+  sendPause() {
+    if (this.networkManager) this.networkManager.sendPause();
+  }
+  sendResume() {
+    if (this.networkManager) this.networkManager.sendResume();
+  }
+  setServerPerformanceStats(stats) {
+    this.serverPerformanceStats = stats;
+  }
 
   startGameLoop(worldConfig) {
-    console.log("クライアントの描画/入力ループを開始...");
     this.isGameOver = false;
     if (worldConfig) {
       this.WORLD_WIDTH = worldConfig.width;
       this.WORLD_HEIGHT = worldConfig.height;
-      console.log(
-        `ワールドサイズ設定: ${this.WORLD_WIDTH} x ${this.WORLD_HEIGHT}`
-      );
+
+      this.setupBackground(this.WORLD_WIDTH, this.WORLD_HEIGHT);
     }
-    this.particles = [];
-    this.lastFrameTime = performance.now();
     this.inputManager.resetActionStates();
     requestAnimationFrame(() => {
       this.resizeCanvas();
     });
     this.uiManager.setWorldSize(this.WORLD_WIDTH, this.WORLD_HEIGHT);
 
-    if (this.renderLoopId) {
-      cancelAnimationFrame(this.renderLoopId);
-    }
-
+    if (this.renderLoopId) cancelAnimationFrame(this.renderLoopId);
+    this.lastFrameTime = performance.now();
     this.renderLoopId = requestAnimationFrame(this.renderLoop.bind(this));
 
     if (this.inputLoopInterval) clearInterval(this.inputLoopInterval);
@@ -152,30 +155,31 @@ export class Game {
   }
 
   stopGameLoop() {
-    console.log("クライアントの描画/入力ループを停止...");
-
     if (this.renderLoopId) {
       cancelAnimationFrame(this.renderLoopId);
       this.renderLoopId = null;
     }
     clearInterval(this.inputLoopInterval);
-    clearInterval(this.clientTickLoopInterval);
   }
 
   resizeCanvas() {
     if (!this.uiManager) return;
     let uiScale = 1;
     try {
-      const style = getComputedStyle(document.body);
-      const val = style.getPropertyValue("--ui-scale");
+      const val = getComputedStyle(document.body).getPropertyValue(
+        "--ui-scale"
+      );
       if (val) uiScale = parseFloat(val);
     } catch (e) {}
     if (!uiScale || isNaN(uiScale)) uiScale = 1;
+
     const container = document.getElementById("cockpit-container");
     if (!container) return;
-
     const width = container.clientWidth;
     const height = container.clientHeight;
+
+    const targetWorldWidth = GRID_SIZE * TARGET_VISIBLE_CELLS;
+    this.gameScale = width / targetWorldWidth;
 
     const fieldContainer = document.getElementById("game-field-container");
     if (fieldContainer) {
@@ -190,139 +194,87 @@ export class Game {
       }
     }
 
-    if (this.chartCanvas && this.chartCanvas.parentElement) {
-      const w = Math.floor(this.chartCanvas.parentElement.clientWidth);
-      const h = Math.floor(this.chartCanvas.parentElement.clientHeight);
-
-      const dpr = window.devicePixelRatio || 1;
-
-      if (w > 0 && h > 0) {
-        this.chartCanvas.width = Math.floor(w * dpr * uiScale);
-        this.chartCanvas.height = Math.floor(h * dpr * uiScale);
-
-        this.chartCanvas.style.width = `${w}px`;
-        this.chartCanvas.style.height = `${h}px`;
-
-        if (this.chartCtx) {
-          this.chartCtx.setTransform(1, 0, 0, 1, 0, 0);
+    const resizeSubCanvas = (canvas, ctx) => {
+      if (canvas && canvas.parentElement) {
+        const w = canvas.parentElement.clientWidth;
+        const h = canvas.parentElement.clientHeight;
+        const dpr = window.devicePixelRatio || 1;
+        if (w > 0 && h > 0) {
+          canvas.width = Math.floor(w * dpr * uiScale);
+          canvas.height = Math.floor(h * dpr * uiScale);
+          canvas.style.width = `${w}px`;
+          canvas.style.height = `${h}px`;
+          if (ctx) ctx.setTransform(1, 0, 0, 1, 0, 0);
         }
       }
-    }
-    if (this.radarCanvas && this.radarCanvas.parentElement) {
-      const w = Math.floor(this.radarCanvas.parentElement.clientWidth);
-      const h = Math.floor(this.radarCanvas.parentElement.clientHeight);
-
-      const dpr = window.devicePixelRatio || 1;
-
-      if (w > 0 && h > 0) {
-        this.radarCanvas.width = Math.floor(w * dpr * uiScale);
-        this.radarCanvas.height = Math.floor(h * dpr * uiScale);
-        this.radarCanvas.style.width = `${w}px`;
-        this.radarCanvas.style.height = `${h}px`;
-
-        if (this.radarCtx) this.radarCtx.setTransform(1, 0, 0, 1, 0, 0);
-      }
-    }
-
-    if (this.magazineCanvas && this.magazineCanvas.parentElement) {
-      const w = Math.floor(this.magazineCanvas.parentElement.clientWidth);
-      const h = Math.floor(this.magazineCanvas.parentElement.clientHeight);
-
-      const dpr = window.devicePixelRatio || 1;
-
-      if (w > 0 && h > 0) {
-        this.magazineCanvas.width = Math.floor(w * dpr * uiScale);
-        this.magazineCanvas.height = Math.floor(h * dpr * uiScale);
-        this.magazineCanvas.style.width = `${w}px`;
-        this.magazineCanvas.style.height = `${h}px`;
-
-        if (this.magazineCtx) this.magazineCtx.setTransform(1, 0, 0, 1, 0, 0);
-      }
-    }
+    };
+    resizeSubCanvas(this.chartCanvas, this.chartCtx);
+    resizeSubCanvas(this.radarCanvas, this.radarCtx);
+    resizeSubCanvas(this.magazineCanvas, this.magazineCtx);
   }
-  /**
-   * イベントリスナーの設定
-   * エディタ関連のイベント処理をすべて削除しました
-   */
+
   async setupEventListeners() {
     this.inputManager.init();
-
     window.addEventListener("resize", this.resizeCanvas.bind(this));
-
     this.gameCanvas.addEventListener("mousedown", (e) => {
-      if (e.button === 0) {
-        this.inputManager.setShootPressed();
-      }
+      if (e.button === 0) this.inputManager.setShootPressed();
     });
-
     this.gameCanvas.addEventListener("mousemove", (e) => {
-      this.mousePos.x = e.offsetX;
-      this.mousePos.y = e.offsetY;
+      const rect = this.gameCanvas.getBoundingClientRect();
+      this.mousePos.x = e.clientX - rect.left;
+      this.mousePos.y = e.clientY - rect.top;
     });
-
     window.addEventListener(
       "wheel",
       (e) => {
-        if (e.ctrlKey) {
-          e.preventDefault();
-        }
+        if (e.ctrlKey) e.preventDefault();
       },
       { passive: false }
     );
-
     window.addEventListener("blur", () => {
       this.inputManager.resetAllKeys();
-
-      if (this.networkManager) {
-        console.log("タブが非アクティブになりました。サーバーに通知します。");
-        this.networkManager.sendPause();
-      }
+      if (this.networkManager) this.networkManager.sendPause();
     });
   }
 
   sendInputLoop() {
     if (!this.networkManager) return;
     const inputState = this.inputManager.getCurrentInputState();
+    inputState.mouseWorldPos = this.mouseWorldPos;
     this.networkManager.sendInput(inputState);
   }
 
   renderLoop() {
     const now = performance.now();
-
     const dt = Math.min((now - this.lastFrameTime) / 1000, 0.1);
     this.lastFrameTime = now;
-
     const deltaFrames = dt * 60;
 
-    if (this.particleSystem) {
-      this.particleSystem.update(deltaFrames);
-    }
+    if (this.particleSystem) this.particleSystem.update(deltaFrames);
 
     this.renderLoopId = requestAnimationFrame(this.renderLoop.bind(this));
 
-    if (this.gameCanvas.width === 0 || this.chartCanvas.width === 0) {
-      this.resizeCanvas();
-    }
+    if (this.gameCanvas.width === 0) this.resizeCanvas();
 
     this.playerEntities.forEach((p) => p.update(this, deltaFrames));
     this.enemyEntities.forEach((e) => e.update(deltaFrames));
     this.bulletEntities.forEach((b) => b.update(this, deltaFrames));
+
     this.updateCamera();
+
     this.renderSystem.render(
       this.playerEntities,
       this.enemyEntities,
       this.bulletEntities,
-      this.obstacleEntities 
+      this.obstacleEntities
     );
 
     this.uiCtx.clearRect(0, 0, this.uiCanvas.width, this.uiCanvas.height);
     if (this.uiManager) {
-      this.uiManager.syncDomElements(this.cameraX, this.cameraY);
-
       const myPlayerState = this.playerEntities.get(this.userId);
       this.uiManager.syncHUD(myPlayerState, this.trading.tradeState);
 
-      if (this.chartCtx) {
+      if (this.chartCtx && this.chartCanvas.width > 0) {
         this.chartCtx.clearRect(
           0,
           0,
@@ -336,7 +288,8 @@ export class Game {
           myPlayerState
         );
       }
-      if (this.magazineCtx) {
+
+      if (this.magazineCtx && this.magazineCanvas.width > 0) {
         this.magazineCtx.clearRect(
           0,
           0,
@@ -350,7 +303,8 @@ export class Game {
           this.magazineCanvas.height
         );
       }
-      if (this.radarCtx) {
+
+      if (this.radarCtx && this.radarCanvas.width > 0) {
         this.radarCtx.clearRect(
           0,
           0,
@@ -360,9 +314,8 @@ export class Game {
         const enemiesState = Array.from(this.enemyEntities.values());
         const otherPlayersState = [];
         for (const [id, player] of this.playerEntities.entries()) {
-          if (id !== this.userId && !player.isDead) {
+          if (id !== this.userId && !player.isDead)
             otherPlayersState.push(player);
-          }
         }
         this.uiManager.drawRadar(
           this.radarCtx,
@@ -389,51 +342,61 @@ export class Game {
     }
   }
 
+  updateCamera() {
+    if (!this.uiManager) return;
+    const myPlayer = this.playerEntities.get(this.userId);
+    const screenCenterX = this.gameCanvas.width / 2;
+    const screenCenterY = this.gameCanvas.height / 2;
+    let playerX = 0;
+    let playerY = 0;
+
+    if (myPlayer) {
+      playerX = myPlayer.x;
+      playerY = myPlayer.y;
+      this.cameraX = playerX - screenCenterX / this.gameScale;
+      this.cameraY = playerY - screenCenterY / this.gameScale;
+    }
+
+    this.mouseWorldPos.x =
+      (this.mousePos.x - screenCenterX) / this.gameScale + playerX;
+    this.mouseWorldPos.y =
+      (this.mousePos.y - screenCenterY) / this.gameScale + playerY;
+
+    this.pixiManager.updateCameraCentered(playerX, playerY, this.gameScale);
+  }
+
   applySnapshot(snapshot) {
     if (!snapshot) return;
-
     this.playerEntities.clear();
     this.enemyEntities.clear();
     this.bulletEntities.clear();
-
-    if (snapshot.players) {
-      snapshot.players.forEach((pState) => {
-        const player = new Player(pState.x, pState.y);
-        player.setState(pState);
-
-        if (pState.i === this.userId) {
-          player.isMe = true;
-        }
-
-        this.playerEntities.set(pState.i, player);
+    if (snapshot.players)
+      snapshot.players.forEach((p) => {
+        const player = new Player(p.x, p.y);
+        player.setState(p);
+        if (p.i === this.userId) player.isMe = true;
+        this.playerEntities.set(p.i, player);
       });
-    }
-
-    if (snapshot.enemies) {
-      snapshot.enemies.forEach((eState) => {
-        const enemy = new Enemy(eState.x, eState.y);
-        enemy.setState(eState);
-
-        this.enemyEntities.set(eState.i, enemy);
+    if (snapshot.enemies)
+      snapshot.enemies.forEach((e) => {
+        const enemy = new Enemy(e.x, e.y);
+        enemy.setState(e);
+        this.enemyEntities.set(e.i, enemy);
       });
-    }
-
-    if (snapshot.bullets) {
-      snapshot.bullets.forEach((bState) => {
-        const bullet = new Bullet(bState.x, bState.y, bState.a, bState.t);
-        bullet.setState(bState);
-
-        this.bulletEntities.set(bState.i, bullet);
+    if (snapshot.bullets)
+      snapshot.bullets.forEach((b) => {
+        const bullet = new Bullet(b.x, b.y, b.a, b.t);
+        bullet.setState(b);
+        this.bulletEntities.set(b.i, bullet);
       });
-    }
   }
   applyDelta(delta) {
     if (!delta) return;
-    if (delta.events && delta.events.length > 0) {
+    if (delta.events) {
       delta.events.forEach((ev) => {
-        if (ev.type === "hit") {
+        if (ev.type === "hit")
           this.particleSystem.createHitEffect(ev.x, ev.y, ev.color, 8, "hit");
-        } else if (ev.type === "explosion") {
+        else if (ev.type === "explosion")
           this.particleSystem.createHitEffect(
             ev.x,
             ev.y,
@@ -441,26 +404,19 @@ export class Game {
             30,
             "explosion"
           );
-        }
       });
     }
     const myPlayer = this.playerEntities.get(this.userId);
-
     if (delta.updated) {
-      if (delta.updated.players) {
+      if (delta.updated.players)
         delta.updated.players.forEach((pState) => {
           let player = this.playerEntities.get(pState.i);
           if (!player) {
             player = new Player(pState.x, pState.y);
-
-            if (pState.i === this.userId) {
-              player.isMe = true;
-            }
-
+            if (pState.i === this.userId) player.isMe = true;
             this.playerEntities.set(pState.i, player);
           }
-
-          if (!player.isDead && pState.d) {
+          if (!player.isDead && pState.d)
             this.particleSystem.createHitEffect(
               player.x,
               player.y,
@@ -468,72 +424,42 @@ export class Game {
               20,
               "explosion"
             );
-          }
           player.setState(pState);
         });
-      }
-
-      if (delta.updated.enemies) {
+      if (delta.updated.enemies)
         delta.updated.enemies.forEach((eState) => {
           let enemy = this.enemyEntities.get(eState.i);
           if (!enemy) {
-            enemy = new Enemy(eState.x, eState.y);
+            enemy = new Enemy(eState.x, e.x, eState.y);
             this.enemyEntities.set(eState.i, enemy);
           }
-
           enemy.setState(eState);
         });
-      }
-
-      if (delta.updated.bullets) {
+      if (delta.updated.bullets)
         delta.updated.bullets.forEach((bState) => {
-          const bulletId = bState.i;
-          if (!bulletId) return;
-          let bullet = this.bulletEntities.get(bulletId);
+          let bullet = this.bulletEntities.get(bState.i);
           if (!bullet) {
             bullet = new Bullet(bState.x, bState.y, bState.a, bState.t);
-            this.bulletEntities.set(bulletId, bullet);
+            this.bulletEntities.set(bState.i, bullet);
           }
           bullet.setState(bState);
         });
-      }
     }
-
     if (delta.removed) {
-      if (delta.removed.players) {
-        delta.removed.players.forEach((id) => {
-          this.playerEntities.delete(id);
-        });
-      }
-
-      if (delta.removed.enemies) {
-        delta.removed.enemies.forEach((id) => {
-          this.enemyEntities.delete(id);
-        });
-      }
-
-      if (delta.removed.bullets) {
-        delta.removed.bullets.forEach((id) => {
-          this.bulletEntities.delete(id);
-        });
-      }
+      if (delta.removed.players)
+        delta.removed.players.forEach((id) => this.playerEntities.delete(id));
+      if (delta.removed.enemies)
+        delta.removed.enemies.forEach((id) => this.enemyEntities.delete(id));
+      if (delta.removed.bullets)
+        delta.removed.bullets.forEach((id) => this.bulletEntities.delete(id));
     }
-
-    if (myPlayer && myPlayer.isDead) {
-      this.gameOver(myPlayer.score || 0);
-    }
-  }//よふかしうた２
-
+    if (myPlayer && myPlayer.isDead) this.gameOver(myPlayer.score || 0);
+  }
   setStaticState(staticData) {
     if (!staticData) return;
-
     this.obstacleEntities.clear();
-
-    if (staticData.obstacles && staticData.obstacles.length > 0) {
-      console.log(
-        `[Game] 静的障害物 ${staticData.obstacles.length} 件を読み込み...`
-      );
-
+    if (staticData.obstacles) {
+      console.log(`静的障害物を受信: ${staticData.obstacles.length}件`);
       staticData.obstacles.forEach((obsState) => {
         const obsId = obsState.id || `${obsState.x},${obsState.y}`;
         const obs = new Obstacle(
@@ -542,117 +468,38 @@ export class Game {
           obsState.width,
           obsState.height
         );
-
-        if (obsState.className) {
-          obs.styleType = obsState.className;
-        }
-
-        obs.rotation = obsState.rotation || 0;
-        obs.borderRadius = obsState.borderRadius || 0;
-        obs.individualRadii = obsState.individualRadii || {};
-        obs.type = obsState.type || "obstacle_wall";
-        obs.radius = obsState.radius;
+        obs.setState(obsState);
+        obs.type = "obstacle_wall";
         this.obstacleEntities.set(obsId, obs);
       });
-
       this.obstacleStateArray = Array.from(this.obstacleEntities.values());
     }
   }
-
   setTradeState(chartDelta) {
-    if (!chartDelta) return;
-    this.trading.addNewChartPoint(chartDelta);
+    if (chartDelta) this.trading.addNewChartPoint(chartDelta);
   }
-
-  setFullChartState(fullChartState) {
-    if (!fullChartState) return;
-    this.trading.setFullChartData(fullChartState);
+  setFullChartState(full) {
+    if (full) this.trading.setFullChartData(full);
   }
-
-  updateCamera() {
-    if (!this.uiManager) return;
-
-    const scaleX = this.gameCanvas.width / this.BASE_WIDTH;
-    const scaleY = this.gameCanvas.height / this.BASE_HEIGHT;
-    this.gameScale = Math.min(scaleX, scaleY);
-    const myPlayer = this.playerEntities.get(this.userId);
-    if (myPlayer) {
-      let targetX = myPlayer.x - this.gameCanvas.width / this.gameScale / 2;
-      let targetY = myPlayer.y - this.gameCanvas.height / this.gameScale / 2;
-
-      this.cameraX += (targetX - this.cameraX) * 0.1;
-      this.cameraY += (targetY - this.cameraY) * 0.1;
-    }
-
-    this.cameraX = Math.max(
-      0,
-      Math.min(
-        this.cameraX,
-        this.WORLD_WIDTH - this.gameCanvas.width / this.gameScale
-      )
-    );
-    this.cameraY = Math.max(
-      0,
-      Math.min(
-        this.cameraY,
-        this.WORLD_HEIGHT - this.gameCanvas.height / this.gameScale
-      )
-    );
-
-    this.mouseWorldPos.x = this.mousePos.x / this.gameScale + this.cameraX;
-    this.mouseWorldPos.y = this.mousePos.y / this.gameScale + this.cameraY;
-    this.pixiManager.updateCamera(this.cameraX, this.cameraY, this.gameScale);
-  }
-
-
-
   async gameOver(score) {
     if (this.isGameOver) return;
     this.isGameOver = true;
     this.stopGameLoop();
-
-    console.log("ゲームオーバー。スコア:", score);
-
     this.uiManager.showGameOverScreen(score);
-
-    this.uiManager.setGameOverMessage(
-      "お疲れ様でした。スコアは自動的に保存されます。"
-    );
+    this.uiManager.setGameOverMessage("お疲れ様でした。");
   }
   findNearestTarget(player, gridRadius = 5) {
-    const cellSize = 150;
-    const range = gridRadius * cellSize;
-    const rangeSq = range * range;
-
-    let nearestTarget = null;
-    let minDistSq = rangeSq;
-
-    this.enemyEntities.forEach((enemy) => {
-      if (!enemy.isInitialized || enemy.hp <= 0) return;
-
-      const dx = enemy.x - player.x;
-      const dy = enemy.y - player.y;
-      const distSq = dx * dx + dy * dy;
-
-      if (distSq < minDistSq) {
-        minDistSq = distSq;
-        nearestTarget = enemy;
+    let nearest = null;
+    let minD = Infinity;
+    this.enemyEntities.forEach((e) => {
+      if (e.hp > 0) {
+        const d = (e.x - player.x) ** 2 + (e.y - player.y) ** 2;
+        if (d < minD) {
+          minD = d;
+          nearest = e;
+        }
       }
     });
-
-    this.playerEntities.forEach((other) => {
-      if (other.id === player.id || other.isDead) return;
-
-      const dx = other.x - player.x;
-      const dy = other.y - player.y;
-      const distSq = dx * dx + dy * dy;
-
-      if (distSq < minDistSq) {
-        minDistSq = distSq;
-        nearestTarget = other;
-      }
-    });
-
-    return nearestTarget;
+    return nearest;
   }
 }

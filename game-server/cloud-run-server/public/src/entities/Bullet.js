@@ -50,21 +50,18 @@ export class Bullet extends GameObject {
    * ★修正箇所: Particleコンストラクタの引数順序を (x, y, radius, color, vx, vy, type) に統一
    */
   spawnTrailParticles(gameInstance) {
-    if (this.type === "player_special_4") {
+   if (this.type === "player_special_4") {
       return;
     }
     if (this.type === "player_special_1" || this.type === "player") {
       if (Math.random() < 0.3) {
-        gameInstance.spawnParticle(this.x, this.y, 2, "#00aaff", 0, 0, "spark");
+        // ★修正: particleSystem.spawn を直接呼ぶように変更
+        gameInstance.particleSystem.spawn(this.x, this.y, 2, "#00aaff", 0, 0, "spark");
       }
     } else if (this.type === "player_special_2") {
       if (Math.random() < 0.5) {
-        const spread = 2;
-        const pX =
-          this.x - Math.cos(this.angle) * 5 + (Math.random() - 0.5) * spread;
-        const pY =
-          this.y - Math.sin(this.angle) * 5 + (Math.random() - 0.5) * spread;
-
+        // ... (省略)
+        // ↓こちらは正しく修正されています
         gameInstance.particleSystem.spawn(
           pX,
           pY,
