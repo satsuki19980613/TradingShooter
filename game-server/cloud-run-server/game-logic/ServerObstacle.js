@@ -81,7 +81,7 @@ export class ServerObstacle extends ServerGameObject {
 
   /**
    * ★RigidBody化のキモ：反復型ソルバー
-   * 複数のコライダー間の競合を、複数回の反復計算で収束させます。
+   * 複数のコライダー間の競合を、複数回の反復計算で収束させます。a
    */
   resolveCollision(circle, applyPush) {
     const distX = circle.x - this.centerX;
