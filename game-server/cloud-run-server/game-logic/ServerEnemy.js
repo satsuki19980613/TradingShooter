@@ -21,7 +21,6 @@ import { ServerPlayer } from "./ServerPlayer.js";
 export class ServerEnemy extends ServerGameObject {
   constructor(x, y, worldWidth, worldHeight) {
     super(x, y, 45);
-    this.protocol = { name: 'Enemy' };
     this.id = null;
     this.hp = 50;
     this.speed = 1.5;

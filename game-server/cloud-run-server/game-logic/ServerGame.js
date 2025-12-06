@@ -8,13 +8,11 @@ import { ServerTrading } from "./ServerTrading.js";
 import { SpatialGrid } from "./SpatialGrid.js";
 import { WebSocket } from "ws";
 import { ServerConfig, GameConstants } from "./ServerConfig.js";
-import { ServerNetworkSystem } from "./ServerNetworkSystem.js"; // これはもう不要に近いですがPhysics等の参照があれば残す
+import { ServerNetworkSystem } from "./ServerNetworkSystem.js";
 import { ServerPhysicsSystem } from "./ServerPhysicsSystem.js";
 import { ServerPersistenceManager } from "./ServerPersistenceManager.js";
 import { ServerMapLoader } from "./ServerMapLoader.js";
 import { GameWarmupManager } from "./GameWarmupManager.js";
-import nengi from "nengi";
-import nengiConfig from "../common/nengiConfig.js";
 
 const IDLE_WARNING_TIME = 180000;
 const IDLE_TIMEOUT_TIME = 300000;
@@ -35,6 +33,7 @@ try {
   console.log(`[Server] マップデータをキャッシュしました: ${mapFileName}`);
 } catch (error) {
   console.warn(`[Server] マップ読み込み失敗 (キャッシュなし):`, error.message);
+
   CACHED_MAP_DATA = {
     worldSize: { width: WORLD_WIDTH, height: WORLD_HEIGHT },
     obstacles: [],
@@ -43,28 +42,6 @@ try {
     playerSpawns: [{ x: 500, y: 500 }],
     enemySpawns: [{ x: 1500, y: 1500 }],
   };
-}
-
-// 簡易的なイベントクラス (nengiのプロトコルに合わせる)
-class GameEventMessage {
-    constructor(type, x, y, color) {
-        this.type = type;
-        this.x = x;
-        this.y = y;
-        this.color = color;
-    }
-}
-GameEventMessage.protocol = { name: 'GameEvent' };
-
-class JsonMessage {
-    constructor(protocolName, jsonString) {
-        this.protocol = { name: protocolName };
-        this.json = jsonString;
-    }
-}
-
-class IdleWarningMessage {
-    constructor() { this.protocol = { name: 'IdleWarning' }; }
 }
 
 export class ServerGame {
@@ -76,7 +53,7 @@ export class ServerGame {
     this.players = new Map();
     this.enemies = [];
     this.bullets = [];
-    this.frameEvents = []; // nengiのmessageキューとして使うか、都度送るか
+    this.frameEvents = [];
     this.obstacles = [];
     this.playerSpawns = [];
     this.enemySpawns = [];
@@ -89,7 +66,7 @@ export class ServerGame {
       this.WORLD_HEIGHT,
       GRID_CELL_SIZE
     );
-    // this.networkSystem = new ServerNetworkSystem(this); // nengi移行に伴い不要化
+    this.networkSystem = new ServerNetworkSystem(this);
     this.physicsSystem = new ServerPhysicsSystem(
       this.WORLD_WIDTH,
       this.WORLD_HEIGHT
@@ -105,24 +82,26 @@ export class ServerGame {
     this.debugPlayerCount = 0;
     this.isReady = false;
     this.warmupManager = new GameWarmupManager(this);
-    
-    this.nengiInstance = new nengi.Instance(nengiConfig, {
-      port: -1, 
-      transferCallback: "none",
-    });
   }
 
+  /**
+   * ワールドの初期化 (障害物と敵の配置)
+   */
+  /**
+   * ワールドの初期化 (障害物と敵の配置)
+   */
   initWorld() {
     ServerMapLoader.loadMapData(this, CACHED_MAP_DATA);
+
     this.nextSpawnIndex = 0;
     for (let i = 0; i < 3; i++) {
       this.spawnEnemy();
     }
     this.trading.init();
   }
-
   startLoop() {
     if (this.isRunning) return;
+
     console.log(`[ServerGame ${this.roomId}] ループを開始します...`);
     this.isRunning = true;
 
@@ -130,89 +109,134 @@ export class ServerGame {
     if (this.chartLoopInterval) clearInterval(this.chartLoopInterval);
     if (this.broadcastLoopInterval) clearInterval(this.broadcastLoopInterval);
 
-    this.gameLoopInterval = setInterval(this.update.bind(this), GAME_LOOP_INTERVAL);
-    this.chartLoopInterval = setInterval(this.updateChart.bind(this), CHART_UPDATE_INTERVAL);
-    this.broadcastLoopInterval = setInterval(this.broadcastGameState.bind(this), BROADCAST_INTERVAL);
-    this.leaderboardLoopInterval = setInterval(this.broadcastLeaderboard.bind(this), 2000);
+    this.gameLoopInterval = setInterval(
+      this.update.bind(this),
+      GAME_LOOP_INTERVAL
+    );
+
+    this.chartLoopInterval = setInterval(
+      this.updateChart.bind(this),
+      CHART_UPDATE_INTERVAL
+    );
+
+    this.broadcastLoopInterval = setInterval(
+      this.broadcastGameState.bind(this),
+      BROADCAST_INTERVAL
+    );
+    this.leaderboardLoopInterval = setInterval(
+      this.broadcastLeaderboard.bind(this),
+      2000
+    );
   }
 
-  // ■ 変更: フレーム内のイベント（ヒット、爆発）をnengiのメッセージとしてブロードキャスト
   broadcastGameState() {
-    if (this.frameEvents.length > 0) {
-        // 全クライアントに対してイベントメッセージを送信
-        // ※ 本来は「見える範囲のクライアント」に絞るべきだが、簡略化のため全員に送る
-        this.frameEvents.forEach(ev => {
-            let typeId = 1; // hit
-            if (ev.type === "explosion") typeId = 2;
-            
-            const msg = new GameEventMessage(typeId, ev.x, ev.y, ev.color || "#ffffff");
-            this.nengiInstance.messageAll(msg);
-        });
-        this.frameEvents = [];
-    }
-  }
+    this.networkSystem.broadcastGameState(this.players, this.frameEvents);
 
+    this.frameEvents = [];
+  }
   updatePlayerName(userId, newName) {
     const player = this.players.get(userId);
     if (player) {
       player.name = newName;
-      player.isDirty = true; // nengiが変更を検知するトリガー
+      player.isDirty = true;
+      console.log(
+        `[ServerGame] プレイヤー名を更新: ID=${userId} -> ${newName}`
+      );
     }
   }
 
   stopLoops() {
     if (!this.isRunning) return;
-    console.log(`[ServerGame ${this.roomId}] 停止します。`);
+
+    console.log(
+      `[ServerGame ${this.roomId}] プレイヤーが0人になったため、ループを停止します。`
+    );
     this.isRunning = false;
+
     if (this.gameLoopInterval) clearInterval(this.gameLoopInterval);
     if (this.chartLoopInterval) clearInterval(this.chartLoopInterval);
     if (this.broadcastLoopInterval) clearInterval(this.broadcastLoopInterval);
-    if (this.leaderboardLoopInterval) clearInterval(this.leaderboardLoopInterval);
+    if (this.leaderboardLoopInterval)
+      clearInterval(this.leaderboardLoopInterval);
     this.gameLoopInterval = null;
     this.chartLoopInterval = null;
     this.broadcastLoopInterval = null;
+
     if (this.onRoomEmptyCallback) {
       this.onRoomEmptyCallback(this.roomId);
     }
   }
 
+  pausePlayer(userId) {
+    const player = this.players.get(userId);
+    if (player) {
+      console.log(
+        `[ServerGame ${this.roomId}] プレイヤー ${player.name} を一時停止します。`
+      );
+      player.isPaused = true;
+    }
+  }
+
+  resumePlayer(userId) {
+    const player = this.players.get(userId);
+    if (!player || player.ws.readyState !== WebSocket.OPEN) return;
+
+    console.log(
+      `[ServerGame ${this.roomId}] プレイヤー ${player.name} を再開します。`
+    );
+    player.isPaused = false;
+
+    this.networkSystem.sendSnapshot(player);
+  }
+
   checkIdlePlayers() {
     const now = Date.now();
     this.players.forEach((player) => {
-      if (player.isDead || player.isPaused) {
+      if (player.isDead) {
         player.lastInputTime = now;
         return;
       }
+      if (player.isPaused) {
+        return;
+      }
+
       const idleTime = now - player.lastInputTime;
+
       if (idleTime > IDLE_TIMEOUT_TIME) {
+        console.log(
+          `[ServerGame ${this.roomId}] プレイヤー ${player.name} をアイドルタイムアウトにより切断します。`
+        );
+
         if (player.ws && player.ws.readyState === WebSocket.OPEN) {
           player.ws.close(1000, "Idle timeout");
         }
       } else if (idleTime > IDLE_WARNING_TIME && !player.isIdleWarned) {
-        // ■ 変更: Idle警告をnengiメッセージで送信
-        const client = player.client; // addPlayerで紐づけたnengiのclient
-        if (client) {
-            this.nengiInstance.message(new IdleWarningMessage(), client);
+        console.log(
+          `[ServerGame ${this.roomId}] プレイヤー ${player.name} にアイドル警告を送信します。`
+        );
+
+        if (player.ws && player.ws.readyState === WebSocket.OPEN) {
+          player.ws.send(JSON.stringify({ type: "idle_warning" }));
+          player.isIdleWarned = true;
         }
-        player.isIdleWarned = true;
       }
     });
   }
 
   update() {
     let startTime;
-    if (this.debugPlayerCount > 0) startTime = process.hrtime.bigint();
-    
+    if (this.debugPlayerCount > 0) {
+      startTime = process.hrtime.bigint();
+    }
     this.checkIdlePlayers();
 
-    // 1. nengiのコマンド処理
-    this.nengiInstance.emitCommands();
+    this.players.forEach((player) => {
+      player.update(this);
+    });
+    this.enemies.forEach((enemy) => {
+      enemy.update(this);
+    });
 
-    // 2. サーバー側ロジック更新
-    this.players.forEach((player) => player.update(this));
-    this.enemies.forEach((enemy) => enemy.update(this));
-
-    // 3. 空間分割と物理演算
     this.grid.clear();
     this.obstacles.forEach((obs) => this.grid.insert(obs));
     this.players.forEach((p) => this.grid.insert(p));
@@ -221,189 +245,360 @@ export class ServerGame {
     this.maintainEpItems();
     this.physicsSystem.update(this);
 
-    // 4. nengiの状態更新 (スナップショット生成)
-    this.nengiInstance.update();
-
     if (this.debugPlayerCount > 0) {
       const endTime = process.hrtime.bigint();
       this.tickTimes.push(Number(endTime - startTime));
     }
   }
-
   maintainEpItems() {
     const epItems = this.bullets.filter((b) => b.type === "item_ep");
-    if (epItems.length < 5) {
-      const spawnCount = 10 - epItems.length;
+
+    const targetCount = 10;
+    const minCount = 5;
+
+    if (epItems.length < minCount) {
+      const spawnCount = targetCount - epItems.length;
       for (let i = 0; i < spawnCount; i++) {
         if (Math.random() < 0.1) {
           const pos = this.findRandomValidPosition(15);
-          const item = new ServerBullet(pos.x, pos.y, 15, 0, 0, "item_ep", 0, null);
+
+          const item = new ServerBullet(
+            pos.x,
+            pos.y,
+            15,
+            0,
+            0,
+            "item_ep",
+            0,
+            null
+          );
           this.addBullet(item);
         }
       }
     }
   }
 
-  // ■ 変更: チャート更新をnengiメッセージで送信
   updateChart() {
     const chartDeltaState = this.trading.updateChartData();
-    const jsonStr = JSON.stringify(chartDeltaState);
-    const msg = new JsonMessage('ChartUpdate', jsonStr);
-    this.nengiInstance.messageAll(msg);
+    this.networkSystem.broadcastChartUpdate(this.players, chartDeltaState);
   }
 
+  /**
+   * ▼▼▼ 追加: 指定座標が障害物と衝突しないか確認するメソッド ▼▼▼
+   */
   isValidSpawnPosition(x, y, radius) {
     const tempObj = { x: x, y: y, radius: radius };
+
     for (const obstacle of this.obstacles) {
-      if (obstacle.checkCollisionWithCircle(tempObj)) return false;
+      if (obstacle.checkCollisionWithCircle(tempObj)) {
+        return false;
+      }
     }
     return true;
   }
-
   findRandomValidPosition(radius) {
     const maxAttempts = 30;
     const margin = 50;
+
     for (let i = 0; i < maxAttempts; i++) {
       const x = Math.random() * (this.WORLD_WIDTH - margin * 2) + margin;
       const y = Math.random() * (this.WORLD_HEIGHT - margin * 2) + margin;
-      if (this.isValidSpawnPosition(x, y, radius)) return { x, y };
+
+      if (this.isValidSpawnPosition(x, y, radius)) {
+        return { x, y };
+      }
     }
+
+    console.warn(
+      "[ServerGame] 安全なスポーン位置が見つかりませんでした。中央に出現させます。"
+    );
     return { x: this.WORLD_WIDTH / 2, y: this.WORLD_HEIGHT / 2 };
   }
-
   addPlayer(userId, playerName, ws, isDebug = false) {
     if (!this.isReady) {
       this.warmupManager.addPendingPlayer(userId, playerName, ws, isDebug);
+
       return null;
     }
-    if (!this.isRunning) this.startLoop();
 
-    // 重複ログインチェック
+    if (!this.isRunning) {
+      console.log(`[ServerGame ${this.roomId}] ループを起動します。`);
+      this.startLoop();
+    }
+
     const existingPlayer = this.players.get(userId);
     if (existingPlayer) {
-      if (existingPlayer.ws && existingPlayer.ws.readyState === WebSocket.OPEN) {
+      console.log(
+        `[ServerGame] ${playerName} (ID: ${userId}) が再接続しました。`
+      );
+      if (existingPlayer.deathCleanupTimer) {
+        clearTimeout(existingPlayer.deathCleanupTimer);
+        existingPlayer.deathCleanupTimer = null;
+      }
+      if (
+        existingPlayer.ws &&
+        existingPlayer.ws.readyState === WebSocket.OPEN
+      ) {
         existingPlayer.ws.close(4001, "Duplicate Login");
       }
-      this.removePlayer(userId); // 一旦削除して作り直すのが安全
     }
 
-    const pos = this.findRandomValidPosition(45);
-    const newPlayer = new ServerPlayer(userId, playerName, pos.x, pos.y, ws, isDebug);
+    const playerRadius = 45;
+    const pos = this.findRandomValidPosition(playerRadius);
+    const x = pos.x;
+    const y = pos.y;
+
+    const newPlayer = new ServerPlayer(userId, playerName, x, y, ws, isDebug);
     this.players.set(userId, newPlayer);
-    
-    // nengi登録
-    this.nengiInstance.addEntity(newPlayer);
-    
-    if (ws) {
-      // WebSocketとnengiを接続
-      const clientConnection = new nengi.ClientConnection(ws, this.nengiInstance);
-      clientConnection.entity = newPlayer; // エンティティと紐づけ
-      this.nengiInstance.addConnection(clientConnection);
-      
-      // 参照保持（メッセージ送信などで使うため）
-      newPlayer.client = clientConnection;
 
-      // ■ 変更: 初期データを nengi メッセージとして送信
-      // nengiは接続直後のメッセージをバッファリングしてハンドシェイク後に送ってくれます
-      
-      // 1. 静的データ (障害物など)
-      const staticState = {
-        obstacles: this.obstacles.map((o) => o.getState()),
-        playerSpawns: this.playerSpawns,
-        enemySpawns: this.enemySpawns,
-      };
-      this.nengiInstance.message(new JsonMessage('StaticState', JSON.stringify(staticState)), clientConnection);
+    console.log(
+      `[ServerGame ${this.roomId}] プレイヤー参加: ${playerName} (現在 ${this.players.size} 人)`
+    );
 
-      // 2. チャート初期データ
-      const fullChartState = this.trading.getState();
-      this.nengiInstance.message(new JsonMessage('ChartState', JSON.stringify(fullChartState)), clientConnection);
+    const staticState = {
+      obstacles: this.obstacles.map((o) => o.getState()),
+      playerSpawns: this.playerSpawns,
+      enemySpawns: this.enemySpawns,
+    };
+    const staticStateString = JSON.stringify({
+      type: "static_state",
+      payload: staticState,
+    });
+
+    const fullChartState = this.trading.getState();
+    const fullChartStateString = JSON.stringify({
+      type: "chart_state",
+      payload: fullChartState,
+    });
+
+    try {
+      ws.send(staticStateString);
+      ws.send(fullChartStateString);
+      this.networkSystem.sendSnapshot(newPlayer);
+    } catch (err) {
+      console.warn(`[Send Error] ${err.message}`);
     }
 
-    console.log(`[ServerGame] 参加: ${playerName} (${this.players.size}人)`);
-    return newPlayer.getState(); // この戻り値はあまり使われません
+    return newPlayer.getState();
   }
-
   removePlayer(userId) {
     const player = this.players.get(userId);
     if (!player) return;
-    
-    this.nengiInstance.removeEntity(player);
-    
-    if (player.ws && player.ws.readyState !== WebSocket.CLOSED) {
-      player.ws.close(1000, "Player removed");
+
+    if (player.isDebugPlayer) {
+      this.debugPlayerCount--;
+      console.log(
+        `[ServerGame ${this.roomId}] デバッグプレイヤー ${player.name} が退出。 (残り ${this.debugPlayerCount} 人)`
+      );
     }
+    const name = player.name;
+
+    if (player.ws && player.ws.readyState !== WebSocket.CLOSED) {
+      player.ws.close(1000, "Player removed from game");
+    }
+
     this.players.delete(userId);
-    
+
+    console.log(
+      `[ServerGame ${this.roomId}] プレイヤー退出: ${name} (現在 ${this.players.size} 人)`
+    );
     if (this.players.size === 0 && this.isRunning) {
       this.stopLoops();
     }
   }
 
-  // handlePlayerInput は nengi.emitCommands() に代替されたため不要ですが、
-  // ServerPlayer.processMove が呼ばれる形になります。
+  handlePlayerInput(userId, inputActions) {
+    const player = this.players.get(userId);
+    if (!player || !inputActions) return;
+
+    player.lastInputTime = Date.now();
+
+    if (player.isIdleWarned) {
+      player.isIdleWarned = false;
+    }
+
+    player.setInput(inputActions);
+
+    if (inputActions.wasPressed) {
+      for (const action in inputActions.wasPressed) {
+        if (!inputActions.wasPressed[action]) continue;
+
+        if (action === "shoot") {
+          player.shoot(this);
+        }
+
+        if (action === "trade_long") {
+          if (!player.chargePosition) {
+            this.handleEntry(player, "long");
+          }
+        }
+
+        if (action === "trade_short") {
+          if (!player.chargePosition) {
+            this.handleEntry(player, "short");
+          }
+        }
+
+        if (action === "trade_settle") {
+          if (player.chargePosition) {
+            this.handleSettle(player);
+          }
+        }
+
+        if (action.startsWith("bet_")) {
+          this.trading.handleBetInput(player, action);
+        }
+      }
+    }
+  }
+  handleEntry(player, type) {
+    if (player.isDead) return;
+    const cost = this.trading.startCharge(player, type);
+    if (cost > 0) {
+      player.ep -= cost;
+      player.isDirty = true;
+    }
+  }
+
+  handleSettle(player) {
+    if (player.isDead) return;
+
+    const result = this.trading.releaseCharge(player);
+
+    if (result) {
+      if (result.type === "profit") {
+        const profit = result.profitAmount;
+        let bulletType = "player_special_1";
+
+        if (profit >= 100) {
+          bulletType = "player_special_4";
+        } else if (profit >= 50) {
+          bulletType = "player_special_3";
+        } else if (profit >= 25) {
+          bulletType = "player_special_2";
+        }
+
+        player.specialAttack(profit, bulletType);
+      } else {
+        player.takeDamage(result.lossAmount, this, null);
+      }
+      this.trading.resetBetAmount(player);
+      player.isDirty = true;
+    }
+  }
+  handleTrade(player, type = "long") {
+    if (player.isDead) return;
+
+    if (!player.chargePosition) {
+      const cost = this.trading.startCharge(player, type);
+      if (cost > 0) {
+        player.ep -= cost;
+        player.isDirty = true;
+      }
+    } else {
+      const result = this.trading.releaseCharge(player);
+      if (result) {
+        if (result.type === "profit") {
+          player.specialAttack(result.profitAmount);
+        } else {
+          player.takeDamage(result.lossAmount, this, null);
+        }
+        this.trading.resetBetAmount(player);
+        player.isDirty = true;
+      }
+    }
+  }
 
   handlePlayerDeath(player, attackerPlayer) {
-    if (attackerPlayer && attackerPlayer.id !== player.id && !attackerPlayer.isDead) {
-      attackerPlayer.ep += player.ep;
+    console.log(`プレイヤーが死亡: ${player.name} (スコア: ${player.score})`);
+    if (
+      attackerPlayer &&
+      attackerPlayer.id !== player.id &&
+      !attackerPlayer.isDead
+    ) {
+      const stolenEP = player.ep;
+      console.log(
+        `${attackerPlayer.name} が ${player.name} のEP ${stolenEP} を強奪`
+      );
+      attackerPlayer.ep += stolenEP;
       attackerPlayer.hp = Math.min(100, attackerPlayer.hp + 20);
-      attackerPlayer.isDirty = true; // ステータス変更を通知
+      attackerPlayer.isDirty = true;
     }
     this.persistenceManager.saveScore(player.id, player.name, player.score);
     player.ep = 0;
-    player.isDirty = true; // 死亡フラグ等の変更を通知
+    player.isDirty = true;
 
     player.deathCleanupTimer = setTimeout(() => {
       if (this.players.has(player.id)) {
-        const p = this.players.get(player.id);
-        if (p.isDead) this.removePlayer(player.id);
+        const currentPlayer = this.players.get(player.id);
+        if (currentPlayer.isDead) {
+          this.removePlayer(player.id);
+          console.log(
+            `プレイヤー ${player.name} をルームからクリーンアップしました。`
+          );
+        }
       }
     }, 0);
   }
 
   spawnEnemy() {
-    const pos = this.findRandomValidPosition(45);
-    const newEnemy = new ServerEnemy(pos.x, pos.y, this.WORLD_WIDTH, this.WORLD_HEIGHT);
+    const enemyRadius = 45;
+    const pos = this.findRandomValidPosition(enemyRadius);
+
+    const newEnemy = new ServerEnemy(
+      pos.x,
+      pos.y,
+      this.WORLD_WIDTH,
+      this.WORLD_HEIGHT
+    );
     newEnemy.id = `e_${this.enemyIdCounter++}`;
     this.enemies.push(newEnemy);
-    this.nengiInstance.addEntity(newEnemy);
   }
 
   addBullet(bullet) {
     bullet.id = `b_${this.bulletIdCounter++}`;
     this.bullets.push(bullet);
-    this.nengiInstance.addEntity(bullet);
   }
 
   removeBullet(bullet, index) {
     this.bullets.splice(index, 1);
-    this.nengiInstance.removeEntity(bullet);
   }
 
   removeEnemy(enemyToRemove) {
     const index = this.enemies.indexOf(enemyToRemove);
     if (index > -1) {
       this.enemies.splice(index, 1);
-      this.nengiInstance.removeEntity(enemyToRemove);
       this.spawnEnemy();
     }
   }
 
-  // ■ 変更: ランキングをnengiメッセージで送信
   broadcastLeaderboard() {
+    let serverStatsPayload = null;
+
+    if (this.debugPlayerCount > 0) {
+      if (this.tickTimes.length > 0) {
+        const sum = this.tickTimes.reduce((a, b) => a + b, 0);
+        this.avgTickTime = sum / this.tickTimes.length / 1000000;
+        this.tickTimes = [];
+      }
+      serverStatsPayload = {
+        avgTickTime: this.avgTickTime,
+        targetTickTime: GAME_LOOP_INTERVAL,
+        playerCount: this.players.size,
+        enemyCount: this.enemies.length,
+        bulletCount: this.bullets.length,
+      };
+    }
     const leaderboard = Array.from(this.players.values())
       .filter((p) => !p.isDead && p.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, 5)
       .map((p) => ({ id: p.id, name: p.name, score: p.score }));
 
-    let serverStatsPayload = null;
-    if (this.debugPlayerCount > 0) {
-       // ... (デバッグ統計計算はそのまま)
-       serverStatsPayload = { /*...*/ };
-    }
-
-    const payload = { leaderboardData: leaderboard, serverStats: serverStatsPayload };
-    const msg = new JsonMessage('LeaderboardUpdate', JSON.stringify(payload));
-    this.nengiInstance.messageAll(msg);
+    this.networkSystem.broadcastLeaderboard(
+      this.players,
+      leaderboard,
+      serverStatsPayload
+    );
   }
 }

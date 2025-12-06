@@ -1,187 +1,413 @@
-// ▼ パスの調整に合わせて変更してください
-import nengi from "/nengi/index.js";
-import nengiConfig from "/common/nengiConfig.js";
-import { processPlayerInput } from "/common/PlayerPhysics.js";
-
+/**
+ * 【Game (Client) の役割: クライアント状態保持・レンダリングループ】
+ * サーバーから送られてきた状態を保持し、描画ループを回す「ダム端末（Dumb Client）」としてのコンテナです。
+ * * ■ 担当する責務 (Do):
+ * - 描画ループ (requestAnimationFrame) の管理
+ * - サーバー座標への補間（Lerp）処理
+ * - 各マネージャー (Input, UI, Network) の保持と初期化
+ * * ■ 担当しない責務 (Don't):
+ * - ゲームの勝敗判定や衝突判定（サーバー権威）
+ * - UIの直接操作 (UIManager へ)
+ * - 通信パケットの解析 (NetworkManager/PacketReader へ)
+ */
+import { PacketReader } from "../utils/PacketReader.js";
+const INPUT_BIT_MAP = {
+  move_up: 1 << 0,
+  move_down: 1 << 1,
+  move_left: 1 << 2,
+  move_right: 1 << 3,
+  shoot: 1 << 4,
+  trade_long: 1 << 5,
+  bet_up: 1 << 6,
+  bet_down: 1 << 7,
+  bet_all: 1 << 8,
+  bet_min: 1 << 9,
+  trade_short: 1 << 10,
+  trade_settle: 1 << 11,
+};
 export class NetworkManager {
   constructor() {
+    this.serverUrl = location.origin.replace(/^http/, "ws");
+    this.onAccountResponse = null;
     this.game = null;
-    this.client = new nengi.Client(nengiConfig, 100);
+    this.ws = null;
     this.isIntentionalClose = false;
-    
-    // 統計情報 (nengiから取得可能ですが、既存UI互換のため形式を維持)
     this.stats = {
       pps_total: 0,
       bps_total: 0,
       total_bytes: 0,
       total_seconds: 0,
     };
+    this.tempStats = { pps_total: 0, bps_total: 0 };
+    this.messageHandlers = new Map();
+    this.statsInterval = setInterval(() => {
+      if (this.stats) {
+        this.stats.total_bytes += this.tempStats.bps_total;
+        this.stats.total_seconds++;
+
+        this.stats.pps_total = this.tempStats.pps_total;
+        this.stats.bps_total = this.tempStats.bps_total;
+
+        this.tempStats.pps_total = 0;
+        this.tempStats.bps_total = 0;
+      }
+    }, 1000);
+    this.inputSequenceNumber = 0;
+    this.pendingInputs = [];
+  }
+
+  _estimateJsonBytes(str) {
+    return new TextEncoder().encode(str).length;
   }
 
   init(game) {
     this.game = game;
-    console.log("Network Manager (nengi) initialized.");
-
-    // ■ イベントハンドラの設定
-    
-    // 1. エンティティ生成 (Create)
-    this.client.on('create', (data) => {
-      const entity = data.entity;
-      
-      // ★ クライアントサイド予測 (Client-Side Prediction) の核心
-      // 自分自身のエンティティであれば、予測ロジックを適用する
-      if (entity.protocol.name === 'Player' && entity.id === this.game.userId) {
-        console.log("My Player Created (Prediction Enabled):", entity.id);
-        
-        // サーバーと同じ物理演算関数を登録
-        this.client.addCustomPrediction(entity.id, (e, command) => {
-          processPlayerInput(e, command);
-        });
+    console.log("Network Manager (WebSocket) が初期化されました。");
+    this.messageHandlers.set("game_state_snapshot", (payload) =>
+      this.game.applySnapshot(payload)
+    );
+    this.messageHandlers.set("game_state_delta", (payload) =>
+      this.game.applyDelta(payload)
+    );
+    this.messageHandlers.set("chart_state", (payload) =>
+      this.game.setFullChartState(payload)
+    );
+    this.messageHandlers.set("chart_update", (payload) =>
+      this.game.setTradeState(payload)
+    );
+    this.messageHandlers.set("static_state", (payload) =>
+      this.game.setStaticState(payload)
+    );
+    this.messageHandlers.set("idle_warning", () =>
+      this.game.uiManager.showScreen("idle-warning")
+    );
+    this.messageHandlers.set("leaderboard_update", (payload) =>
+      this.game.uiManager.updateLeaderboard(payload, this.game.userId)
+    );
+    this.messageHandlers.set("leaderboard_update", (payload) => {
+      if (payload.leaderboardData) {
+        this.game.uiManager.updateLeaderboard(
+          payload.leaderboardData,
+          this.game.userId
+        );
       }
-
-      // Game側のエンティティ生成処理を呼び出す
-      this.game.onEntityCreated(entity);
-    });
-
-    // 2. エンティティ更新 (Update)
-    // nengiが補間(Interpolation)済みの値をentityにセットしてくれます
-    this.client.on('update', (data) => {
-      // Game側のエンティティ更新処理 (必要に応じて)
-      // ※ 基本的にGame側は entity オブジェクトを参照し続けるため、
-      //    nengiがプロパティを書き換えるだけで描画に反映されます。
-    });
-
-    // 3. エンティティ削除 (Delete)
-    this.client.on('delete', (data) => {
-      this.game.onEntityDeleted(data.entity.id);
-    });
-
-    // 4. メッセージ受信 (Events)
-    this.client.on('message', (message) => {
-      const protocol = message.protocol.name;
-
-      if (protocol === 'GameEvent') {
-        this.game.onGameEvent(message);
-      }
-      else if (protocol === 'StaticState') {
-        const data = JSON.parse(message.json);
-        this.game.setStaticState(data);
-      }
-      else if (protocol === 'ChartState') {
-        const data = JSON.parse(message.json);
-        this.game.setFullChartState(data);
-      }
-      else if (protocol === 'ChartUpdate') {
-        const data = JSON.parse(message.json);
-        this.game.setTradeState(data);
-      }
-      else if (protocol === 'LeaderboardUpdate') {
-        const data = JSON.parse(message.json);
-        // data.leaderboardData, data.serverStats が入っている
-        if (data.leaderboardData) {
-            this.game.uiManager.updateLeaderboard(data.leaderboardData, this.game.userId);
-        }
-        if (data.serverStats) {
-            this.game.setServerPerformanceStats(data.serverStats);
-        }
-      }
-      else if (protocol === 'IdleWarning') {
-        this.game.uiManager.showScreen("idle-warning");
-      }
-    });
-
-    this.client.on('connected', (res) => {
-      console.log('Nengi Connected:', res);
-    });
-
-    this.client.on('disconnected', () => {
-      console.log('Nengi Disconnected');
-      if (!this.isIntentionalClose) {
-        this.game.gameOver(0); // 簡易的な切断処理
+      if (payload.serverStats) {
+        this.game.setServerPerformanceStats(payload.serverStats);
       }
     });
   }
 
+  /**
+   * [修正] デルタ更新に対応した onmessage ハンドラ
+   */
   connect(userId, playerName, isDebugMode = false) {
     return new Promise((resolve, reject) => {
       this.isIntentionalClose = false;
-      
-      // ハンドシェイクデータとして認証情報を送る
-      const handshake = { userId, playerName, isDebugMode };
+      const url = `${this.serverUrl}/?userId=${encodeURIComponent(
+        userId
+      )}&playerName=${encodeURIComponent(playerName)}&debug=${isDebugMode}`;
+      console.log(`[Network] サーバー ${url} に接続中...`);
 
-      // ws:// または wss:// に変換
-      const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-      const url = `${protocol}://${location.hostname}:${location.port || 8080}`;
+      this.stats.total_bytes = 0;
+      this.stats.total_seconds = 0;
 
-      this.client.connect(url, handshake)
-        .then((response) => {
-          console.log("Connect Response:", response);
-          // 既存のGame初期化フローに合わせるため、レスポンスを整形
-          resolve({
-            type: "join_success",
-            roomId: "nengi_room",
-            worldConfig: { width: 3000, height: 3000 }, // 必要ならサーバーから送る
-            playerState: {} // nengiのcreateイベントで処理するため空でOK
-          });
-        })
-        .catch((err) => {
-          console.error("Connection failed", err);
-          reject(err);
-        });
+      try {
+        this.ws = new WebSocket(url);
+        this.ws.binaryType = "arraybuffer";
+      } catch (error) {
+        console.error("[Network] (A) WebSocket 接続(new)に失敗:", error);
+        return reject(error);
+      }
+
+      this.ws.onopen = () => {
+        console.log(
+          "[Network] (B) WebSocket 接続成功 (onopen)。サーバーからの 'join_success' を待機中..."
+        );
+      };
+
+      this.ws.onmessage = (event) => {
+        this.tempStats.pps_total++;
+        this.tempStats.bps_total += event.data.byteLength || event.data.length;
+        if (event.data instanceof ArrayBuffer) {
+          this.handleBinaryMessage(event.data);
+          return;
+        }
+        try {
+          const message = JSON.parse(event.data);
+          if (message.type === "account_response") {
+            if (this.onAccountResponse) {
+              this.onAccountResponse(message);
+            }
+            return;
+          }
+          if (message.type === "join_success") {
+            resolve(message);
+            return;
+          }
+          const handler = this.messageHandlers.get(message.type);
+          if (handler) {
+            handler(message.payload);
+          } else {
+            console.warn("[Network] 未知のメッセージタイプ:", message.type);
+          }
+        } catch (e) {
+          console.warn(
+            "[Network] (E) 不正なメッセージ形式:",
+            e.message,
+            event.data
+          );
+        }
+      };
+      this.ws.onclose = (event) => {
+        console.log(
+          `[Network] (F) 接続切断 (Code: ${event.code}, Reason: ${event.reason})`
+        );
+        if (this.isIntentionalClose) {
+          console.log(
+            "[Network] 意図的な切断のため、ゲームオーバー画面への遷移をスキップします。"
+          );
+          return;
+        }
+        this.game.stopGameLoop();
+        const reason = event.reason || `Code ${event.code}`;
+        let friendlyMessage = "サーバーから切断されました。";
+        if (event.code === 4001) {
+          friendlyMessage =
+            "別の端末またはタブでログインされたため、接続が切断されました。";
+        } else if (event.code === 1000 && event.reason === "Idle timeout") {
+          friendlyMessage =
+            "一定時間操作がなかったため、サーバーから切断されました。";
+        }
+        this.game.uiManager.showGameOverScreen(0);
+        this.game.uiManager.setGameOverMessage(friendlyMessage);
+      };
+      this.ws.onerror = (errorEvent) => {
+        console.error("[Network] (G) WebSocket エラー発生:", errorEvent);
+      };
     });
   }
 
+  handleBinaryMessage(arrayBuffer) {
+    const reader = new PacketReader(arrayBuffer);
+
+    const msgType = reader.u8();
+    if (msgType === 1) {
+      const delta = {
+        updated: { players: [], enemies: [], bullets: [] },
+        removed: { players: [], enemies: [], bullets: [] },
+        events: [],
+      };
+
+      const remPlayerCount = reader.u8();
+      for (let i = 0; i < remPlayerCount; i++)
+        delta.removed.players.push(reader.string());
+      const remEnemyCount = reader.u8();
+      for (let i = 0; i < remEnemyCount; i++)
+        delta.removed.enemies.push(reader.string());
+      const remBulletCount = reader.u16();
+      for (let i = 0; i < remBulletCount; i++)
+        delta.removed.bullets.push(reader.string());
+
+      const playerCount = reader.u8();
+      for (let i = 0; i < playerCount; i++) {
+        const p = {};
+        p.i = reader.string();
+        p.x = reader.f32();
+        p.y = reader.f32();
+        p.h = reader.u8();
+        p.a = reader.f32();
+        p.n = reader.string();
+        p.lastAckSeq = reader.u32();
+        p.d = reader.u8();
+        p.e = reader.u16();
+        p.ba = reader.u16();
+        const hasCharge = reader.u8();
+        if (hasCharge === 1) {
+          p.cp = {
+            ep: reader.f32(),
+            a: reader.f32(),
+            t: reader.u8() === 1 ? "short" : "long",
+          };
+        } else {
+          p.cp = null;
+        }
+        const stockCount = reader.u8();
+        p.sb = [];
+        for (let j = 0; j < stockCount; j++) p.sb.push(reader.u16());
+
+        delta.updated.players.push(p);
+      }
+
+      const enemyCount = reader.u8();
+      for (let i = 0; i < enemyCount; i++) {
+        const e = {};
+        e.i = reader.string();
+        e.x = reader.f32();
+        e.y = reader.f32();
+        e.h = reader.u8();
+        e.ta = reader.f32();
+        delta.updated.enemies.push(e);
+      }
+
+      const bulletCount = reader.u16();
+      for (let i = 0; i < bulletCount; i++) {
+        const b = {};
+        b.i = reader.string();
+        b.x = reader.f32();
+        b.y = reader.f32();
+        b.a = reader.f32();
+        const typeId = reader.u8();
+        let type = "player";
+        if (typeId === 1) type = "enemy";
+        else if (typeId === 2) type = "player_special_1";
+        else if (typeId === 3) type = "item_ep";
+        else if (typeId === 4) type = "player_special_2";
+        else if (typeId === 5) type = "player_special_3";
+        else if (typeId === 6) type = "player_special_4";
+        b.t = type;
+        delta.updated.bullets.push(b);
+      }
+
+      try {
+        const eventCount = reader.u8();
+        for (let i = 0; i < eventCount; i++) {
+          const typeId = reader.u8();
+          const x = reader.f32();
+          const y = reader.f32();
+          const color = reader.string();
+
+          let type = "hit";
+          if (typeId === 2) type = "explosion";
+
+          delta.events.push({ type, x, y, color });
+        }
+      } catch (e) {}
+
+      this.game.applyDelta(delta);
+    }
+  }
+
+  readString(view, offset, length) {
+    const bytes = new Uint8Array(view.buffer, offset, length);
+    return new TextDecoder().decode(bytes);
+  }
   disconnect() {
     this.isIntentionalClose = true;
-    this.client.disconnect();
+    if (this.ws) {
+      this.ws.close(1000, "Intentional Disconnect");
+      this.ws = null;
+    }
+  }
+  stopListening() {
+    this.disconnect();
   }
 
   /**
-   * 毎フレーム呼び出す更新処理
-   * Game.js の renderLoop から呼ぶ
-   */
-  update(delta, now) {
-    // ネットワークパケットを読み込み、補間計算を行い、イベントを発火させる
-    this.client.readNetworkAndEmit();
-  }
-
-  /**
-   * 入力送信 (Game.js / InputManager から呼ばれる)
+   * 入力データをバイナリ変換して送信
+   * @param {Object} inputActions - InputManagerから取得した入力状態
    */
   sendInput(inputActions) {
-    // nengiConfig の 'PlayerInput' に合わせたコマンドを作成
-    const command = {
-      // 移動
-      move_up: !!inputActions.states.move_up,
-      move_down: !!inputActions.states.move_down,
-      move_left: !!inputActions.states.move_left,
-      move_right: !!inputActions.states.move_right,
-      
-      // アクション
-      shoot: !!inputActions.wasPressed.shoot,
-      
-      // マウス座標
-      mouseX: inputActions.mouseWorldPos ? inputActions.mouseWorldPos.x : 0,
-      mouseY: inputActions.mouseWorldPos ? inputActions.mouseWorldPos.y : 0,
-      
-      // トレード系 (必要に応じて追加)
-      trade_long: !!inputActions.wasPressed.trade_long,
-      trade_short: !!inputActions.wasPressed.trade_short,
-      trade_settle: !!inputActions.wasPressed.trade_settle,
-      bet_up: !!inputActions.wasPressed.bet_up,
-      bet_down: !!inputActions.wasPressed.bet_down,
-      bet_all: !!inputActions.wasPressed.bet_all,
-      bet_min: !!inputActions.wasPressed.bet_min,
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
 
-      // デルタタイム (nengiがこれを元に移動量を計算します)
-      delta: 1/60 // または実際のフレームデルタ
-    };
+    let mask = 0;
+    if (inputActions.states) {
+      if (inputActions.states.move_up) mask |= 1;
+      if (inputActions.states.move_down) mask |= 2;
+      if (inputActions.states.move_left) mask |= 4;
+      if (inputActions.states.move_right) mask |= 8;
+    }
 
-    // クライアントの送信キューに追加（次のtickで自動送信される）
-    this.client.addCommand(command);
+    if (inputActions.wasPressed) {
+      if (inputActions.wasPressed.shoot) mask |= 16;
+      if (inputActions.wasPressed.trade_long) mask |= 32;
+      if (inputActions.wasPressed.bet_up) mask |= 64;
+      if (inputActions.wasPressed.bet_down) mask |= 128;
+      if (inputActions.wasPressed.bet_all) mask |= 256;
+      if (inputActions.wasPressed.bet_min) mask |= 512;
+      if (inputActions.wasPressed.trade_short) mask |= 1024;
+      if (inputActions.wasPressed.trade_settle) mask |= 2048;
+    }
+
+    this.inputSequenceNumber++;
+
+    this.pendingInputs.push({
+      seq: this.inputSequenceNumber,
+      inputs: inputActions.states,
+      dt: 1.0,
+    });
+
+    const buffer = new ArrayBuffer(15);
+    const view = new DataView(buffer);
+
+    view.setUint8(0, 2);
+    view.setUint16(1, mask, true);
+    view.setUint32(3, this.inputSequenceNumber, true);
+
+    const mx = inputActions.mouseWorldPos ? inputActions.mouseWorldPos.x : 0;
+    const my = inputActions.mouseWorldPos ? inputActions.mouseWorldPos.y : 0;
+
+    view.setFloat32(7, mx, true);
+    view.setFloat32(11, my, true);
+
+    this.ws.send(buffer);
+    this.stats.total_bytes += 15;
   }
 
-  getStats() { return this.stats; }
-  getSimulationStats() { return { avg_bps: 0 }; }
-  stopListening() { this.disconnect(); }
+  sendPause() {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: "pause" }));
+    }
+  }
+
+  sendResume() {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: "resume" }));
+    }
+  }
+
+  getStats() {
+    return this.stats;
+  }
+
+  getSimulationStats() {
+    if (this.stats.total_seconds === 0) {
+      return {
+        avg_bps: 0,
+        mb_per_minute: 0,
+        mb_per_hour: 0,
+      };
+    }
+
+    const avg_bps = this.stats.total_bytes / this.stats.total_seconds;
+    const bytes_per_hour = avg_bps * 3600;
+
+    return {
+      avg_bps: avg_bps.toFixed(0),
+      mb_per_minute: ((avg_bps * 60) / (1024 * 1024)).toFixed(3),
+      mb_per_hour: (bytes_per_hour / (1024 * 1024)).toFixed(2),
+    };
+  }
+  /**
+   * アカウント操作リクエストを送信する
+   * @param {string} subtype - "register_name", "issue_code", "recover"
+   * @param {Object} data - { name: "..." } or { code: "..." }
+   * @param {Function} callback - サーバーからのレスポンスを受け取る関数
+   */
+  sendAccountAction(subtype, data, callback) {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.onAccountResponse = callback;
+      this.ws.send(
+        JSON.stringify({
+          type: "account_action",
+          payload: {
+            subtype: subtype,
+            ...data,
+          },
+        })
+      );
+    } else {
+      console.warn("WebSocketが接続されていません。");
+      if (callback) callback({ success: false, message: "サーバー未接続" });
+    }
+  }
 }

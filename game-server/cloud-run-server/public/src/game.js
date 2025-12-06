@@ -11,7 +11,9 @@ import { RenderSystem } from "./systems/RenderSystem.js";
 import { GridSkin } from "./skins/environment/GridSkin.js";
 import { skinManager } from "./systems/SkinManager.js";
 
+const RENDER_LOOP_INTERVAL = ClientConfig.RENDER_LOOP_INTERVAL;
 const INPUT_SEND_INTERVAL = ClientConfig.INPUT_SEND_INTERVAL;
+
 const GRID_SIZE = ClientConfig.GRID_SIZE || 150;
 const TARGET_VISIBLE_CELLS = ClientConfig.VIEWPORT_GRID_WIDTH || 10;
 
@@ -41,8 +43,8 @@ export class Game {
 
     if (this.gameCanvas) this.gameCanvas.focus();
 
-    // nengi管理になるため、serverStateなどの独自管理変数は一部不要になりますが、
-    // 描画システムが参照するMapは維持します。
+    this.serverState = { players: [], enemies: [], bullets: [] };
+    this.tradeState = {};
     this.playerEntities = new Map();
     this.enemyEntities = new Map();
     this.bulletEntities = new Map();
@@ -93,7 +95,9 @@ export class Game {
     );
 
     this.gridSprite = new PIXI.TilingSprite(gridTexture, worldW, worldH);
+
     this.gridSprite.position.set(0, 0);
+
     bgLayer.addChild(this.gridSprite);
 
     const border = new PIXI.Graphics();
@@ -130,6 +134,7 @@ export class Game {
     if (worldConfig) {
       this.WORLD_WIDTH = worldConfig.width;
       this.WORLD_HEIGHT = worldConfig.height;
+
       this.setupBackground(this.WORLD_WIDTH, this.WORLD_HEIGHT);
     }
     this.inputManager.resetActionStates();
@@ -161,7 +166,9 @@ export class Game {
     if (!this.uiManager) return;
     let uiScale = 1;
     try {
-      const val = getComputedStyle(document.body).getPropertyValue("--ui-scale");
+      const val = getComputedStyle(document.body).getPropertyValue(
+        "--ui-scale"
+      );
       if (val) uiScale = parseFloat(val);
     } catch (e) {}
     if (!uiScale || isNaN(uiScale)) uiScale = 1;
@@ -178,7 +185,9 @@ export class Game {
     if (fieldContainer) {
       fieldContainer.style.width = `${width}px`;
       fieldContainer.style.height = `${height}px`;
+
       this.pixiManager.resize(width, height);
+
       if (this.uiCanvas) {
         this.uiCanvas.width = width;
         this.uiCanvas.height = height;
@@ -237,15 +246,9 @@ export class Game {
 
   renderLoop() {
     const now = performance.now();
-    // nengiの補間計算には正確なデルタが必要です
     const dt = Math.min((now - this.lastFrameTime) / 1000, 0.1);
     this.lastFrameTime = now;
-    const deltaFrames = dt * 60; // 従来のアニメーション用
-
-    // ▼ nengiのネットワーク更新＆補間処理を実行
-    if (this.networkManager) {
-      this.networkManager.update(dt, now);
-    }
+    const deltaFrames = dt * 60;
 
     if (this.particleSystem) this.particleSystem.update(deltaFrames);
 
@@ -253,12 +256,6 @@ export class Game {
 
     if (this.gameCanvas.width === 0) this.resizeCanvas();
 
-    // ▼ 各エンティティの位置をnengiから同期
-    this.playerEntities.forEach((p) => p.updateFromNengi());
-    this.enemyEntities.forEach((e) => e.updateFromNengi());
-    this.bulletEntities.forEach((b) => b.updateFromNengi());
-
-    // 従来のアニメーション更新も実行 (エフェクトなど)
     this.playerEntities.forEach((p) => p.update(this, deltaFrames));
     this.enemyEntities.forEach((e) => e.update(deltaFrames));
     this.bulletEntities.forEach((b) => b.update(this, deltaFrames));
@@ -368,55 +365,97 @@ export class Game {
     this.pixiManager.updateCameraCentered(playerX, playerY, this.gameScale);
   }
 
-  // NetworkManagerの 'create' イベントから呼ばれる
-  onEntityCreated(nengiEntity) {
-    const protocol = nengiEntity.protocol.name;
-
-    if (protocol === "Player") {
-      const player = new Player(nengiEntity.x, nengiEntity.y);
-      player.id = nengiEntity.id;
-      player.nengiEntity = nengiEntity;
-
-      if (player.id === this.userId) player.isMe = true;
-      this.playerEntities.set(player.id, player);
-    } else if (protocol === "Enemy") {
-      const enemy = new Enemy(nengiEntity.x, nengiEntity.y);
-      enemy.id = nengiEntity.id;
-      enemy.nengiEntity = nengiEntity;
-      this.enemyEntities.set(enemy.id, enemy);
-    } else if (protocol === "Bullet") {
-      // 弾のタイプID解決はnengiEntity.typeIdから行うなどの処理が必要
-      // ここでは仮に angle=0, type="player" で初期化
-      const bullet = new Bullet(
-        nengiEntity.x,
-        nengiEntity.y,
-        nengiEntity.rotation,
-        "player" // TODO: typeIdから解決
-      );
-      bullet.id = nengiEntity.id;
-      bullet.nengiEntity = nengiEntity;
-      this.bulletEntities.set(bullet.id, bullet);
+  applySnapshot(snapshot) {
+    if (!snapshot) return;
+    this.playerEntities.clear();
+    this.enemyEntities.clear();
+    this.bulletEntities.clear();
+    if (snapshot.players)
+      snapshot.players.forEach((p) => {
+        const player = new Player(p.x, p.y);
+        player.setState(p);
+        if (p.i === this.userId) player.isMe = true;
+        this.playerEntities.set(p.i, player);
+      });
+    if (snapshot.enemies)
+      snapshot.enemies.forEach((e) => {
+        const enemy = new Enemy(e.x, e.y);
+        enemy.setState(e);
+        this.enemyEntities.set(e.i, enemy);
+      });
+    if (snapshot.bullets)
+      snapshot.bullets.forEach((b) => {
+        const bullet = new Bullet(b.x, b.y, b.a, b.t);
+        bullet.setState(b);
+        this.bulletEntities.set(b.i, bullet);
+      });
+  }
+  applyDelta(delta) {
+    if (!delta) return;
+    if (delta.events) {
+      delta.events.forEach((ev) => {
+        if (ev.type === "hit")
+          this.particleSystem.createHitEffect(ev.x, ev.y, ev.color, 8, "hit");
+        else if (ev.type === "explosion")
+          this.particleSystem.createHitEffect(
+            ev.x,
+            ev.y,
+            ev.color,
+            30,
+            "explosion"
+          );
+      });
     }
-  }
-
-  // NetworkManagerの 'delete' イベントから呼ばれる
-  onEntityDeleted(id) {
-    if (this.playerEntities.has(id)) this.playerEntities.delete(id);
-    if (this.enemyEntities.has(id)) this.enemyEntities.delete(id);
-    if (this.bulletEntities.has(id)) this.bulletEntities.delete(id);
-  }
-
-  // NetworkManagerの 'GameEvent' メッセージ受信時に呼ばれる
-  onGameEvent(message) {
-    if (message.type === 1) { // hit
-      this.particleSystem.createHitEffect(message.x, message.y, message.color, 8, "hit");
-    } else if (message.type === 2) { // explosion
-      this.particleSystem.createHitEffect(message.x, message.y, message.color, 30, "explosion");
+    const myPlayer = this.playerEntities.get(this.userId);
+    if (delta.updated) {
+      if (delta.updated.players)
+        delta.updated.players.forEach((pState) => {
+          let player = this.playerEntities.get(pState.i);
+          if (!player) {
+            player = new Player(pState.x, pState.y);
+            if (pState.i === this.userId) player.isMe = true;
+            this.playerEntities.set(pState.i, player);
+          }
+          if (!player.isDead && pState.d)
+            this.particleSystem.createHitEffect(
+              player.x,
+              player.y,
+              "#ffffff",
+              20,
+              "explosion"
+            );
+          player.setState(pState);
+        });
+      if (delta.updated.enemies)
+        delta.updated.enemies.forEach((eState) => {
+          let enemy = this.enemyEntities.get(eState.i);
+          if (!enemy) {
+            // ▼ "e.x" を削除し、x と y だけにします
+            enemy = new Enemy(eState.x, eState.y);
+            this.enemyEntities.set(eState.i, enemy);
+          }
+          enemy.setState(eState);
+        });
+      if (delta.updated.bullets)
+        delta.updated.bullets.forEach((bState) => {
+          let bullet = this.bulletEntities.get(bState.i);
+          if (!bullet) {
+            bullet = new Bullet(bState.x, bState.y, bState.a, bState.t);
+            this.bulletEntities.set(bState.i, bullet);
+          }
+          bullet.setState(bState);
+        });
     }
+    if (delta.removed) {
+      if (delta.removed.players)
+        delta.removed.players.forEach((id) => this.playerEntities.delete(id));
+      if (delta.removed.enemies)
+        delta.removed.enemies.forEach((id) => this.enemyEntities.delete(id));
+      if (delta.removed.bullets)
+        delta.removed.bullets.forEach((id) => this.bulletEntities.delete(id));
+    }
+    if (myPlayer && myPlayer.isDead) this.gameOver(myPlayer.score || 0);
   }
-
-  // nengiへの移行に伴い、applySnapshot, applyDelta は不要になったため削除しました。
-
   setStaticState(staticData) {
     if (!staticData) return;
     this.obstacleEntities.clear();
@@ -430,7 +469,6 @@ export class Game {
           obsState.width,
           obsState.height
         );
-        // Obstacleは動かないためnengi管理外（static_stateで受信）のままでもOK
         obs.setState(obsState);
         obs.id = obsId;
         obs.type = "obstacle_wall";

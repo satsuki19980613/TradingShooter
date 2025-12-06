@@ -25,50 +25,23 @@ export class Player extends GameObject {
     this.maxStock = 10;
 
     this.isDead = false;
+
     this.hoverOffset = 0;
-    
-    // nengiのエンティティへの参照
-    this.nengiEntity = null;
-  }
-
-  // ★ nengiから最新の補間済み座標・ステータスを反映
-  updateFromNengi() {
-    if (this.nengiEntity) {
-      // 座標の同期
-      this.x = this.nengiEntity.x;
-      this.y = this.nengiEntity.y;
-      
-      // 回転の同期 (nengiConfigで rotation として定義)
-      this.rotationAngle = this.nengiEntity.rotation;
-      this.aimAngle = this.nengiEntity.rotation; // 仮: 照準も体の向きと同じにする
-
-      // ステータスの同期
-      this.hp = this.nengiEntity.hp;
-      this.ep = this.nengiEntity.ep;
-      this.isDead = this.nengiEntity.isDead;
-      this.name = this.nengiEntity.name;
-      
-      // トレード情報の同期 (nengiConfigでフラット化されているものを構造体に戻す)
-      this.chargeBetAmount = this.nengiEntity.chargeBetAmount;
-      
-      if (this.nengiEntity.hasCharge) {
-          this.chargePosition = {
-              entryPrice: this.nengiEntity.chargeEntryPrice,
-              amount: this.nengiEntity.chargeAmount,
-              type: this.nengiEntity.chargeType === 1 ? "short" : "long"
-          };
-      } else {
-          this.chargePosition = null;
-      }
-    }
   }
 
   update(gameInstance, deltaFrames = 1.0) {
-    // GameObject.js の update（Lerp移動）は nengi が管理するため不要だが、
-    // 親クラスの処理があれば呼ぶ（現状はLerpのみならコメントアウトでも可）
-    // super.update(deltaFrames); 
+    super.update(deltaFrames);
 
-    // ホバーアニメーション（見た目だけ）
+    const dx = this.targetX - this.x;
+    const dy = this.targetY - this.y;
+
+    if (dx * dx + dy * dy > 1) {
+      const moveAngle = Math.atan2(dy, dx);
+
+      const rotAdjust = 1 - Math.pow(1 - 0.1, deltaFrames);
+      this.rotationAngle = lerpAngle(this.rotationAngle, moveAngle, rotAdjust);
+    }
+
     this.hoverOffset = Math.sin(Date.now() / 200) * 3;
 
     this.lockedTarget = null;
@@ -78,11 +51,69 @@ export class Player extends GameObject {
 
       if (target) {
         this.lockedTarget = target;
-        // ロックオン時は見た目の照準をターゲットに向ける
+
         this.aimAngle = Math.atan2(target.y - this.y, target.x - this.x);
+      } else {
+        this.aimAngle = this.rotationAngle;
       }
+    } else if (!this.isMe) {
     }
   }
 
-  // 独自バイナリパケット用の setState は不要になったため削除
+  /**
+   * サーバーからの状態同期
+   * 【修正】消えてしまっていたチャージ情報等の同期を復活
+   */
+  setState(state) {
+    this.id = state.i;
+
+    if (!this.isInitialized) {
+      this.x = state.x;
+      this.y = state.y;
+      this.aimAngle = state.a;
+      this.rotationAngle = state.a;
+      this.isInitialized = true;
+    }
+
+    if (state.n) this.name = state.n;
+    if (this.isMe) {
+      const dist = Math.sqrt(
+        Math.pow(state.x - this.x, 2) + Math.pow(state.y - this.y, 2)
+      );
+
+      const TOLERANCE = 20.0;
+
+      if (dist > TOLERANCE) {
+        this.targetX = state.x;
+        this.targetY = state.y;
+      } else {
+        this.targetX = this.x;
+        this.targetY = this.y;
+      }
+    } else {
+      this.targetX = state.x;
+      this.targetY = state.y;
+    }
+    this.targetX = state.x;
+    this.targetY = state.y;
+    this.targetAimAngle = state.a;
+
+    this.hp = state.h;
+    this.ep = state.e;
+    this.isDead = !!state.d;
+
+    this.chargeBetAmount = state.ba;
+
+    if (state.cp) {
+      this.chargePosition = {
+        entryPrice: state.cp.ep,
+        amount: state.cp.a,
+        type: state.cp.t || "long",
+      };
+    } else {
+      this.chargePosition = null;
+    }
+
+    this.stockedBullets = state.sb;
+  }
 }
