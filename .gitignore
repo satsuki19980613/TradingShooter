@@ -1,0 +1,14 @@
+# --- システム・巨大ファイル ---
+node_modules/
+.DS_Store
+thumbs.db
+*.log
+
+# --- セキュリティ（念のため） ---
+.env
+firebase-admin-service-account.json
+*.key
+*.pem
+
+# --- Firebase キャッシュ ---
+.firebase/
