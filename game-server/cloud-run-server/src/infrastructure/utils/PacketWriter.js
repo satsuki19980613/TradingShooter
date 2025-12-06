@@ -31,7 +31,8 @@ export class PacketWriter {
     this.offset += 4;
   }
 
-  string(str) {
+string(str) {
+    if (str == null) str = ""; // nullまたはundefinedなら空文字にする
     const len = Buffer.byteLength(str);
     this.u8(len);
     this.buffer.write(str, this.offset, len, "utf8");

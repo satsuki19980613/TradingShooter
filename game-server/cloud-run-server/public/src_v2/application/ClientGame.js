@@ -1,17 +1,14 @@
-import { PixiRenderer } from "../infrastructure/rendering/pixi/PixiRenderer.js";
+﻿import { PixiRenderer } from "../infrastructure/rendering/pixi/PixiRenderer.js";
 import { DomInputListener } from "../infrastructure/input/DomInputListener.js";
 import { WebSocketClient } from "../infrastructure/network/WebSocketClient.js";
 import { StateSyncManager } from "./managers/StateSyncManager.js";
 import { VirtualJoystick } from "../infrastructure/input/VirtualJoystick.js";
 import { ChartRenderer } from "../infrastructure/rendering/canvas/ChartRenderer.js";
 import { RadarRenderer } from "../infrastructure/rendering/canvas/RadarRenderer.js";
-import { MagazineRenderer } from "../infrastructure/rendering/canvas/MagazineRenderer.js"; // ※MagazineRendererもCanvas配下に移動と仮定
+import { MagazineRenderer } from "../infrastructure/rendering/canvas/MagazineRenderer.js";
 import { DomManipulator } from "../infrastructure/ui/DomManipulator.js";
-import { ClientConfig } from "../../core/config/ClientConfig.js";
+import { ClientConfig } from "../core/config/ClientConfig.js"; 
 
-/**
- * クライアントサイドのゲームメインクラス
- */
 export class ClientGame {
   constructor() {
     this.renderer = new PixiRenderer("game-field");
@@ -21,14 +18,13 @@ export class ClientGame {
     
     this.chartRenderer = new ChartRenderer();
     this.radarRenderer = new RadarRenderer();
-    // this.magazineRenderer = new MagazineRenderer(); // 既存コードにある場合
+    this.magazineRenderer = new MagazineRenderer();
 
     this.joystick = new VirtualJoystick(this.inputListener);
     this.syncManager = null;
     this.userId = null;
     
     this.tradeState = { chartData: [], currentPrice: 1000, minPrice: 990, maxPrice: 1010, maData: { short:[], medium:[], long:[] } };
-    
     this.renderLoopId = null;
     this.inputIntervalId = null;
     this.lastFrameTime = 0;
@@ -45,7 +41,6 @@ export class ClientGame {
     
     this.renderer.setupBackground(3000, 3000);
     
-    // Network Event Bindings
     this.network.on("game_state_snapshot", (payload) => this.syncManager.applySnapshot(payload));
     this.network.on("game_state_delta", (payload) => this.syncManager.applyDelta(payload));
     this.network.on("static_state", (payload) => {
@@ -62,7 +57,6 @@ export class ClientGame {
   }
 
   async connect(userName) {
-    // Generate simple ID or use Firebase Auth in real impl
     const tempId = "user_" + Math.random().toString(36).substr(2, 9);
     this.userId = tempId;
     this.syncManager = new StateSyncManager(this.userId);
@@ -94,17 +88,12 @@ export class ClientGame {
         this.syncManager.updateInterpolation(deltaFrames);
         const myPlayer = this.syncManager.visualState.players.get(this.userId);
         
-        // Render Game
         this.renderer.render(this.syncManager.visualState);
         
         if (myPlayer) {
-            // Camera
-            this.renderer.updateCamera(myPlayer.x, myPlayer.y, 1.0); // Scale logic omitted
+            this.renderer.updateCamera(myPlayer.x, myPlayer.y, 1.0);
+            this.uiManipulator.updateHUD(myPlayer.hp, 100, myPlayer.ep, myPlayer.chargeBetAmount, 0);
             
-            // HUD
-            this.uiManipulator.updateHUD(myPlayer.hp, 100, myPlayer.ep, myPlayer.chargeBetAmount, 0); // Power logic omitted for brevity
-            
-            // Sub Canvases
             if (this.chartCanvas) {
                 const ctx = this.chartCanvas.getContext("2d");
                 this.chartRenderer.draw(ctx, this.chartCanvas.width, this.chartCanvas.height, this.tradeState, myPlayer);
@@ -112,6 +101,10 @@ export class ClientGame {
             if (this.radarCanvas) {
                 const ctx = this.radarCanvas.getContext("2d");
                 this.radarRenderer.draw(ctx, this.radarCanvas.width, this.radarCanvas.height, 3000, 3000, myPlayer, Array.from(this.syncManager.visualState.enemies.values()), [], []);
+            }
+            if (this.magazineCanvas && this.magazineRenderer) {
+                const ctx = this.magazineCanvas.getContext("2d");
+                this.magazineRenderer.draw(ctx, myPlayer, this.magazineCanvas.width, this.magazineCanvas.height);
             }
         }
     }
@@ -121,10 +114,8 @@ export class ClientGame {
 
   sendInput() {
       const state = this.inputListener.getInputState();
-      // Mouse position needs adjustment by camera in real implementation
       const myPlayer = this.syncManager?.visualState.players.get(this.userId);
       if (myPlayer) {
-          // Simple screen-center offset logic would go here
           state.mouseWorldPos.x = state.mousePos.x - window.innerWidth/2 + myPlayer.x;
           state.mouseWorldPos.y = state.mousePos.y - window.innerHeight/2 + myPlayer.y;
       }

@@ -27,7 +27,9 @@ export class NetworkSystem {
       if (data.length > 0) {
         try {
           player.ws.send(data);
-        } catch (e) {}
+        } catch (e) {
+          // ignore error
+        }
       }
     });
   }
@@ -35,18 +37,21 @@ export class NetworkSystem {
   writeDeltaPacket(writer, worldState) {
     writer.u8(Protocol.MSG_TYPE_DELTA);
 
-    writer.u8(0);
+    // 削除されたエンティティ (簡易実装: 現在は0固定)
+    writer.u8(0); // removedPlayersCount
+    writer.u8(0); // removedEnemiesCount
+    writer.u16(0); // removedBulletsCount
 
-    writer.u8(0);
-
-    writer.u16(0);
-
+    // --- 更新: プレイヤー ---
     writer.u8(Math.min(worldState.players.size, 255));
     for (const p of worldState.players.values()) {
-      writer.string(p.id);
+      writer.string(p.id || "");
       writer.f32(p.x);
       writer.f32(p.y);
-      writer.u8(Math.ceil(p.hp));
+      
+      // ★修正: HPがマイナスにならないように 0 と比較する
+      writer.u8(Math.max(0, Math.ceil(p.hp))); 
+      
       writer.f32(p.angle);
       writer.string(p.name || "Guest");
       writer.u32(p.lastProcessedInputSeq || 0);
@@ -71,18 +76,23 @@ export class NetworkSystem {
       }
     }
 
+    // --- 更新: 敵 ---
     writer.u8(Math.min(worldState.enemies.length, 255));
     for (const e of worldState.enemies) {
-      writer.string(e.id);
+      writer.string(e.id || "");
       writer.f32(e.x);
       writer.f32(e.y);
-      writer.u8(Math.ceil(e.hp));
+      
+      // ★修正: 敵のHPも同様にマイナス対策
+      writer.u8(Math.max(0, Math.ceil(e.hp)));
+      
       writer.f32(e.targetAngle);
     }
 
+    // --- 更新: 弾 ---
     writer.u16(Math.min(worldState.bullets.length, 65535));
     for (const b of worldState.bullets) {
-      writer.string(b.id);
+      writer.string(b.id || "");
       writer.f32(b.x);
       writer.f32(b.y);
       writer.f32(Math.atan2(b.vy, b.vx));
@@ -90,10 +100,12 @@ export class NetworkSystem {
       let typeId = 0;
       if (b.type === "enemy") typeId = 1;
       else if (b.type === "player_special_1") typeId = 2;
+      // 必要に応じてID定義を追加
 
       writer.u8(typeId);
     }
 
+    // --- イベント (ヒットエフェクト等) ---
     const events = worldState.frameEvents || [];
     writer.u8(Math.min(events.length, 255));
     for (const ev of events) {
@@ -114,7 +126,7 @@ export class NetworkSystem {
           i: p.id,
           x: p.x,
           y: p.y,
-          h: p.hp,
+          h: Math.max(0, Math.ceil(p.hp)), // ★ここも念のため修正
           e: p.ep,
           n: p.name,
           d: p.isDead ? 1 : 0,
@@ -123,7 +135,7 @@ export class NetworkSystem {
           i: e.id,
           x: e.x,
           y: e.y,
-          h: e.hp,
+          h: Math.max(0, Math.ceil(e.hp)), // ★ここも念のため修正
         })),
         bullets: [],
       },
