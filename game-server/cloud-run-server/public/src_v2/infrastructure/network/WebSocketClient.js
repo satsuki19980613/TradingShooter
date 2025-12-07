@@ -156,7 +156,7 @@ export class WebSocketClient {
   }
 
   sendInput(seq, states, pressed, mousePos) {
-    if (!this.isConnected) return;
+    if (!this.isConnected || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
     const buffer = new ArrayBuffer(15);
     const view = new DataView(buffer);
 

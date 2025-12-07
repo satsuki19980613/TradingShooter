@@ -1,5 +1,5 @@
 import { CollisionLogic } from "../../logic/CollisionLogic.js";
-
+// MovementLogic はインライン化済みなのでインポート不要
 import { GameConstants } from "../../core/constants/GameConstants.js";
 
 class SpatialGrid {
@@ -8,25 +8,32 @@ class SpatialGrid {
     this.grid = new Map();
     this.staticGrid = new Map();
   }
+
   clearDynamic() {
     this.grid.clear();
   }
+
   insertStatic(entity) {
     this._addToGrid(entity, this.staticGrid);
   }
+
   insertDynamic(entity) {
     this._addToGrid(entity, this.grid);
   }
+
   _getKey(x, y) {
     return (x << 16) | (y & 0xffff);
   }
+
   _addToGrid(entity, map) {
     const r =
-      entity.radius || Math.max(entity.width || 0, entity.height || 0) / 2;
+      entity.radius ||
+      Math.max(entity.width || 0, entity.height || 0) / 2;
     const minX = Math.floor((entity.x - r) / this.cellSize);
     const maxX = Math.floor((entity.x + r) / this.cellSize);
     const minY = Math.floor((entity.y - r) / this.cellSize);
     const maxY = Math.floor((entity.y + r) / this.cellSize);
+
     for (let x = minX; x <= maxX; x++) {
       for (let y = minY; y <= maxY; y++) {
         const key = this._getKey(x, y);
@@ -39,12 +46,14 @@ class SpatialGrid {
       }
     }
   }
+
   getNearby(entity) {
     const r = entity.radius || 0;
     const minX = Math.floor((entity.x - r) / this.cellSize);
     const maxX = Math.floor((entity.x + r) / this.cellSize);
     const minY = Math.floor((entity.y - r) / this.cellSize);
     const maxY = Math.floor((entity.y + r) / this.cellSize);
+
     const result = new Set();
     for (let x = minX; x <= maxX; x++) {
       for (let y = minY; y <= maxY; y++) {
@@ -56,6 +65,37 @@ class SpatialGrid {
         if (this.grid.has(key)) {
           const dynamics = this.grid.get(key);
           for (const e of dynamics) if (e !== entity) result.add(e);
+        }
+      }
+    }
+    return result;
+  }
+
+  /**
+   * ★追加: AimingServiceから呼ばれるメソッド
+   */
+  getNearbyWithRadius(entity, radius) {
+    const minX = Math.floor((entity.x - radius) / this.cellSize);
+    const maxX = Math.floor((entity.x + radius) / this.cellSize);
+    const minY = Math.floor((entity.y - radius) / this.cellSize);
+    const maxY = Math.floor((entity.y + radius) / this.cellSize);
+
+    const result = new Set();
+    for (let x = minX; x <= maxX; x++) {
+      for (let y = minY; y <= maxY; y++) {
+        const key = this._getKey(x, y);
+
+        if (this.staticGrid.has(key)) {
+          const statics = this.staticGrid.get(key);
+          for (const e of statics) {
+              result.add(e);
+          }
+        }
+        if (this.grid.has(key)) {
+          const dynamics = this.grid.get(key);
+          for (const e of dynamics) {
+            if (e !== entity) result.add(e);
+          }
         }
       }
     }
@@ -75,7 +115,6 @@ export class PhysicsSystem {
     this.staticInitialized = false;
 
     this.tempPos = { x: 0, y: 0 };
-
     this.tempPushVector = { x: 0, y: 0 };
   }
 
@@ -91,7 +130,8 @@ export class PhysicsSystem {
     if (!this.staticInitialized) this.initStatic(worldState.obstacles);
 
     this.grid.clearDynamic();
-
+    
+    // グリッド登録
     for (const p of worldState.players.values()) {
       if (!p.isDead) this.grid.insertDynamic(p);
     }
@@ -102,10 +142,12 @@ export class PhysicsSystem {
       this.grid.insertDynamic(b);
     }
 
+    // プレイヤー更新
     for (const p of worldState.players.values()) {
       if (!p.isDead) this._updateSingleEntity(p);
     }
 
+    // 敵更新
     for (const e of worldState.enemies) {
       this._updateSingleEntity(e);
     }
@@ -146,7 +188,6 @@ export class PhysicsSystem {
           this.tempPos,
           this.tempPushVector
         );
-
         if (hasCollision) {
           entity.x = this.tempPos.x;
           entity.y = this.tempPos.y;
@@ -158,12 +199,10 @@ export class PhysicsSystem {
   resolveEntityCollisions(worldState) {
     for (const player of worldState.players.values()) {
       if (player.isDead) continue;
-
       const nearby = this.grid.getNearby(player);
 
       for (const target of nearby) {
         if (target === player) continue;
-
         if (target.type === "player" || target.type === "enemy") {
           if (target.isDead) continue;
           if (target.type === "player" && player.id > target.id) continue;
@@ -195,7 +234,6 @@ export class PhysicsSystem {
   updateBullets(worldState) {
     for (let i = worldState.bullets.length - 1; i >= 0; i--) {
       const b = worldState.bullets[i];
-
       b.x += b.vx;
       b.y += b.vy;
 

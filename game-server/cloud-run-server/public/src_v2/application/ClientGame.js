@@ -144,6 +144,7 @@ export class ClientGame {
   }
 
   async connect(userName) {
+    this.stopLoop();
     this.inputManager.resetActionStates();
 
     const tempId = "user_" + Math.random().toString(36).substr(2, 9);
