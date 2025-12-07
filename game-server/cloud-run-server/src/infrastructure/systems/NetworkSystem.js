@@ -2,9 +2,6 @@ import { WebSocket } from "ws";
 import { PacketWriter } from "../utils/PacketWriter.js";
 import { Protocol } from "../../core/constants/Protocol.js";
 
-/**
- * 通信処理を担当するシステム
- */
 export class NetworkSystem {
   constructor() {
     this.playerWriters = new WeakMap();
@@ -12,7 +9,11 @@ export class NetworkSystem {
 
   broadcastGameState(players, worldState) {
     players.forEach((player) => {
-      if (!player.ws || player.ws.readyState !== WebSocket.OPEN) return;
+      if (!player.ws || player.ws.readyState !== WebSocket.OPEN) {
+        return;
+      }
+
+      const relevantEntityMaps = this.getRelevantEntityMapsFor(player, worldState);
 
       let writer = this.playerWriters.get(player);
       if (!writer) {
@@ -21,49 +22,82 @@ export class NetworkSystem {
       }
       writer.reset();
 
-      this.writeDeltaPacket(writer, worldState);
+      const binaryData = this.createBinaryDelta(
+        player.lastBroadcastState,
+        relevantEntityMaps,
+        writer,
+        worldState.frameEvents
+      );
 
-      const data = writer.getData();
-      if (data.length > 0) {
-        try {
-          player.ws.send(data);
-        } catch (e) {
-          // ignore error
-        }
+      if (binaryData.length > 0) {
+        this.safeSend(player.ws, binaryData);
       }
+
+      player.lastBroadcastState = relevantEntityMaps;
     });
   }
 
-  writeDeltaPacket(writer, worldState) {
-    writer.u8(Protocol.MSG_TYPE_DELTA);
+  createBinaryDelta(oldEntityMaps, newEntityMaps, writer, events) {
+    writer.u8(Protocol.MSG_TYPE_DELTA || 1);
 
-    // 削除されたエンティティ (簡易実装: 現在は0固定)
-    writer.u8(0); // removedPlayersCount
-    writer.u8(0); // removedEnemiesCount
-    writer.u16(0); // removedBulletsCount
+    let removedCount = 0;
+    const removedPlayersStart = writer.offset;
+    writer.u8(0);
+    if (oldEntityMaps && oldEntityMaps.players) {
+      for (const id of oldEntityMaps.players.keys()) {
+        if (!newEntityMaps.players.has(id)) {
+          writer.string(id);
+          removedCount++;
+        }
+      }
+    }
+    writer.buffer.writeUInt8(Math.min(removedCount, 255), removedPlayersStart);
 
-    // --- 更新: プレイヤー ---
-    writer.u8(Math.min(worldState.players.size, 255));
-    for (const p of worldState.players.values()) {
-      writer.string(p.id || "");
+    removedCount = 0;
+    const removedEnemiesStart = writer.offset;
+    writer.u8(0);
+    if (oldEntityMaps && oldEntityMaps.enemies) {
+      for (const id of oldEntityMaps.enemies.keys()) {
+        if (!newEntityMaps.enemies.has(id)) {
+          writer.string(id);
+          removedCount++;
+        }
+      }
+    }
+    writer.buffer.writeUInt8(Math.min(removedCount, 255), removedEnemiesStart);
+
+    removedCount = 0;
+    const removedBulletsStart = writer.offset;
+    writer.u16(0);
+    if (oldEntityMaps && oldEntityMaps.bullets) {
+      for (const id of oldEntityMaps.bullets.keys()) {
+        if (!newEntityMaps.bullets.has(id)) {
+          writer.string(id);
+          removedCount++;
+        }
+      }
+    }
+    writer.buffer.writeUInt16LE(Math.min(removedCount, 65535), removedBulletsStart);
+
+    writer.u8(Math.min(newEntityMaps.players.size, 255));
+    for (const p of newEntityMaps.players.values()) {
+      writer.string(p.id);
       writer.f32(p.x);
       writer.f32(p.y);
-      
-      // ★修正: HPがマイナスにならないように 0 と比較する
-      writer.u8(Math.max(0, Math.ceil(p.hp))); 
-      
+      writer.u8(Math.min(Math.max(0, Math.ceil(p.hp)), 255));
       writer.f32(p.angle);
       writer.string(p.name || "Guest");
       writer.u32(p.lastProcessedInputSeq || 0);
       writer.u8(p.isDead ? 1 : 0);
       writer.u16(Math.floor(p.ep));
-      writer.u16(p.chargeBetAmount);
+      writer.u16(p.chargeBetAmount || 10);
 
       if (p.chargePosition) {
         writer.u8(1);
         writer.f32(p.chargePosition.entryPrice);
         writer.f32(p.chargePosition.amount);
-        writer.u8(p.chargePosition.type === "short" ? 1 : 0);
+        const typeId = p.chargePosition.type === "short" ? 1 : 0;
+        writer.u8(typeId);
       } else {
         writer.u8(0);
       }
@@ -76,39 +110,37 @@ export class NetworkSystem {
       }
     }
 
-    // --- 更新: 敵 ---
-    writer.u8(Math.min(worldState.enemies.length, 255));
-    for (const e of worldState.enemies) {
-      writer.string(e.id || "");
+    writer.u8(Math.min(newEntityMaps.enemies.size, 255));
+    for (const e of newEntityMaps.enemies.values()) {
+      writer.string(e.id);
       writer.f32(e.x);
       writer.f32(e.y);
-      
-      // ★修正: 敵のHPも同様にマイナス対策
-      writer.u8(Math.max(0, Math.ceil(e.hp)));
-      
-      writer.f32(e.targetAngle);
+      writer.u8(Math.min(Math.max(0, Math.ceil(e.hp)), 255));
+      writer.f32(e.targetAngle || 0);
     }
 
-    // --- 更新: 弾 ---
-    writer.u16(Math.min(worldState.bullets.length, 65535));
-    for (const b of worldState.bullets) {
-      writer.string(b.id || "");
+    writer.u16(Math.min(newEntityMaps.bullets.size, 65535));
+    for (const b of newEntityMaps.bullets.values()) {
+      writer.string(b.id);
       writer.f32(b.x);
       writer.f32(b.y);
-      writer.f32(Math.atan2(b.vy, b.vx));
+      const angle = Math.atan2(b.vy, b.vx);
+      writer.f32(angle);
 
       let typeId = 0;
       if (b.type === "enemy") typeId = 1;
       else if (b.type === "player_special_1") typeId = 2;
-      // 必要に応じてID定義を追加
-
+      else if (b.type === "item_ep") typeId = 3;
+      else if (b.type === "player_special_2") typeId = 4;
+      else if (b.type === "player_special_3") typeId = 5;
+      else if (b.type === "player_special_4") typeId = 6;
+      
       writer.u8(typeId);
     }
 
-    // --- イベント (ヒットエフェクト等) ---
-    const events = worldState.frameEvents || [];
-    writer.u8(Math.min(events.length, 255));
-    for (const ev of events) {
+    const safeEvents = events || [];
+    writer.u8(Math.min(safeEvents.length, 255));
+    for (const ev of safeEvents) {
       let typeId = 1;
       if (ev.type === "explosion") typeId = 2;
       writer.u8(typeId);
@@ -116,32 +148,95 @@ export class NetworkSystem {
       writer.f32(ev.y);
       writer.string(ev.color || "#ffffff");
     }
+
+    return writer.getData();
+  }
+
+  getRelevantEntityMapsFor(player, worldState) {
+    const viewportRadius = 1500;
+
+    const playersMap = new Map();
+    const enemiesMap = new Map();
+    const bulletsMap = new Map();
+
+    worldState.players.forEach(p => {
+        if (p.id === player.id) {
+            playersMap.set(p.id, p);
+        } else {
+            const dist = Math.sqrt((p.x - player.x)**2 + (p.y - player.y)**2);
+            if (dist < viewportRadius) {
+                playersMap.set(p.id, p);
+            }
+        }
+    });
+
+    worldState.enemies.forEach(e => {
+        const dist = Math.sqrt((e.x - player.x)**2 + (e.y - player.y)**2);
+        if (dist < viewportRadius) {
+            enemiesMap.set(e.id, e);
+        }
+    });
+
+    worldState.bullets.forEach(b => {
+        const dist = Math.sqrt((b.x - player.x)**2 + (b.y - player.y)**2);
+        if (dist < viewportRadius) {
+            bulletsMap.set(b.id, b);
+        }
+    });
+
+    return { players: playersMap, enemies: enemiesMap, bullets: bulletsMap };
   }
 
   sendSnapshot(player, worldState) {
-    const snapshot = {
-      type: "game_state_snapshot",
-      payload: {
-        players: Array.from(worldState.players.values()).map((p) => ({
-          i: p.id,
-          x: p.x,
-          y: p.y,
-          h: Math.max(0, Math.ceil(p.hp)), // ★ここも念のため修正
-          e: p.ep,
-          n: p.name,
-          d: p.isDead ? 1 : 0,
-        })),
-        enemies: worldState.enemies.map((e) => ({
-          i: e.id,
-          x: e.x,
-          y: e.y,
-          h: Math.max(0, Math.ceil(e.hp)), // ★ここも念のため修正
-        })),
-        bullets: [],
-      },
+    const entityMaps = this.getRelevantEntityMapsFor(player, worldState);
+    const snapshotPayload = {
+      players: Array.from(entityMaps.players.values()).map((p) => ({
+        i: p.id, x: p.x, y: p.y, h: p.hp, e: p.ep, a: p.angle, n: p.name,
+        ba: p.chargeBetAmount,
+        cp: p.chargePosition ? {
+              ep: p.chargePosition.entryPrice,
+              a: p.chargePosition.amount,
+              t: p.chargePosition.type,
+            } : null,
+        sb: p.stockedBullets ? p.stockedBullets.map(b => typeof b === "object" ? b.damage : b) : [],
+        d: p.isDead ? 1 : 0,
+      })),
+      enemies: Array.from(entityMaps.enemies.values()).map((e) => ({
+        i: e.id, x: e.x, y: e.y, h: e.hp, ta: e.targetAngle,
+      })),
+      bullets: Array.from(entityMaps.bullets.values()).map((b) => ({
+        i: b.id, x: b.x, y: b.y, r: b.radius, t: b.type,
+        a: Math.atan2(b.vy, b.vx),
+      })),
     };
-    if (player.ws && player.ws.readyState === WebSocket.OPEN) {
-      player.ws.send(JSON.stringify(snapshot));
+
+    this.safeSend(
+      player.ws,
+      JSON.stringify({ type: "game_state_snapshot", payload: snapshotPayload })
+    );
+    
+    player.lastBroadcastState = entityMaps;
+  }
+
+  broadcastLeaderboard(players, leaderboardData, serverStats) {
+    const payload = { leaderboardData, serverStats };
+    const message = JSON.stringify({ type: "leaderboard_update", payload });
+    players.forEach((p) => this.safeSend(p.ws, message));
+  }
+
+  broadcastChartUpdate(players, chartDeltaState) {
+    const message = JSON.stringify({
+      type: "chart_update",
+      payload: chartDeltaState,
+    });
+    players.forEach((p) => this.safeSend(p.ws, message));
+  }
+
+  safeSend(ws, msg) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      try {
+        ws.send(msg);
+      } catch (e) {}
     }
   }
 }

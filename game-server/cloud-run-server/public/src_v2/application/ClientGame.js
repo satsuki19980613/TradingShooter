@@ -1,8 +1,8 @@
 ﻿import { PixiRenderer } from "../infrastructure/rendering/pixi/PixiRenderer.js";
-import { DomInputListener } from "../infrastructure/input/DomInputListener.js";
-import { WebSocketClient } from "../infrastructure/network/WebSocketClient.js";
+import { InputManager } from "../infrastructure/input/InputManager.js";
+import { NetworkClient } from "../infrastructure/network/NetworkClient.js";
 import { StateSyncManager } from "./managers/StateSyncManager.js";
-import { VirtualJoystick } from "../infrastructure/input/VirtualJoystick.js";
+import { MobileControlManager } from "../infrastructure/input/MobileControlManager.js";
 import { ChartRenderer } from "../infrastructure/rendering/canvas/ChartRenderer.js";
 import { RadarRenderer } from "../infrastructure/rendering/canvas/RadarRenderer.js";
 import { MagazineRenderer } from "../infrastructure/rendering/canvas/MagazineRenderer.js";
@@ -12,22 +12,22 @@ import { ClientConfig } from "../core/config/ClientConfig.js";
 export class ClientGame {
   constructor() {
     this.renderer = new PixiRenderer("game-field");
-    this.inputListener = new DomInputListener(document.getElementById("game-field"));
-    this.network = new WebSocketClient();
+    this.inputManager = new InputManager();
+    this.network = new NetworkClient();
     this.uiManipulator = new DomManipulator();
     
     this.chartRenderer = new ChartRenderer();
     this.radarRenderer = new RadarRenderer();
     this.magazineRenderer = new MagazineRenderer();
 
-    this.joystick = new VirtualJoystick(this.inputListener);
+    this.mobileControls = new MobileControlManager(this.inputManager);
     this.syncManager = null;
     this.userId = null;
-    
     this.tradeState = { chartData: [], currentPrice: 1000, minPrice: 990, maxPrice: 1010, maData: { short:[], medium:[], long:[] } };
     this.renderLoopId = null;
     this.inputIntervalId = null;
     this.lastFrameTime = 0;
+    this.serverStats = null;
     
     this.chartCanvas = document.getElementById("chart-canvas");
     this.radarCanvas = document.getElementById("radar-canvas");
@@ -36,8 +36,8 @@ export class ClientGame {
 
   async init() {
     await this.renderer.init();
-    this.inputListener.init();
-    this.joystick.init();
+    this.inputManager.init(document.getElementById("game-field"));
+    this.mobileControls.init();
     
     this.renderer.setupBackground(3000, 3000);
     
@@ -49,6 +49,10 @@ export class ClientGame {
     });
     this.network.on("chart_state", (payload) => this.updateTradeStateFull(payload));
     this.network.on("chart_update", (payload) => this.updateTradeStateDelta(payload));
+    this.network.on("leaderboard_update", (payload) => {
+        if(payload.leaderboardData) this.uiManipulator.updateLeaderboard(payload.leaderboardData, this.userId);
+        if(payload.serverStats) this.serverStats = payload.serverStats;
+    });
     this.network.on("disconnect", () => {
         this.stopLoop();
         this.uiManipulator.showScreen("gameover");
@@ -72,11 +76,13 @@ export class ClientGame {
     this.lastFrameTime = performance.now();
     this.renderLoopId = requestAnimationFrame((t) => this.loop(t));
     this.inputIntervalId = setInterval(() => this.sendInput(), ClientConfig.INPUT_SEND_INTERVAL);
+    this.mobileControls.applyScreenMode("game");
   }
 
   stopLoop() {
     if(this.renderLoopId) cancelAnimationFrame(this.renderLoopId);
     if(this.inputIntervalId) clearInterval(this.inputIntervalId);
+    this.mobileControls.applyScreenMode("menu");
   }
 
   loop(now) {
@@ -88,22 +94,26 @@ export class ClientGame {
         this.syncManager.updateInterpolation(deltaFrames);
         const myPlayer = this.syncManager.visualState.players.get(this.userId);
         
+        this.updateCamera(myPlayer);
         this.renderer.render(this.syncManager.visualState);
         
         if (myPlayer) {
-            this.renderer.updateCamera(myPlayer.x, myPlayer.y, 1.0);
             this.uiManipulator.updateHUD(myPlayer.hp, 100, myPlayer.ep, myPlayer.chargeBetAmount, 0);
+            this.mobileControls.updateDisplay(myPlayer);
             
             if (this.chartCanvas) {
                 const ctx = this.chartCanvas.getContext("2d");
+                ctx.clearRect(0, 0, this.chartCanvas.width, this.chartCanvas.height);
                 this.chartRenderer.draw(ctx, this.chartCanvas.width, this.chartCanvas.height, this.tradeState, myPlayer);
             }
             if (this.radarCanvas) {
                 const ctx = this.radarCanvas.getContext("2d");
-                this.radarRenderer.draw(ctx, this.radarCanvas.width, this.radarCanvas.height, 3000, 3000, myPlayer, Array.from(this.syncManager.visualState.enemies.values()), [], []);
+                ctx.clearRect(0, 0, this.radarCanvas.width, this.radarCanvas.height);
+                this.radarRenderer.draw(ctx, this.radarCanvas.width, this.radarCanvas.height, 3000, 3000, myPlayer, Array.from(this.syncManager.visualState.enemies.values()), [], Array.from(this.syncManager.visualState.players.values()));
             }
-            if (this.magazineCanvas && this.magazineRenderer) {
+            if (this.magazineCanvas) {
                 const ctx = this.magazineCanvas.getContext("2d");
+                ctx.clearRect(0, 0, this.magazineCanvas.width, this.magazineCanvas.height);
                 this.magazineRenderer.draw(ctx, myPlayer, this.magazineCanvas.width, this.magazineCanvas.height);
             }
         }
@@ -112,14 +122,22 @@ export class ClientGame {
     this.renderLoopId = requestAnimationFrame((t) => this.loop(t));
   }
 
+  updateCamera(myPlayer) {
+      if(!myPlayer) return;
+      
+      const screenCenterX = window.innerWidth / 2;
+      const screenCenterY = window.innerHeight / 2;
+      
+      const mouseState = this.inputManager.mousePos;
+      this.inputManager.mouseWorldPos.x = mouseState.x - screenCenterX + myPlayer.x;
+      this.inputManager.mouseWorldPos.y = mouseState.y - screenCenterY + myPlayer.y;
+
+      this.renderer.updateCamera(myPlayer.x, myPlayer.y, 1.0);
+  }
+
   sendInput() {
-      const state = this.inputListener.getInputState();
-      const myPlayer = this.syncManager?.visualState.players.get(this.userId);
-      if (myPlayer) {
-          state.mouseWorldPos.x = state.mousePos.x - window.innerWidth/2 + myPlayer.x;
-          state.mouseWorldPos.y = state.mousePos.y - window.innerHeight/2 + myPlayer.y;
-      }
-      this.network.sendInput(state.seq++, state.states, state.pressed, state.mouseWorldPos);
+      const state = this.inputManager.getInputState();
+      this.network.sendInput(0, state.states, state.pressed, state.mouseWorldPos);
   }
 
   updateTradeStateFull(payload) {

@@ -1,50 +1,73 @@
 import { CollisionLogic } from "./CollisionLogic.js";
 
-/**
- * 敵の行動決定（索敵、移動方向）に関する純粋ロジック
- */
 export const AILogic = {
   /**
-   * 最も近いプレイヤーを探す
+   * 索敵範囲内の最も近いプレイヤーを探す
    */
-  findClosestPlayer(enemyX, enemyY, players) {
+  findClosestPlayer(enemy, players, searchRadius) {
     let closestPlayer = null;
-    let minDistance = Infinity;
+    let minDistance = searchRadius;
 
-    for (const player of players) {
+    for (const player of players.values()) {
       if (player.isDead) continue;
-      const dist = CollisionLogic.getDistance(enemyX, enemyY, player.x, player.y);
+
+      const dist = CollisionLogic.getDistance(
+        enemy.x,
+        enemy.y,
+        player.x,
+        player.y
+      );
       if (dist < minDistance) {
         minDistance = dist;
         closestPlayer = player;
       }
     }
-    return { player: closestPlayer, distance: minDistance };
+    return closestPlayer;
   },
 
   /**
    * 敵の移動目標角度を決定する
    */
-  decideTargetAngle(enemyX, enemyY, targetPlayer, currentAngle, distanceToPlayer) {
-    let newAngle = currentAngle;
-    
+  decideTargetAngle(enemy, targetPlayer) {
     if (targetPlayer) {
-      if (distanceToPlayer < 500) {
-        newAngle = Math.atan2(targetPlayer.y - enemyY, targetPlayer.x - enemyX);
+      const dist = CollisionLogic.getDistance(
+        enemy.x,
+        enemy.y,
+        targetPlayer.x,
+        targetPlayer.y
+      );
+
+      if (dist < 500) {
+        return Math.atan2(targetPlayer.y - enemy.y, targetPlayer.x - enemy.x);
       } else {
-        newAngle += (Math.random() - 0.5) * 0.5;
+        return enemy.targetAngle + (Math.random() - 0.5) * 0.5;
       }
     } else {
-      newAngle += (Math.random() - 0.5) * 1.0;
+      return enemy.targetAngle + (Math.random() - 0.5) * 1.0;
     }
-    
-    return newAngle;
   },
 
   /**
-   * 射撃可能か判定する
+   * 射撃判定とクールダウン時間の決定
    */
-  shouldShoot(distanceToPlayer) {
-    return distanceToPlayer < 500;
-  }
+  shouldShoot(enemy, targetPlayer) {
+    if (!targetPlayer) return { shouldShoot: false, nextCooldown: 60 };
+
+    const dist = CollisionLogic.getDistance(
+      enemy.x,
+      enemy.y,
+      targetPlayer.x,
+      targetPlayer.y
+    );
+
+    if (dist < 500) {
+      const angle = Math.atan2(
+        targetPlayer.y - enemy.y,
+        targetPlayer.x - enemy.x
+      );
+      return { shouldShoot: true, angle, nextCooldown: 120 };
+    }
+
+    return { shouldShoot: false, nextCooldown: 60 };
+  },
 };

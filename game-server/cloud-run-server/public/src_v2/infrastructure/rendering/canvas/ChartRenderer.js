@@ -1,83 +1,156 @@
-/**
- * チャート描画レンダラー
- */
 export class ChartRenderer {
-  draw(ctx, width, height, tradeState, playerState) {
-    const chartData = tradeState.chartData || [];
-    if (chartData.length < 2) return;
-
+  draw(ctx, canvasWidth, canvasHeight, tradeState, playerState) {
     const dpr = window.devicePixelRatio || 1;
-    const ratio = dpr; 
-    const padding = { top: 10 * ratio, right: 30 * ratio, bottom: 5 * ratio, left: 0 };
-    const chartX = padding.left;
-    const chartY = padding.top;
-    const chartWidth = width - padding.left - padding.right;
-    const chartHeight = height - padding.top - padding.bottom;
+    let uiScale = 1;
+    try {
+      const val = getComputedStyle(document.body).getPropertyValue("--ui-scale");
+      if (val) uiScale = parseFloat(val);
+    } catch (e) {}
+    if (!uiScale || isNaN(uiScale)) uiScale = 1;
+    const ratio = dpr * uiScale;
 
+    const chartData = tradeState.chartData || [];
+    const currentPrice = tradeState.currentPrice || 1000;
     let minPrice = tradeState.minPrice || 990;
     let maxPrice = tradeState.maxPrice || 1010;
+
+    if (chartData.length < 2) return;
+
+    const padding = {
+      top: 10 * ratio,
+      right: 30 * ratio,
+      bottom: 5 * ratio,
+      left: 0,
+    };
+    const chartX = padding.left;
+    const chartY = padding.top;
+    const chartWidth = canvasWidth - padding.left - padding.right;
+    const chartHeight = canvasHeight - padding.top - padding.bottom;
+
+    const visibleData = chartData;
     let priceRange = maxPrice - minPrice;
     if (priceRange === 0) priceRange = 1;
+
     const margin = priceRange * 0.1;
     maxPrice += margin;
     minPrice -= margin;
     const renderRange = maxPrice - minPrice;
 
     const px = (val) => Math.floor(val) + 0.5;
-    const getX = (index) => chartX + (index / (chartData.length - 1)) * chartWidth;
-    const getY = (price) => chartY + chartHeight - ((price - minPrice) / renderRange) * chartHeight;
+    const getX = (index) =>
+      chartX + (index / (visibleData.length - 1)) * chartWidth;
+    const getY = (price) =>
+      chartY + chartHeight - ((price - minPrice) / renderRange) * chartHeight;
 
-    ctx.clearRect(0, 0, width, height);
-
-    // Main Line
     ctx.beginPath();
-    ctx.moveTo(px(getX(0)), px(getY(chartData[0])));
-    for (let i = 1; i < chartData.length; i++) {
-      ctx.lineTo(px(getX(i)), px(getY(chartData[i])));
+    ctx.moveTo(px(getX(0)), px(getY(visibleData[0])));
+    for (let i = 1; i < visibleData.length; i++) {
+      ctx.lineTo(px(getX(i)), px(getY(visibleData[i])));
     }
-    const currentPrice = tradeState.currentPrice;
-    const lastPrice = chartData[chartData.length - 1];
-    const firstPrice = chartData[0];
+
+    const lastPrice = visibleData[visibleData.length - 1];
+    const firstPrice = visibleData[0];
+
     ctx.strokeStyle = lastPrice >= firstPrice ? "#00ff00" : "#ff0055";
     ctx.lineWidth = 2.5;
+    ctx.shadowColor = ctx.strokeStyle;
+    ctx.shadowBlur = 10;
     ctx.stroke();
+    ctx.shadowBlur = 0;
 
-    // MAs
-    const maColors = { short: "#00e1ff", medium: "#e1ff00", long: "#ff00e1" };
-    ["short", "medium", "long"].forEach(type => {
-        const maList = tradeState.maData[type];
-        if (!maList || maList.length === 0) return;
-        ctx.beginPath();
-        ctx.strokeStyle = (maColors[type] || "#ffffff") + "80";
-        ctx.lineWidth = 1.5;
-        let started = false;
-        for (let i = 0; i < chartData.length; i++) {
-            const offset = chartData.length - 1 - i;
-            const maIndex = maList.length - 1 - offset;
-            if (maIndex < 0) continue;
-            const val = maList[maIndex];
-            if (val === null) { started = false; continue; }
-            if (!started) { ctx.moveTo(px(getX(i)), px(getY(val))); started = true; }
-            else { ctx.lineTo(px(getX(i)), px(getY(val))); }
+    const maColors = {
+      short: "#00e1ff",
+      medium: "#e1ff00",
+      long: "#ff00e1",
+    };
+    
+    ["short", "medium", "long"].forEach((type) => {
+      const maList = tradeState.maData[type];
+      if (!maList || maList.length === 0) return;
+
+      ctx.beginPath();
+      ctx.strokeStyle = (maColors[type] || "#ffffff") + "80";
+      ctx.lineWidth = 1.5;
+
+      let maStarted = false;
+      for (let i = 0; i < visibleData.length; i++) {
+        const offsetFromEnd = visibleData.length - 1 - i;
+        const maIndex = maList.length - 1 - offsetFromEnd;
+
+        if (maIndex < 0) continue;
+        const val = maList[maIndex];
+
+        if (val === null || val === undefined) {
+          maStarted = false;
+          continue;
         }
-        ctx.stroke();
+
+        const x = getX(i);
+        const y = getY(val);
+
+        if (!maStarted) {
+          ctx.moveTo(px(x), px(y));
+          maStarted = true;
+        } else {
+          ctx.lineTo(px(x), px(y));
+        }
+      }
+      ctx.stroke();
     });
 
-    // Entry Line
+    const currentY = getY(currentPrice);
+    ctx.beginPath();
+    ctx.setLineDash([5 * dpr, 5 * dpr]);
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 1;
+    ctx.moveTo(px(chartX), px(currentY));
+    ctx.lineTo(px(chartX + chartWidth), px(currentY));
+    ctx.stroke();
+    ctx.setLineDash([]);
+
     if (playerState && playerState.chargePosition) {
-        const entryPrice = playerState.chargePosition.entryPrice;
-        const entryY = getY(entryPrice);
-        const isShort = playerState.chargePosition.type === "short";
-        const color = isShort ? "#ff0055" : "#00ff00";
-        
-        ctx.beginPath();
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 2;
-        ctx.setLineDash([4 * dpr, 4 * dpr]);
-        ctx.moveTo(px(chartX), px(entryY));
-        ctx.lineTo(px(chartX + chartWidth), px(entryY));
-        ctx.stroke();
-        ctx.setLineDash([]);
+      const entryPrice = playerState.chargePosition.entryPrice;
+      const type = playerState.chargePosition.type || "long";
+      const isShort = type === "short";
+      const entryY = getY(entryPrice);
+
+      ctx.beginPath();
+      const color = isShort ? "#ff0055" : "#00ff00";
+      const mark = isShort ? "▼" : "▲";
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4 * dpr, 4 * dpr]);
+
+      ctx.moveTo(px(chartX), px(entryY));
+      ctx.lineTo(px(chartX + chartWidth), px(entryY));
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = color;
+      ctx.font = `bold ${12 * ratio}px sans-serif`;
+
+      const labelText = `${mark} ${isShort ? "SHORT ENTRY" : "LONG ENTRY"}`;
+      ctx.fillText(labelText, chartX + 5 * ratio, entryY - 5 * ratio);
+
+      ctx.textAlign = "right";
+      ctx.fillText(mark, chartX + chartWidth - 5 * ratio, entryY - 5 * ratio);
+      ctx.textAlign = "left";
     }
+
+    ctx.font = `bold ${14 * ratio}px 'Roboto Mono', monospace`;
+    const priceText = currentPrice.toFixed(0);
+    const textHeight = 14 * ratio;
+    const textX = chartX + chartWidth + 5 * ratio;
+    const textY = Math.max(
+      chartY + textHeight / 2,
+      Math.min(currentY, chartY + chartHeight - textHeight / 2)
+    );
+    ctx.save();
+    ctx.fillStyle = lastPrice >= (chartData[chartData.length - 2] || 0) ? "#00ff00" : "#ff0055";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(priceText, textX, textY);
+    ctx.restore();
   }
 }

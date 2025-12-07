@@ -62,7 +62,7 @@
           <div id="hud-dashboard">
             <div class="hud-upper-row">
               <div class="dashboard-item status-group">
-                <div class="panel-module transparent-bg">
+                 <div class="panel-module transparent-bg">
                   <div class="panel-header-row">
                     <h3>STATUS</h3>
                   </div>
@@ -71,7 +71,7 @@
                       <span class="stat-label">HP</span>
                       <div class="stat-bar-outer">
                         <div id="hp-bar-inner" class="stat-bar hp"></div>
-                      </div>
+                       </div>
                       <span id="hp-value" class="stat-value">100</span>
                     </div>
                     <div class="stat-row">
@@ -83,28 +83,28 @@
                       <span id="ep-value" class="stat-value ep-value">100</span>
                     </div>
                     <div class="stat-row no-bar">
-                      <span class="stat-label">Size</span>
+                       <span class="stat-label">Size</span>
                       <span id="size-value" class="stat-value">10</span>
                     </div>
                     <div class="stat-row no-bar">
-                      <span class="stat-label" id="power-label">Power</span>
+                       <span class="stat-label" id="power-label">Power</span>
                       <span id="power-value" class="stat-value">0</span>
                     </div>
                   </div>
                 </div>
               </div>
-              <div
+               <div
                 id="bottom-chart-panel"
                 class="panel-module transparent-bg dashboard-item"
               >
                 <div id="bottom-chart-left">
                   <h3 class="chart-label-badge">MARKET CHART</h3>
-                  <div class="canvas-wrapper" style="height: 100%">
+                   <div class="canvas-wrapper" style="height: 100%">
                     <canvas id="chart-canvas"></canvas>
                   </div>
                 </div>
                 <div id="ma-selection-panel">
-                  <div class="ma-option">
+                   <div class="ma-option">
                     <input
                       type="checkbox"
                       id="ma-short"
@@ -114,7 +114,7 @@
                     /><label for="ma-short">S</label>
                   </div>
                   <div class="ma-option">
-                    <input
+                     <input
                       type="checkbox"
                       id="ma-medium"
                       name="ma-select"
@@ -135,19 +135,19 @@
             </div>
           </div>
           <div class="hud-group top-right">
-            <div class="hud-row">
+             <div class="hud-row">
               <div class="panel-module transparent-bg">
                 <h3>RADAR</h3>
                 <div class="canvas-wrapper">
                   <canvas id="radar-canvas"></canvas>
                 </div>
-              </div>
+               </div>
               <div class="panel-module transparent-bg">
                 <h3>MAGAZINE</h3>
                 <div class="canvas-wrapper">
                   <canvas id="magazine-canvas"></canvas>
                 </div>
-              </div>
+               </div>
             </div>
           </div>
           <button id="btn-retire" class="ui-button small">RETIRE</button>
@@ -155,7 +155,7 @@
             <div
               id="debug-panel"
               class="ui-panel"
-              style="display: none; background: rgba(0, 0, 0, 0.5)"
+               style="display: none; background: rgba(0, 0, 0, 0.5)"
             >
               <h4>Stats</h4>
               <div id="debug-stats-container"></div>
@@ -170,13 +170,13 @@
               <button id="mc-btn-settle" class="mc-btn-entry">FIX</button>
               <button id="mc-btn-short" class="mc-btn-entry">SHORT</button>
               <button id="mc-btn-fire">FIRE</button>
-              <button id="mc-btn-long" class="mc-btn-entry">LONG</button>
+               <button id="mc-btn-long" class="mc-btn-entry">LONG</button>
               <div id="mc-lot-control">
                 <button id="mc-btn-lot-minus" class="mc-btn-lot">-</button>
                 <div id="mc-lot-display">10</div>
                 <button id="mc-btn-lot-plus" class="mc-btn-lot">+</button>
               </div>
-            </div>
+             </div>
           </div>
           <div id="mc-right-bottom">
             <div id="mc-joystick-area"><div id="mc-joystick-knob"></div></div>
@@ -185,7 +185,7 @@
         <div id="music-notification" class="music-notification hidden">
             <div class="music-icon">♪</div>
             <div class="music-info">
-              <span class="music-label">Now Playing</span>
+               <span class="music-label">Now Playing</span>
               <span id="music-title" class="music-title">Track Name</span>
             </div>
         </div>
@@ -197,7 +197,7 @@
         <h2>GAME OVER</h2>
         <p>Score: <span id="gameover-score">0</span></p>
         <button id="btn-gameover-retry" class="ui-button primary">Retry</button>
-        <button id="btn-gameover-home" class="ui-button">Home</button>
+         <button id="btn-gameover-home" class="ui-button">Home</button>
       </div>
     </div>
 
@@ -213,21 +213,9 @@
       <div class="screen-content">
         <h2>Warning</h2>
         <p>アイドル状態のため切断されます。</p>
-      </div>
+       </div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/8.1.0/pixi.min.js"></script>
-    <script
-      src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"
-      type="module"
-    ></script>
-    <script
-      src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js"
-      type="module"
-    ></script>
-    <script
-      src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js"
-      type="module"
-    ></script>
     <script src="src_v2/boot.js" type="module"></script>
   </body>
 </html>

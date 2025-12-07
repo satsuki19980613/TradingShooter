@@ -1,6 +1,3 @@
-/**
- * バイナリデータ書き込み用ユーティリティ
- */
 export class PacketWriter {
   constructor(size = 16384) {
     this.buffer = Buffer.alloc(size);
@@ -31,8 +28,7 @@ export class PacketWriter {
     this.offset += 4;
   }
 
-string(str) {
-    if (str == null) str = ""; // nullまたはundefinedなら空文字にする
+  string(str) {
     const len = Buffer.byteLength(str);
     this.u8(len);
     this.buffer.write(str, this.offset, len, "utf8");

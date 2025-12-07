@@ -39,10 +39,19 @@
 
       if (hasBullet) {
         let baseColor, glowColor;
-        if (damageVal >= 100) { baseColor = "#b300ff"; glowColor = "#ea80fc"; }
-        else if (damageVal >= 50) { baseColor = "#ff6d00"; glowColor = "#ffab40"; }
-        else if (damageVal >= 25) { baseColor = "#00e676"; glowColor = "#69f0ae"; }
-        else { baseColor = "#00bcd4"; glowColor = "#84ffff"; }
+        if (damageVal >= 100) {
+          baseColor = "#b300ff";
+          glowColor = "#ea80fc";
+        } else if (damageVal >= 50) {
+          baseColor = "#ff6d00";
+          glowColor = "#ffab40";
+        } else if (damageVal >= 25) {
+          baseColor = "#00e676";
+          glowColor = "#69f0ae";
+        } else {
+          baseColor = "#00bcd4";
+          glowColor = "#84ffff";
+        }
 
         ctx.save();
         const margin = 2 * ratio;
@@ -52,6 +61,7 @@
         grad.addColorStop(0, baseColor);
         grad.addColorStop(0.8, glowColor);
         grad.addColorStop(1, "#ffffff");
+
         ctx.fillStyle = grad;
         ctx.shadowColor = baseColor;
         ctx.shadowBlur = 10 * ratio;

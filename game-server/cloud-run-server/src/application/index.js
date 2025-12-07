@@ -12,24 +12,22 @@ import { ServerGame } from "./ServerGame.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Firebase Init
 initializeApp({ projectId: "trading-charge-shooter" });
 const firestore = getFirestore();
+console.log("Firebase Admin SDK initialized.");
 
-// Express Setup
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Static Files (Client)
-const staticPath = path.join(__dirname, "../../public"); // Adjust path to point to public
+const staticPath = path.join(__dirname, "../../public");
 app.use(express.static(staticPath));
+console.log(`Serving static files from: ${staticPath}`);
 
 const PORT = process.env.PORT || 8080;
 const server = createServer(app);
 const wss = new WebSocketServer({ server });
 
-// Room Management
 const activeRooms = new Map();
 
 function onRoomEmpty(roomId) {
@@ -41,18 +39,19 @@ function onRoomEmpty(roomId) {
 
 function findOrCreateRoom() {
   for (const [roomId, game] of activeRooms.entries()) {
-    if (game.worldState.players.size < 8 && game.worldState.isRunning && game.worldState.isReady) {
+    if (game.worldState.players.size < 8 && game.worldState.isRunning) {
       return game;
     }
   }
   const newRoomId = `room_${Date.now()}`;
   const newGame = new ServerGame(newRoomId, firestore, onRoomEmpty);
-  newGame.warmup().catch(e => console.error("Warmup failed", e));
+  
+  newGame.warmup().catch(e => console.error("Warmup Error:", e));
+  
   activeRooms.set(newRoomId, newGame);
   return newGame;
 }
 
-// WebSocket Handling
 wss.on("connection", (ws, req) => {
   let userId = null;
   let game = null;
@@ -69,30 +68,21 @@ wss.on("connection", (ws, req) => {
     }
 
     game = findOrCreateRoom();
-    const joinResult = game.addPlayer(userId, playerName, ws, isDebug);
-
-    if (joinResult) {
-      const joinData = {
-        type: "join_success",
-        roomId: game.roomId,
-        worldConfig: { width: game.worldState.width, height: game.worldState.height }
-      };
-      ws.send(JSON.stringify(joinData));
-    }
+    
+    game.addPlayer(userId, playerName, ws, isDebug);
 
     ws.on("message", (message) => {
-        // Binary Input Parsing
         const isBinary = Buffer.isBuffer(message) || message instanceof ArrayBuffer;
-        if (isBinary) {
+        
+        if (isBinary && game) {
             const buf = Buffer.isBuffer(message) ? message : Buffer.from(message);
             if (buf.length >= 15) {
                 const msgType = buf.readUInt8(0);
-                if (msgType === 2 && game) {
+                if (msgType === 2) { 
                     const mask = buf.readUInt16LE(1);
-                    const seq = buf.readUInt32LE(3);
                     const mouseX = buf.readFloatLE(7);
                     const mouseY = buf.readFloatLE(11);
-                    
+
                     const input = {
                         states: {
                             move_up: !!(mask & 1),
@@ -118,15 +108,16 @@ wss.on("connection", (ws, req) => {
             return;
         }
 
-        // JSON Message Handling
         try {
             const data = JSON.parse(message.toString());
-            if (data.type === "pause" && game) {
-                const p = game.worldState.players.get(userId);
-                if(p) p.isPaused = true;
-            } else if (data.type === "resume" && game) {
-                const p = game.worldState.players.get(userId);
-                if(p) p.isPaused = false;
+            if (game) {
+                if (data.type === "pause") {
+                    const player = game.worldState.players.get(userId);
+                    if (player) player.isPaused = true;
+                } else if (data.type === "resume") {
+                    const player = game.worldState.players.get(userId);
+                    if (player) player.isPaused = false;
+                }
             }
         } catch (e) {}
     });
@@ -140,6 +131,7 @@ wss.on("connection", (ws, req) => {
     });
 
   } catch (e) {
+    console.error("Connection Error:", e);
     ws.close(1011, "Server Error");
   }
 });

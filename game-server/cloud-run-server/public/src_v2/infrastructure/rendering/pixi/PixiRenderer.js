@@ -1,14 +1,11 @@
 import { skinFactory } from "../skins/SkinFactory.js";
-// ※以下のスキン定義は既存ファイルを infrastructure/rendering/skins/ 配下に移動・配置している前提でインポート
 import { PlayerSkins } from "../skins/players/PlayerSkins.js";
 import { EnemySkins } from "../skins/enemies/EnemySkins.js";
 import { BulletSkins } from "../skins/bullets/BulletSkins.js";
 import { ObstacleSkins } from "../skins/ObstacleSkins.js";
 import { GridSkin } from "../skins/environment/GridSkin.js";
+import { PixiParticleRenderer } from "./PixiParticleRenderer.js";
 
-/**
- * PixiJSを使用したメインレンダラー
- */
 export class PixiRenderer {
   constructor(canvasId) {
     this.canvasId = canvasId;
@@ -24,6 +21,8 @@ export class PixiRenderer {
     
     this.PLAYER_SKIN_SIZE = 150;
     this.ENEMY_SKIN_SIZE = 120;
+    
+    this.particleRenderer = null;
   }
 
   async init() {
@@ -40,17 +39,17 @@ export class PixiRenderer {
       autoDensity: true,
       antialias: false,
     });
-
     this.app.stage.addChild(this.layers.background);
     this.app.stage.addChild(this.layers.game);
     this.app.stage.addChild(this.layers.effect);
+    
+    this.particleRenderer = new PixiParticleRenderer(this.layers.effect);
   }
 
   setupBackground(worldW, worldH, cellSize = 150) {
     this.layers.background.removeChildren();
     const drawFn = GridSkin.drawTile("rgba(0, 100, 100, 0.2)", 2);
     const gridTexture = skinFactory.getTexture("bg_grid", cellSize, cellSize, drawFn);
-    
     this.gridSprite = new PIXI.TilingSprite(gridTexture, worldW, worldH);
     this.layers.background.addChild(this.gridSprite);
 
@@ -79,16 +78,14 @@ export class PixiRenderer {
   }
 
   render(visualState) {
-    // Players
     this.syncSprites(visualState.players, "player");
-    // Enemies
     this.syncSprites(visualState.enemies, "enemy");
-    // Bullets
     this.syncSprites(visualState.bullets, "bullet");
-    // Obstacles
     this.syncSprites(visualState.obstacles, "obstacle");
-    // Effects
-    this.renderEffects(visualState.effects);
+    
+    if (this.particleRenderer) {
+        this.particleRenderer.render(visualState.effects);
+    }
 
     this.cleanupSprites(visualState);
   }
@@ -151,7 +148,6 @@ export class PixiRenderer {
             container.addChild(hpBar);
         }
         return { container, chassis, turret, text, hpBar, type };
-
     } else if (type === "enemy") {
         const bodyTex = skinFactory.getTexture("enemy_heavy_tank", this.ENEMY_SKIN_SIZE, this.ENEMY_SKIN_SIZE, EnemySkins.heavyTank());
         const body = new PIXI.Sprite(bodyTex);
@@ -159,13 +155,12 @@ export class PixiRenderer {
         hpBar.y = -60;
         container.addChild(body, hpBar);
         return { container, body, hpBar, type };
-
     } else if (type === "bullet") {
         const size = entity.radius ? entity.radius * 4 : 32;
         const bulletType = entity.type || "player";
         const drawFunc = BulletSkins[bulletType] || BulletSkins["player"];
         const funcToUse = (ctx, w, h) => { 
-            const f = drawFunc(3000); 
+            const f = drawFunc(3000);
             if (typeof f === "function") f(ctx, w, h);
             else drawFunc()(ctx, w, h); 
         };
@@ -174,7 +169,6 @@ export class PixiRenderer {
         sprite.anchor.set(0.5);
         container.addChild(sprite);
         return { container, sprite, type };
-
     } else if (type === "obstacle") {
         const sprite = new PIXI.Sprite();
         sprite.anchor.set(0.5);
@@ -241,32 +235,6 @@ export class PixiRenderer {
     graphics.rect(-width / 2, 0, width, height).fill({ color: 0x000000, alpha: 0.6 });
     graphics.rect(-width / 2, 0, barW, height).fill({ color: color, alpha: 0.8 });
     graphics.rect(-width / 2, 0, width, height).stroke({ width: 1, color: 0xffffff, alpha: 0.3 });
-  }
-
-  renderEffects(effects) {
-      // 簡易実装: VisualEffectモデルの状態に基づいてパーティクルを描画
-      // 実際にはParticleSystemのロジックでグラフィックスを生成・更新する
-      if (!effects) return;
-      effects.forEach(effect => {
-          if (!effect.graphics) {
-              const g = new PIXI.Graphics();
-              if (effect.type === "ring") {
-                  g.circle(0, 0, effect.radius * 3).stroke({ width: 2, color: effect.color });
-              } else {
-                  g.circle(0, 0, effect.radius).fill({ color: effect.color });
-              }
-              g.blendMode = 'add';
-              this.layers.effect.addChild(g);
-              effect.graphics = g;
-          }
-          effect.graphics.x = effect.x;
-          effect.graphics.y = effect.y;
-          effect.graphics.alpha = effect.alpha;
-          if (effect.alpha <= 0) {
-              this.layers.effect.removeChild(effect.graphics);
-              effect.graphics.destroy();
-          }
-      });
   }
 
   cleanupSprites(visualState) {

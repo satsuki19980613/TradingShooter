@@ -1,10 +1,7 @@
 import { VisualPlayer } from "../../domain/view_models/VisualPlayer.js";
-import { VisualEffect } from "../../domain/view_models/VisualEffect.js";
 import { InterpolationLogic } from "../../logic/InterpolationLogic.js";
+import { ParticleFactory } from "../../domain/factories/ParticleFactory.js";
 
-/**
- * サーバー状態をクライアントのViewModelに同期させるマネージャー
- */
 export class StateSyncManager {
   constructor(userId) {
     this.userId = userId;
@@ -48,25 +45,24 @@ export class StateSyncManager {
   applyDelta(delta) {
     if (!delta) return;
 
-    // Events
     if (delta.events) {
         delta.events.forEach(ev => {
+            let newParticles = [];
             if (ev.type === "hit") {
-                this.createHitEffect(ev.x, ev.y, ev.color, 8, "spark");
+                newParticles = ParticleFactory.createHitEffect(ev.x, ev.y, ev.color, 8);
             } else if (ev.type === "explosion") {
-                this.createHitEffect(ev.x, ev.y, ev.color, 30, "ring");
+                newParticles = ParticleFactory.createExplosionEffect(ev.x, ev.y, ev.color);
             }
+            this.visualState.effects.push(...newParticles);
         });
     }
 
-    // Removed
     if (delta.removed) {
         delta.removed.players.forEach(id => this.visualState.players.delete(id));
         delta.removed.enemies.forEach(id => this.visualState.enemies.delete(id));
         delta.removed.bullets.forEach(id => this.visualState.bullets.delete(id));
     }
 
-    // Updated
     if (delta.updated) {
         if (delta.updated.players) {
             delta.updated.players.forEach(pState => {
@@ -78,7 +74,8 @@ export class StateSyncManager {
                 }
                 this.updatePlayerModel(p, pState);
                 if (!p.isDead && pState.d) {
-                    this.createHitEffect(p.x, p.y, "#ffffff", 20, "ring");
+                    const deathEffects = ParticleFactory.createExplosionEffect(p.x, p.y, "#ffffff");
+                    this.visualState.effects.push(...deathEffects);
                 }
             });
         }
@@ -132,7 +129,6 @@ export class StateSyncManager {
       vp.isDead = !!state.d;
       vp.chargeBetAmount = state.ba;
       vp.stockedBullets = state.sb || [];
-      
       if (state.cp) {
           vp.chargePosition = { entryPrice: state.cp.ep, amount: state.cp.a, type: state.cp.t };
       } else {
@@ -159,52 +155,27 @@ export class StateSyncManager {
       });
   }
 
-  createHitEffect(x, y, colorStr, count, type) {
-      const color = parseInt(colorStr.replace("#", "0x"), 16);
-      for(let i=0; i<count; i++) {
-          const angle = Math.random() * Math.PI * 2;
-          const speed = Math.random() * 5 + 2;
-          const vx = Math.cos(angle) * speed;
-          const vy = Math.sin(angle) * speed;
-          const r = Math.random() * 2 + 1;
-          const p = new VisualEffect(x, y, r, color, vx, vy, "spark");
-          this.visualState.effects.push(p);
-      }
-      if(type === "ring") {
-          const ring = new VisualEffect(x, y, 10, color, 0, 0, "ring");
-          this.visualState.effects.push(ring);
-      }
-  }
-
   updateInterpolation(dt) {
-      // Lerp Players
       this.visualState.players.forEach(p => {
           p.x = InterpolationLogic.calculateNextPosition(p.x, p.targetX, dt);
           p.y = InterpolationLogic.calculateNextPosition(p.y, p.targetY, dt);
           p.rotationAngle = InterpolationLogic.calculateNextAngle(p.rotationAngle, p.targetAimAngle, dt); 
       });
-      // Lerp Enemies
+
       this.visualState.enemies.forEach(e => {
           e.x = InterpolationLogic.calculateNextPosition(e.x, e.targetX || e.x, dt);
           e.y = InterpolationLogic.calculateNextPosition(e.y, e.targetY || e.y, dt);
       });
-      // Lerp Bullets
+
       this.visualState.bullets.forEach(b => {
           b.x = InterpolationLogic.calculateNextPosition(b.x, b.targetX || b.x, dt);
           b.y = InterpolationLogic.calculateNextPosition(b.y, b.targetY || b.y, dt);
       });
-      // Update Effects
+
       for (let i = this.visualState.effects.length - 1; i >= 0; i--) {
           const ef = this.visualState.effects[i];
-          ef.x += ef.vx * dt;
-          ef.y += ef.vy * dt;
-          ef.vx *= Math.pow(ef.friction, dt);
-          ef.vy *= Math.pow(ef.friction, dt);
-          ef.alpha -= ef.decay * dt;
-          if (ef.type === "ring") {
-              ef.radius += 2 * dt; 
-          }
-          if (ef.alpha <= 0) {
+          ef.update(dt);
+          if (ef.isDead()) {
               this.visualState.effects.splice(i, 1);
           }
       }
