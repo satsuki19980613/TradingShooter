@@ -33,12 +33,21 @@ export const MovementLogic = {
 
   /**
    * 速度ベクトルに基づいて座標を更新する (単純移動)
+   * ★修正: 新しいオブジェクトを返さず、outResultに書き込む
+   * @param {number} x
+   * @param {number} y
+   * @param {number} vx
+   * @param {number} vy
+   * @param {object} outResult - 結果を格納する再利用可能なオブジェクト {x, y}
    */
-  updatePosition(x, y, vx, vy) {
-    return {
-      x: x + vx,
-      y: y + vy
-    };
+  updatePosition(x, y, vx, vy, outResult) {
+    if (!outResult) {
+        // 安全策: もし渡されなかったら仕方なく作るが、基本は渡すこと
+        return { x: x + vx, y: y + vy };
+    }
+    outResult.x = x + vx;
+    outResult.y = y + vy;
+    return outResult; // 参照を返す（連鎖呼び出し用）
   },
 
   /**

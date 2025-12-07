@@ -1,5 +1,5 @@
 import { CollisionLogic } from "../../logic/CollisionLogic.js";
-import { MovementLogic } from "../../logic/MovementLogic.js";
+
 import { GameConstants } from "../../core/constants/GameConstants.js";
 
 class SpatialGrid {
@@ -8,7 +8,6 @@ class SpatialGrid {
     this.grid = new Map();
     this.staticGrid = new Map();
   }
-
   clearDynamic() {
     this.grid.clear();
   }
@@ -18,7 +17,9 @@ class SpatialGrid {
   insertDynamic(entity) {
     this._addToGrid(entity, this.grid);
   }
-
+  _getKey(x, y) {
+    return (x << 16) | (y & 0xffff);
+  }
   _addToGrid(entity, map) {
     const r =
       entity.radius || Math.max(entity.width || 0, entity.height || 0) / 2;
@@ -28,13 +29,16 @@ class SpatialGrid {
     const maxY = Math.floor((entity.y + r) / this.cellSize);
     for (let x = minX; x <= maxX; x++) {
       for (let y = minY; y <= maxY; y++) {
-        const key = `${x},${y}`;
-        if (!map.has(key)) map.set(key, []);
-        map.get(key).push(entity);
+        const key = this._getKey(x, y);
+        let cell = map.get(key);
+        if (!cell) {
+          cell = [];
+          map.set(key, cell);
+        }
+        cell.push(entity);
       }
     }
   }
-
   getNearby(entity) {
     const r = entity.radius || 0;
     const minX = Math.floor((entity.x - r) / this.cellSize);
@@ -44,36 +48,14 @@ class SpatialGrid {
     const result = new Set();
     for (let x = minX; x <= maxX; x++) {
       for (let y = minY; y <= maxY; y++) {
-        const key = `${x},${y}`;
+        const key = this._getKey(x, y);
         if (this.staticGrid.has(key)) {
-          this.staticGrid.get(key).forEach((e) => result.add(e));
+          const statics = this.staticGrid.get(key);
+          for (const e of statics) result.add(e);
         }
         if (this.grid.has(key)) {
-          this.grid.get(key).forEach((e) => {
-            if (e !== entity) result.add(e);
-          });
-        }
-      }
-    }
-    return result;
-  }
-  getNearbyWithRadius(entity, radius) {
-    const minX = Math.floor((entity.x - radius) / this.cellSize);
-    const maxX = Math.floor((entity.x + radius) / this.cellSize);
-    const minY = Math.floor((entity.y - radius) / this.cellSize);
-    const maxY = Math.floor((entity.y + radius) / this.cellSize);
-
-    const result = new Set();
-    for (let x = minX; x <= maxX; x++) {
-      for (let y = minY; y <= maxY; y++) {
-        const key = `${x},${y}`;
-        if (this.staticGrid.has(key)) {
-          this.staticGrid.get(key).forEach((e) => result.add(e));
-        }
-        if (this.grid.has(key)) {
-          this.grid.get(key).forEach((e) => {
-            if (e !== entity) result.add(e);
-          });
+          const dynamics = this.grid.get(key);
+          for (const e of dynamics) if (e !== entity) result.add(e);
         }
       }
     }
@@ -91,11 +73,17 @@ export class PhysicsSystem {
       GameConstants.GRID_CELL_SIZE
     );
     this.staticInitialized = false;
+
+    this.tempPos = { x: 0, y: 0 };
+
+    this.tempPushVector = { x: 0, y: 0 };
   }
 
   initStatic(obstacles) {
     if (this.staticInitialized) return;
-    obstacles.forEach((obs) => this.grid.insertStatic(obs));
+    for (const obs of obstacles) {
+      this.grid.insertStatic(obs);
+    }
     this.staticInitialized = true;
   }
 
@@ -103,67 +91,73 @@ export class PhysicsSystem {
     if (!this.staticInitialized) this.initStatic(worldState.obstacles);
 
     this.grid.clearDynamic();
-    worldState.players.forEach((p) => !p.isDead && this.grid.insertDynamic(p));
-    worldState.enemies.forEach((e) => this.grid.insertDynamic(e));
 
-    worldState.bullets.forEach((b) => this.grid.insertDynamic(b));
+    for (const p of worldState.players.values()) {
+      if (!p.isDead) this.grid.insertDynamic(p);
+    }
+    for (const e of worldState.enemies) {
+      this.grid.insertDynamic(e);
+    }
+    for (const b of worldState.bullets) {
+      this.grid.insertDynamic(b);
+    }
 
-    const activeEntities = [
-      ...Array.from(worldState.players.values()).filter((p) => !p.isDead),
-      ...worldState.enemies,
-    ];
+    for (const p of worldState.players.values()) {
+      if (!p.isDead) this._updateSingleEntity(p);
+    }
 
-    activeEntities.forEach((entity) => {
-      if (entity.vx !== 0 || entity.vy !== 0) {
-        const nextPos = MovementLogic.updatePosition(
-          entity.x,
-          entity.y,
-          entity.vx,
-          entity.vy
-        );
-        entity.x = nextPos.x;
-        entity.y = nextPos.y;
-      }
-
-      this.resolveObstacleCollisions(entity);
-
-      const clamped = CollisionLogic.clampPosition(
-        entity.x,
-        entity.y,
-        entity.radius,
-        this.worldWidth,
-        this.worldHeight
-      );
-      entity.x = clamped.x;
-      entity.y = clamped.y;
-    });
+    for (const e of worldState.enemies) {
+      this._updateSingleEntity(e);
+    }
 
     this.resolveEntityCollisions(worldState);
-
     this.updateBullets(worldState);
+  }
+
+  _updateSingleEntity(entity) {
+    if (entity.vx !== 0 || entity.vy !== 0) {
+      entity.x += entity.vx;
+      entity.y += entity.vy;
+    }
+
+    this.resolveObstacleCollisions(entity);
+
+    CollisionLogic.clampPosition(
+      entity.x,
+      entity.y,
+      entity.radius,
+      this.worldWidth,
+      this.worldHeight,
+      this.tempPos
+    );
+    entity.x = this.tempPos.x;
+    entity.y = this.tempPos.y;
   }
 
   resolveObstacleCollisions(entity) {
     const nearby = this.grid.getNearby(entity);
     for (const other of nearby) {
       if (other.type === "obstacle_wall") {
-        const correctedPos = CollisionLogic.resolveObstacleCollision(
+        const hasCollision = CollisionLogic.resolveObstacleCollision(
           entity.x,
           entity.y,
           entity.radius,
-          other
+          other,
+          this.tempPos,
+          this.tempPushVector
         );
-        if (correctedPos) {
-          entity.x = correctedPos.x;
-          entity.y = correctedPos.y;
+
+        if (hasCollision) {
+          entity.x = this.tempPos.x;
+          entity.y = this.tempPos.y;
         }
       }
     }
   }
 
   resolveEntityCollisions(worldState) {
-    worldState.players.forEach((player) => {
-      if (player.isDead) return;
+    for (const player of worldState.players.values()) {
+      if (player.isDead) continue;
 
       const nearby = this.grid.getNearby(player);
 
@@ -172,38 +166,38 @@ export class PhysicsSystem {
 
         if (target.type === "player" || target.type === "enemy") {
           if (target.isDead) continue;
-
           if (target.type === "player" && player.id > target.id) continue;
 
-          const push = CollisionLogic.resolveEntityOverlap(
+          const hasCollision = CollisionLogic.resolveEntityOverlap(
             player.x,
             player.y,
             player.radius,
             target.x,
             target.y,
-            target.radius
+            target.radius,
+            this.tempPushVector
           );
 
-          if (push) {
-            player.x += push.pushX;
-            player.y += push.pushY;
-            target.x -= push.pushX;
-            target.y -= push.pushY;
+          if (hasCollision) {
+            player.x += this.tempPushVector.x;
+            player.y += this.tempPushVector.y;
+            target.x -= this.tempPushVector.x;
+            target.y -= this.tempPushVector.y;
 
             this.resolveObstacleCollisions(player);
             this.resolveObstacleCollisions(target);
           }
         }
       }
-    });
+    }
   }
 
   updateBullets(worldState) {
     for (let i = worldState.bullets.length - 1; i >= 0; i--) {
       const b = worldState.bullets[i];
-      const nextPos = MovementLogic.updatePosition(b.x, b.y, b.vx, b.vy);
-      b.x = nextPos.x;
-      b.y = nextPos.y;
+
+      b.x += b.vx;
+      b.y += b.vy;
 
       if (
         b.x < 0 ||
@@ -218,16 +212,17 @@ export class PhysicsSystem {
       let hit = false;
 
       const nearby = this.grid.getNearby(b);
-
       for (const target of nearby) {
         if (target.type === "obstacle_wall") {
-          const collision = CollisionLogic.resolveObstacleCollision(
+          const hasCollision = CollisionLogic.resolveObstacleCollision(
             b.x,
             b.y,
             b.radius,
-            target
+            target,
+            null,
+            this.tempPushVector
           );
-          if (collision) {
+          if (hasCollision) {
             hit = true;
             break;
           }
@@ -276,5 +271,4 @@ export class PhysicsSystem {
       }
     }
   }
-
 }

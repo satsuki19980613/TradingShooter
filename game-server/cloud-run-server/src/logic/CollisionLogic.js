@@ -1,55 +1,83 @@
+/**
+ * src/logic/CollisionLogic.js
+ */
 export const CollisionLogic = {
   getDistance(x1, y1, x2, y2) {
     const dx = x1 - x2;
     const dy = y1 - y2;
     return Math.sqrt(dx * dx + dy * dy);
   },
+  
   getDistanceSq(x1, y1, x2, y2) {
     const dx = x1 - x2;
     const dy = y1 - y2;
     return dx * dx + dy * dy;
   },
-  clampPosition(x, y, radius, worldWidth, worldHeight) {
+
+  /**
+   * 座標制限 (Step 1で修正済みだが、再掲)
+   */
+  clampPosition(x, y, radius, worldWidth, worldHeight, outResult) {
     const newX = Math.max(radius, Math.min(worldWidth - radius, x));
     const newY = Math.max(radius, Math.min(worldHeight - radius, y));
+    if (outResult) {
+        outResult.x = newX;
+        outResult.y = newY;
+        return outResult;
+    }
     return { x: newX, y: newY };
   },
 
-  resolveEntityOverlap(x1, y1, r1, x2, y2, r2) {
+  /**
+   * エンティティ間の重なり解消
+   * ★修正: outResult に書き込む (戻り値は boolean)
+   */
+  resolveEntityOverlap(x1, y1, r1, x2, y2, r2, outResult) {
     const dx = x1 - x2;
     const dy = y1 - y2;
-    const dist = Math.sqrt(dx * dx + dy * dy);
+    const distSq = dx * dx + dy * dy;
     const totalRadius = r1 + r2;
-    const overlap = totalRadius - dist;
 
-    if (overlap > 0) {
-      let pushX = 0;
-      let pushY = 0;
+    if (distSq < totalRadius * totalRadius) {
+      const dist = Math.sqrt(distSq);
+      const overlap = totalRadius - dist;
+      
+      if (overlap > 0) {
+        let pushX = 0;
+        let pushY = 0;
+        
+        if (dist === 0) {
+          pushX = 0.1;
+          pushY = 0;
+        } else {
+          pushX = dx / dist;
+          pushY = dy / dist;
+        }
 
-      if (dist === 0) {
-        pushX = 0.1;
-        pushY = 0;
-      } else {
-        pushX = dx / dist;
-        pushY = dy / dist;
+        const pushAmount = overlap / 2;
+        
+        if (outResult) {
+            outResult.x = pushX * pushAmount;
+            outResult.y = pushY * pushAmount;
+        }
+        return true; // 衝突あり
       }
-
-      const pushAmount = overlap / 2;
-      return {
-        pushX: pushX * pushAmount,
-        pushY: pushY * pushAmount,
-      };
     }
-    return null;
+    return false; // 衝突なし
   },
 
-  resolveObstacleCollision(circleX, circleY, radius, obstacle) {
+  /**
+   * 障害物との衝突解決 (反復計算)
+   * ★修正: outResult (最終座標) と tempVector (計算用) を受け取る
+   */
+  resolveObstacleCollision(circleX, circleY, radius, obstacle, outResult, tempVector) {
     const distX = circleX - obstacle.centerX;
     const distY = circleY - obstacle.centerY;
     const threshold = radius + obstacle.maxColliderRadius + 10;
-
+    
+    // ブロードフェーズ判定（高速化）
     if (distX * distX + distY * distY > threshold * threshold) {
-      return null;
+      return false;
     }
 
     let tempX = circleX;
@@ -59,54 +87,57 @@ export const CollisionLogic = {
 
     for (let i = 0; i < ITERATIONS; i++) {
       let movedInThisLoop = false;
-
+      
+      // for...of ループ (配列生成なし)
       for (const c of obstacle.colliders) {
-        const result = this.solveSingleCollider(
+        // ★修正: tempVector を渡して結果を受け取る
+        const hit = this.solveSingleCollider(
           tempX,
           tempY,
           radius,
           obstacle.centerX,
           obstacle.centerY,
-          c
+          c,
+          tempVector
         );
-        if (result.hit) {
+
+        if (hit) {
           hasCollision = true;
           movedInThisLoop = true;
-          tempX += result.pushX;
-          tempY += result.pushY;
+          tempX += tempVector.x;
+          tempY += tempVector.y;
         }
       }
 
       if (!movedInThisLoop) break;
     }
 
-    if (hasCollision) {
-      return { x: tempX, y: tempY };
+    if (hasCollision && outResult) {
+      outResult.x = tempX;
+      outResult.y = tempY;
+      return true;
     }
-    return null;
+    return false;
   },
 
-  solveSingleCollider(
-    circleX,
-    circleY,
-    radius,
-    obsCenterX,
-    obsCenterY,
-    collider
-  ) {
+  /**
+   * 単一コライダーとの判定
+   * ★修正: outVector に押し出し量を書き込む
+   */
+  solveSingleCollider(circleX, circleY, radius, obsCenterX, obsCenterY, collider, outVector) {
     const boxCenterX = obsCenterX + (collider.x || 0);
     const boxCenterY = obsCenterY + (collider.y || 0);
 
     const dx = circleX - boxCenterX;
     const dy = circleY - boxCenterY;
-
     const totalAngle = (collider.angle || 0) * (Math.PI / 180);
+    
     const cos = Math.cos(-totalAngle);
     const sin = Math.sin(-totalAngle);
-
+    
     const localX = dx * cos - dy * sin;
     const localY = dx * sin + dy * cos;
-
+    
     const halfW = collider.w / 2;
     const halfH = collider.h / 2;
 
@@ -115,10 +146,11 @@ export const CollisionLogic = {
 
     const distLocX = localX - closestLocX;
     const distLocY = localY - closestLocY;
+    
     const distSq = distLocX * distLocX + distLocY * distLocY;
 
     if (distSq > radius * radius || distSq === 0) {
-      return { hit: false, pushX: 0, pushY: 0 };
+      return false;
     }
 
     const dist = Math.sqrt(distSq);
@@ -134,10 +166,11 @@ export const CollisionLogic = {
 
     const cosR = Math.cos(totalAngle);
     const sinR = Math.sin(totalAngle);
-
-    const bestPushX = pushLocX * cosR - pushLocY * sinR;
-    const bestPushY = pushLocX * sinR + pushLocY * cosR;
-
-    return { hit: true, pushX: bestPushX, pushY: bestPushY };
+    
+    if (outVector) {
+        outVector.x = pushLocX * cosR - pushLocY * sinR;
+        outVector.y = pushLocX * sinR + pushLocY * cosR;
+    }
+    return true;
   },
 };

@@ -5,6 +5,10 @@ import { Protocol } from "../../core/constants/Protocol.js";
 export class NetworkSystem {
   constructor() {
     this.playerWriters = new WeakMap();
+    
+    // ★追加: プレイヤーごとのMapプールを管理するWeakMap
+    // Key: PlayerState, Value: { index: 0, buffers: [ {players, enemies, bullets}, ... ] }
+    this.playerMapsPool = new WeakMap();
   }
 
   broadcastGameState(players, worldState) {
@@ -13,6 +17,7 @@ export class NetworkSystem {
         return;
       }
 
+      // ★変更: プールからMapを取得して使用
       const relevantEntityMaps = this.getRelevantEntityMapsFor(
         player,
         worldState
@@ -36,10 +41,12 @@ export class NetworkSystem {
         this.safeSend(player.ws, binaryData);
       }
 
+      // 今回の状態を次回のために保持（参照を保持するだけなのでコピーコストなし）
       player.lastBroadcastState = relevantEntityMaps;
     });
   }
 
+  // ... (createBinaryDelta メソッドは変更なしのため省略) ...
   createBinaryDelta(oldEntityMaps, newEntityMaps, writer, events) {
     writer.u8(Protocol.MSG_TYPE_DELTA || 1);
 
@@ -55,7 +62,6 @@ export class NetworkSystem {
       }
     }
     writer.buffer.writeUInt8(Math.min(removedCount, 255), removedPlayersStart);
-
     removedCount = 0;
     const removedEnemiesStart = writer.offset;
     writer.u8(0);
@@ -68,7 +74,6 @@ export class NetworkSystem {
       }
     }
     writer.buffer.writeUInt8(Math.min(removedCount, 255), removedEnemiesStart);
-
     removedCount = 0;
     const removedBulletsStart = writer.offset;
     writer.u16(0);
@@ -84,13 +89,12 @@ export class NetworkSystem {
       Math.min(removedCount, 65535),
       removedBulletsStart
     );
-
     writer.u8(Math.min(newEntityMaps.players.size, 255));
     for (const p of newEntityMaps.players.values()) {
       writer.string(p.id);
       writer.f32(p.x);
       writer.f32(p.y);
-      const safeHp = Number.isNaN(p.hp) ? 0 : p.hp; // NaNチェック
+      const safeHp = Number.isNaN(p.hp) ? 0 : p.hp; 
       writer.u8(Math.min(Math.max(0, Math.ceil(safeHp)), 255));
       writer.f32(p.angle);
       writer.f32(p.aimAngle || 0);
@@ -99,12 +103,12 @@ export class NetworkSystem {
       writer.u8(p.isDead ? 1 : 0);
       writer.u16(Math.floor(p.ep));
       writer.u16(p.chargeBetAmount || 10);
-
       if (p.chargePosition) {
         writer.u8(1);
         writer.f32(p.chargePosition.entryPrice);
         writer.f32(p.chargePosition.amount);
-        const typeId = p.chargePosition.type === "short" ? 1 : 0;
+        const typeId = p.chargePosition.type === "short" ?
+          1 : 0;
         writer.u8(typeId);
       } else {
         writer.u8(0);
@@ -113,7 +117,8 @@ export class NetworkSystem {
       const bullets = p.stockedBullets || [];
       writer.u8(Math.min(bullets.length, 255));
       for (const b of bullets) {
-        const dmg = typeof b === "object" ? b.damage : b;
+        const dmg = typeof b === "object" ?
+          b.damage : b;
         writer.u16(Math.ceil(dmg));
       }
     }
@@ -161,40 +166,65 @@ export class NetworkSystem {
   }
 
   getRelevantEntityMapsFor(player, worldState) {
-    const viewportRadius = 750;
+    // ★最適化: 二乗距離での比較（sqrt除去）
+    const VIEWPORT_RADIUS_SQ = 750 * 750;
 
-    const playersMap = new Map();
-    const enemiesMap = new Map();
-    const bulletsMap = new Map();
+    // ★最適化: Mapのダブルバッファリング
+    let poolData = this.playerMapsPool.get(player);
+    if (!poolData) {
+        // バッファを2セット用意
+        poolData = {
+            index: 0,
+            buffers: [
+                { players: new Map(), enemies: new Map(), bullets: new Map() },
+                { players: new Map(), enemies: new Map(), bullets: new Map() }
+            ]
+        };
+        this.playerMapsPool.set(player, poolData);
+    }
 
-    worldState.players.forEach((p) => {
+    // カレントのバッファインデックスを切り替え (0 -> 1 -> 0 ...)
+    poolData.index = (poolData.index + 1) % 2;
+    const buffer = poolData.buffers[poolData.index];
+
+    // 内容をクリア（new Mapせず再利用）
+    buffer.players.clear();
+    buffer.enemies.clear();
+    buffer.bullets.clear();
+
+    // ★最適化: forEach -> for...of
+    for (const p of worldState.players.values()) {
       if (p.id === player.id) {
-        playersMap.set(p.id, p);
+        buffer.players.set(p.id, p);
       } else {
-        const dist = Math.sqrt((p.x - player.x) ** 2 + (p.y - player.y) ** 2);
-        if (dist < viewportRadius) {
-          playersMap.set(p.id, p);
+        const dx = p.x - player.x;
+        const dy = p.y - player.y;
+        if (dx * dx + dy * dy < VIEWPORT_RADIUS_SQ) {
+          buffer.players.set(p.id, p);
         }
       }
-    });
+    }
 
-    worldState.enemies.forEach((e) => {
-      const dist = Math.sqrt((e.x - player.x) ** 2 + (e.y - player.y) ** 2);
-      if (dist < viewportRadius) {
-        enemiesMap.set(e.id, e);
+    for (const e of worldState.enemies) {
+      const dx = e.x - player.x;
+      const dy = e.y - player.y;
+      if (dx * dx + dy * dy < VIEWPORT_RADIUS_SQ) {
+        buffer.enemies.set(e.id, e);
       }
-    });
+    }
 
-    worldState.bullets.forEach((b) => {
-      const dist = Math.sqrt((b.x - player.x) ** 2 + (b.y - player.y) ** 2);
-      if (dist < viewportRadius) {
-        bulletsMap.set(b.id, b);
+    for (const b of worldState.bullets) {
+      const dx = b.x - player.x;
+      const dy = b.y - player.y;
+      if (dx * dx + dy * dy < VIEWPORT_RADIUS_SQ) {
+        buffer.bullets.set(b.id, b);
       }
-    });
+    }
 
-    return { players: playersMap, enemies: enemiesMap, bullets: bulletsMap };
+    return buffer;
   }
 
+  // ... (sendSnapshot, broadcastLeaderboard, broadcastChartUpdate, safeSend は変更なしのため省略) ...
   sendSnapshot(player, worldState) {
     const entityMaps = this.getRelevantEntityMapsFor(player, worldState);
     const snapshotPayload = {
@@ -236,12 +266,10 @@ export class NetworkSystem {
         a: Math.atan2(b.vy, b.vx),
       })),
     };
-
     this.safeSend(
       player.ws,
       JSON.stringify({ type: "game_state_snapshot", payload: snapshotPayload })
     );
-
     player.lastBroadcastState = entityMaps;
   }
 
