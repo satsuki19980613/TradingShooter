@@ -1,9 +1,21 @@
 export class RadarRenderer {
-  draw(ctx, canvasWidth, canvasHeight, worldWidth, worldHeight, playerState, enemiesState, obstaclesState, otherPlayersState) {
+  draw(
+    ctx,
+    canvasWidth,
+    canvasHeight,
+    worldWidth,
+    worldHeight,
+    playerState,
+    enemiesState,
+    obstaclesState,
+    otherPlayersState
+  ) {
     const dpr = window.devicePixelRatio || 1;
     let uiScale = 1;
     try {
-      const val = getComputedStyle(document.body).getPropertyValue("--ui-scale");
+      const val = getComputedStyle(document.body).getPropertyValue(
+        "--ui-scale"
+      );
       if (val) uiScale = parseFloat(val);
     } catch (e) {}
     if (!uiScale || isNaN(uiScale)) uiScale = 1;
@@ -89,11 +101,9 @@ export class RadarRenderer {
         if (distSq <= radarRadius ** 2) {
           ctx.beginPath();
           ctx.fillStyle = "#ff3333";
-          ctx.shadowColor = "#ff0000";
-          ctx.shadowBlur = 6 * ratio;
+
           ctx.arc(pos.x, pos.y, 2.5 * ratio, 0, Math.PI * 2);
           ctx.fill();
-          ctx.shadowBlur = 0;
         }
       });
     }
@@ -105,23 +115,22 @@ export class RadarRenderer {
         if (distSq <= radarRadius ** 2) {
           ctx.beginPath();
           ctx.fillStyle = "#00ff88";
-          ctx.shadowColor = "#00ff00";
-          ctx.shadowBlur = 5 * ratio;
+
           ctx.arc(pos.x, pos.y, 2.5 * ratio, 0, Math.PI * 2);
           ctx.fill();
-          ctx.shadowBlur = 0;
         }
       });
     }
 
     ctx.save();
     ctx.translate(centerX, centerY);
-    const myRot = playerState.rotationAngle !== undefined ? playerState.rotationAngle : playerState.aimAngle;
+    const myRot =
+      playerState.rotationAngle !== undefined
+        ? playerState.rotationAngle
+        : playerState.aimAngle;
     ctx.rotate(myRot + Math.PI / 2);
 
     ctx.fillStyle = "#00ffff";
-    ctx.shadowColor = "#00ffff";
-    ctx.shadowBlur = 8 * ratio;
 
     ctx.beginPath();
     const s = 4 * ratio;

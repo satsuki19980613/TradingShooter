@@ -24,8 +24,8 @@ export class AppFlowManager {
     const startBtn = document.getElementById("btn-start-game");
     if (startBtn)
       startBtn.addEventListener("click", () => {
-          this.ui.tryFullscreen();
-          this.handleStartGame();
+        this.ui.tryFullscreen();
+        this.handleStartGame();
       });
 
     const audioBtn = document.getElementById("btn-audio-toggle");
@@ -35,8 +35,7 @@ export class AppFlowManager {
     const retryBtn = document.getElementById("btn-gameover-retry");
     if (retryBtn)
       retryBtn.addEventListener("click", () => {
-        this.ui.showScreen("loading");
-        this.game.connect("Guest").then(() => this.ui.showScreen("game"));
+        this.handleStartGame("Guest");
       });
     const retireBtn = document.getElementById("btn-retire");
     if (retireBtn) {
@@ -47,8 +46,8 @@ export class AppFlowManager {
     if (homeBtn) {
       homeBtn.addEventListener("click", () => this.handleBackToHome());
     }
-    
-    this.ui.mobileControlManager.init(); 
+
+    this.ui.mobileControlManager.init();
   }
 
   handleRetire() {

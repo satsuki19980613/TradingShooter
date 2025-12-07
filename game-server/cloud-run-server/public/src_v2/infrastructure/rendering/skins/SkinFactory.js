@@ -5,6 +5,8 @@ export class SkinFactory {
   constructor() {
     this.cache = new Map();
     this.textureCache = new Map();
+
+    this.animationCache = new Map();
   }
 
   getSkin(key, width, height, drawFn) {
@@ -38,6 +40,31 @@ export class SkinFactory {
 
     this.textureCache.set(key, texture);
     return texture;
+  }
+
+  getAnimationTextures(key, width, height, drawFactoryFn, frameCount = 60) {
+    if (this.animationCache.has(key)) {
+      return this.animationCache.get(key);
+    }
+
+    const textures = [];
+    for (let i = 0; i < frameCount; i++) {
+      const progress = i / frameCount;
+
+      const drawFn = drawFactoryFn(progress);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      drawFn(ctx, width, height);
+
+      const texture = PIXI.Texture.from(canvas);
+      textures.push(texture);
+    }
+
+    this.animationCache.set(key, textures);
+    return textures;
   }
 }
 

@@ -264,7 +264,7 @@ export class PhysicsSystem {
             hit = true;
             break;
           }
-        } else if (target.type === "player" || target.type === "enemy") {
+        } else if ((target.type === "player" || target.type === "enemy") && target.hp !== undefined) {
           if (target.isDead) continue;
           if (b.ownerId === target.id) continue;
 

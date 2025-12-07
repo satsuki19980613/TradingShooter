@@ -3,7 +3,9 @@ export class ChartRenderer {
     const dpr = window.devicePixelRatio || 1;
     let uiScale = 1;
     try {
-      const val = getComputedStyle(document.body).getPropertyValue("--ui-scale");
+      const val = getComputedStyle(document.body).getPropertyValue(
+        "--ui-scale"
+      );
       if (val) uiScale = parseFloat(val);
     } catch (e) {}
     if (!uiScale || isNaN(uiScale)) uiScale = 1;
@@ -15,7 +17,6 @@ export class ChartRenderer {
     let maxPrice = tradeState.maxPrice || 1010;
 
     if (chartData.length < 2) return;
-
     const padding = {
       top: 10 * ratio,
       right: 30 * ratio,
@@ -52,18 +53,15 @@ export class ChartRenderer {
     const firstPrice = visibleData[0];
 
     ctx.strokeStyle = lastPrice >= firstPrice ? "#00ff00" : "#ff0055";
-    ctx.lineWidth = 2.5;
-    ctx.shadowColor = ctx.strokeStyle;
-    ctx.shadowBlur = 10;
+    ctx.lineWidth = 2.0;
+
     ctx.stroke();
-    ctx.shadowBlur = 0;
 
     const maColors = {
       short: "#00e1ff",
       medium: "#e1ff00",
       long: "#ff00e1",
     };
-    
     ["short", "medium", "long"].forEach((type) => {
       const maList = tradeState.maData[type];
       if (!maList || maList.length === 0) return;
@@ -147,7 +145,10 @@ export class ChartRenderer {
       Math.min(currentY, chartY + chartHeight - textHeight / 2)
     );
     ctx.save();
-    ctx.fillStyle = lastPrice >= (chartData[chartData.length - 2] || 0) ? "#00ff00" : "#ff0055";
+    ctx.fillStyle =
+      lastPrice >= (chartData[chartData.length - 2] || 0)
+        ? "#00ff00"
+        : "#ff0055";
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
     ctx.fillText(priceText, textX, textY);
