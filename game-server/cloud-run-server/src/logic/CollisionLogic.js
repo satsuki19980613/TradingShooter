@@ -4,7 +4,11 @@ export const CollisionLogic = {
     const dy = y1 - y2;
     return Math.sqrt(dx * dx + dy * dy);
   },
-
+  getDistanceSq(x1, y1, x2, y2) {
+    const dx = x1 - x2;
+    const dy = y1 - y2;
+    return dx * dx + dy * dy;
+  },
   clampPosition(x, y, radius, worldWidth, worldHeight) {
     const newX = Math.max(radius, Math.min(worldWidth - radius, x));
     const newY = Math.max(radius, Math.min(worldHeight - radius, y));
@@ -33,7 +37,7 @@ export const CollisionLogic = {
       const pushAmount = overlap / 2;
       return {
         pushX: pushX * pushAmount,
-        pushY: pushY * pushAmount
+        pushY: pushY * pushAmount,
       };
     }
     return null;
@@ -55,9 +59,16 @@ export const CollisionLogic = {
 
     for (let i = 0; i < ITERATIONS; i++) {
       let movedInThisLoop = false;
-      
+
       for (const c of obstacle.colliders) {
-        const result = this.solveSingleCollider(tempX, tempY, radius, obstacle.centerX, obstacle.centerY, c);
+        const result = this.solveSingleCollider(
+          tempX,
+          tempY,
+          radius,
+          obstacle.centerX,
+          obstacle.centerY,
+          c
+        );
         if (result.hit) {
           hasCollision = true;
           movedInThisLoop = true;
@@ -75,20 +86,27 @@ export const CollisionLogic = {
     return null;
   },
 
-  solveSingleCollider(circleX, circleY, radius, obsCenterX, obsCenterY, collider) {
+  solveSingleCollider(
+    circleX,
+    circleY,
+    radius,
+    obsCenterX,
+    obsCenterY,
+    collider
+  ) {
     const boxCenterX = obsCenterX + (collider.x || 0);
     const boxCenterY = obsCenterY + (collider.y || 0);
 
     const dx = circleX - boxCenterX;
     const dy = circleY - boxCenterY;
-    
+
     const totalAngle = (collider.angle || 0) * (Math.PI / 180);
     const cos = Math.cos(-totalAngle);
     const sin = Math.sin(-totalAngle);
-    
+
     const localX = dx * cos - dy * sin;
     const localY = dx * sin + dy * cos;
-    
+
     const halfW = collider.w / 2;
     const halfH = collider.h / 2;
 
@@ -116,10 +134,10 @@ export const CollisionLogic = {
 
     const cosR = Math.cos(totalAngle);
     const sinR = Math.sin(totalAngle);
-    
+
     const bestPushX = pushLocX * cosR - pushLocY * sinR;
     const bestPushY = pushLocX * sinR + pushLocY * cosR;
 
     return { hit: true, pushX: bestPushX, pushY: bestPushY };
-  }
+  },
 };

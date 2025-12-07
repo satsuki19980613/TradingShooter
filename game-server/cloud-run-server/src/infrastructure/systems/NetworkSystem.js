@@ -13,7 +13,10 @@ export class NetworkSystem {
         return;
       }
 
-      const relevantEntityMaps = this.getRelevantEntityMapsFor(player, worldState);
+      const relevantEntityMaps = this.getRelevantEntityMapsFor(
+        player,
+        worldState
+      );
 
       let writer = this.playerWriters.get(player);
       if (!writer) {
@@ -77,7 +80,10 @@ export class NetworkSystem {
         }
       }
     }
-    writer.buffer.writeUInt16LE(Math.min(removedCount, 65535), removedBulletsStart);
+    writer.buffer.writeUInt16LE(
+      Math.min(removedCount, 65535),
+      removedBulletsStart
+    );
 
     writer.u8(Math.min(newEntityMaps.players.size, 255));
     for (const p of newEntityMaps.players.values()) {
@@ -135,7 +141,7 @@ export class NetworkSystem {
       else if (b.type === "player_special_2") typeId = 4;
       else if (b.type === "player_special_3") typeId = 5;
       else if (b.type === "player_special_4") typeId = 6;
-      
+
       writer.u8(typeId);
     }
 
@@ -160,29 +166,29 @@ export class NetworkSystem {
     const enemiesMap = new Map();
     const bulletsMap = new Map();
 
-    worldState.players.forEach(p => {
-        if (p.id === player.id) {
-            playersMap.set(p.id, p);
-        } else {
-            const dist = Math.sqrt((p.x - player.x)**2 + (p.y - player.y)**2);
-            if (dist < viewportRadius) {
-                playersMap.set(p.id, p);
-            }
+    worldState.players.forEach((p) => {
+      if (p.id === player.id) {
+        playersMap.set(p.id, p);
+      } else {
+        const dist = Math.sqrt((p.x - player.x) ** 2 + (p.y - player.y) ** 2);
+        if (dist < viewportRadius) {
+          playersMap.set(p.id, p);
         }
+      }
     });
 
-    worldState.enemies.forEach(e => {
-        const dist = Math.sqrt((e.x - player.x)**2 + (e.y - player.y)**2);
-        if (dist < viewportRadius) {
-            enemiesMap.set(e.id, e);
-        }
+    worldState.enemies.forEach((e) => {
+      const dist = Math.sqrt((e.x - player.x) ** 2 + (e.y - player.y) ** 2);
+      if (dist < viewportRadius) {
+        enemiesMap.set(e.id, e);
+      }
     });
 
-    worldState.bullets.forEach(b => {
-        const dist = Math.sqrt((b.x - player.x)**2 + (b.y - player.y)**2);
-        if (dist < viewportRadius) {
-            bulletsMap.set(b.id, b);
-        }
+    worldState.bullets.forEach((b) => {
+      const dist = Math.sqrt((b.x - player.x) ** 2 + (b.y - player.y) ** 2);
+      if (dist < viewportRadius) {
+        bulletsMap.set(b.id, b);
+      }
     });
 
     return { players: playersMap, enemies: enemiesMap, bullets: bulletsMap };
@@ -192,21 +198,40 @@ export class NetworkSystem {
     const entityMaps = this.getRelevantEntityMapsFor(player, worldState);
     const snapshotPayload = {
       players: Array.from(entityMaps.players.values()).map((p) => ({
-        i: p.id, x: p.x, y: p.y, h: p.hp, e: p.ep, a: p.angle, n: p.name,
+        i: p.id,
+        x: p.x,
+        y: p.y,
+        h: p.hp,
+        e: p.ep,
+        a: p.angle,
+        ta: p.aimAngle || 0,
+        n: p.name,
         ba: p.chargeBetAmount,
-        cp: p.chargePosition ? {
+        cp: p.chargePosition
+          ? {
               ep: p.chargePosition.entryPrice,
               a: p.chargePosition.amount,
               t: p.chargePosition.type,
-            } : null,
-        sb: p.stockedBullets ? p.stockedBullets.map(b => typeof b === "object" ? b.damage : b) : [],
+            }
+          : null,
+        sb: p.stockedBullets
+          ? p.stockedBullets.map((b) => (typeof b === "object" ? b.damage : b))
+          : [],
         d: p.isDead ? 1 : 0,
       })),
       enemies: Array.from(entityMaps.enemies.values()).map((e) => ({
-        i: e.id, x: e.x, y: e.y, h: e.hp, ta: e.targetAngle,
+        i: e.id,
+        x: e.x,
+        y: e.y,
+        h: e.hp,
+        ta: e.targetAngle,
       })),
       bullets: Array.from(entityMaps.bullets.values()).map((b) => ({
-        i: b.id, x: b.x, y: b.y, r: b.radius, t: b.type,
+        i: b.id,
+        x: b.x,
+        y: b.y,
+        r: b.radius,
+        t: b.type,
         a: Math.atan2(b.vy, b.vx),
       })),
     };
@@ -215,7 +240,7 @@ export class NetworkSystem {
       player.ws,
       JSON.stringify({ type: "game_state_snapshot", payload: snapshotPayload })
     );
-    
+
     player.lastBroadcastState = entityMaps;
   }
 
