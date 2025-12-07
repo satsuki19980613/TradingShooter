@@ -13,7 +13,6 @@ export class AppFlowManager {
     this.isAudioLoaded = false;
     this.isAudioLoading = false;
     this.pendingGameStartName = null;
-
     this.audioManager.onTrackChanged = (title) => {
       this.ui.showMusicNotification(title);
     };
@@ -24,7 +23,10 @@ export class AppFlowManager {
   setupUI() {
     const startBtn = document.getElementById("btn-start-game");
     if (startBtn)
-      startBtn.addEventListener("click", () => this.handleStartGame());
+      startBtn.addEventListener("click", () => {
+          this.ui.tryFullscreen();
+          this.handleStartGame();
+      });
 
     const audioBtn = document.getElementById("btn-audio-toggle");
     if (audioBtn)
@@ -36,7 +38,6 @@ export class AppFlowManager {
         this.ui.showScreen("loading");
         this.game.connect("Guest").then(() => this.ui.showScreen("game"));
       });
-
     const retireBtn = document.getElementById("btn-retire");
     if (retireBtn) {
       retireBtn.addEventListener("click", () => this.handleRetire());
@@ -46,18 +47,18 @@ export class AppFlowManager {
     if (homeBtn) {
       homeBtn.addEventListener("click", () => this.handleBackToHome());
     }
+    
+    this.ui.mobileControlManager.init(); 
   }
 
   handleRetire() {
     if (confirm("ゲームを終了してホームに戻りますか？")) {
       this.game.stopLoop();
-
       if (this.game.network) {
         this.game.network.disconnect();
       }
 
       this.ui.showScreen("home");
-
       const bgVideo = document.getElementById("bg-video");
       if (bgVideo) bgVideo.style.display = "block";
     }
@@ -88,13 +89,12 @@ export class AppFlowManager {
       this.game.startLoop();
     } catch (e) {
       console.error(e);
-      this.ui.showScreen("error");
+      this.ui.showErrorScreen("接続失敗", e);
     }
   }
 
   async handleAudioToggle() {
     if (this.isAudioLoading) return;
-
     if (!this.isAudioLoaded) {
       await this.startLoadingSequence();
       return;
@@ -107,23 +107,19 @@ export class AppFlowManager {
   async startLoadingSequence() {
     this.isAudioLoading = true;
     this.ui.setAudioLoadingState(true);
-
     await this.assetLoader.loadAudioPlaylist(
       AudioConfig.BGM_PLAYLIST,
       (percent) => this.ui.updateAudioLoadingProgress(percent)
     );
-
     console.log("[Audio] Ready to stream (Cached in Memory).");
     this.isAudioLoaded = true;
     this.isAudioLoading = false;
-
     setTimeout(() => {
       this.ui.setAudioLoadingState(false);
     }, 500);
 
     const isUnmuted = this.audioManager.toggleMute();
     this.ui.updateAudioButton(!isUnmuted);
-
     if (this.pendingGameStartName) {
       this.ui.setLoadingText("音楽の準備完了。接続中...");
       this.handleStartGame(this.pendingGameStartName);

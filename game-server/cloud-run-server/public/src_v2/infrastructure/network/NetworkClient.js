@@ -6,7 +6,8 @@ export class NetworkClient {
     this.ws = null;
     this.messageHandlers = new Map();
     this.isConnected = false;
-    
+    this.isIntentionalClose = false; // ★追加: 意図的な切断フラグ
+
     this.stats = {
       pps_total: 0,
       bps_total: 0,
@@ -33,6 +34,9 @@ export class NetworkClient {
 
   connect(userId, playerName, isDebug) {
     return new Promise((resolve, reject) => {
+      // 接続前にフラグをリセット
+      this.isIntentionalClose = false; 
+
       const url = `${this.serverUrl}/?userId=${encodeURIComponent(userId)}&playerName=${encodeURIComponent(playerName)}&debug=${isDebug}`;
       
       this.ws = new WebSocket(url);
@@ -65,8 +69,15 @@ export class NetworkClient {
       };
 
       this.ws.onerror = (e) => reject(e);
+      
       this.ws.onclose = () => {
           this.isConnected = false;
+          // ★修正: 意図的な切断（リタイア）の場合は、切断イベントを発火させない
+          if (this.isIntentionalClose) {
+              console.log("[Network] Intentional disconnect (Retire).");
+              return; 
+          }
+          
           const handler = this.messageHandlers.get("disconnect");
           if (handler) handler();
       };
@@ -83,7 +94,6 @@ export class NetworkClient {
             updated: { players: [], enemies: [], bullets: [] },
             events: []
         };
-
         const remP = reader.u8(); for(let i=0; i<remP; i++) delta.removed.players.push(reader.string());
         const remE = reader.u8(); for(let i=0; i<remE; i++) delta.removed.enemies.push(reader.string());
         const remB = reader.u16(); for(let i=0; i<remB; i++) delta.removed.bullets.push(reader.string());
@@ -176,6 +186,7 @@ export class NetworkClient {
 
   disconnect() {
       if(this.ws) {
+          this.isIntentionalClose = true; // ★追加: 意図的な切断であることをマーク
           this.ws.close();
           this.isConnected = false;
       }

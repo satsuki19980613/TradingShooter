@@ -211,7 +211,7 @@ export class ServerGame {
           const betActions = ["bet_up", "bet_down", "bet_all", "bet_min"];
           betActions.forEach(action => {
               if (input.wasPressed[action]) {
-                  this.tradingSystem.handleBetInput(player, action);
+                 this.playerSystem.handleShoot(player);
               }
           });
       }

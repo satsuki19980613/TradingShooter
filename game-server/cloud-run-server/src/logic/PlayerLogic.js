@@ -1,5 +1,3 @@
-import { CollisionLogic } from "./CollisionLogic.js";
-
 export const PlayerLogic = {
   /**
    * 入力状態から移動速度と角度を計算
@@ -16,7 +14,6 @@ export const PlayerLogic = {
     let vx = 0;
     let vy = 0;
     let angle = null;
-
     if (dx !== 0 || dy !== 0) {
       const length = Math.sqrt(dx * dx + dy * dy);
       dx /= length;
@@ -32,22 +29,26 @@ export const PlayerLogic = {
 
   /**
    * オートエイム: 最も近いターゲットを探して角度を返す
+   * @param {Object} player 
+   * @param {Set|Array} nearbyEntities 
+   * @param {number} searchRadius 
    */
-  calculateAutoAimAngle(player, nearbyEntities, currentAngle, searchRadius = 750) {
+  calculateAutoAimAngle(player, nearbyEntities, searchRadius = 750) {
     let closestTarget = null;
     let minDistSq = searchRadius * searchRadius;
 
     // Set または Array のエンティティリストを走査
     for (const entity of nearbyEntities) {
       if (entity.id === player.id) continue;
-      if (entity.hp <= 0 || entity.isDead) continue;
+      // 死亡フラグのチェック (hp <= 0 または isDead)
+      if ((entity.hp !== undefined && entity.hp <= 0) || entity.isDead) continue;
       
-      // 敵または他プレイヤーを対象
+      // 敵または他プレイヤーを対象 (typeプロパティを持っている前提)
       if (entity.type === "enemy" || entity.type === "player") {
         const dx = entity.x - player.x;
         const dy = entity.y - player.y;
         const distSq = dx * dx + dy * dy;
-
+        
         if (distSq < minDistSq) {
           minDistSq = distSq;
           closestTarget = entity;
@@ -59,7 +60,7 @@ export const PlayerLogic = {
       return Math.atan2(closestTarget.y - player.y, closestTarget.x - player.x);
     }
     
-    return currentAngle;
+    return null; 
   },
 
   /**

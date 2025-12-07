@@ -3,8 +3,13 @@ import { AppFlowManager } from "./application/managers/AppFlowManager.js";
 import { DomManipulator } from "./infrastructure/ui/DomManipulator.js";
 
 window.addEventListener("load", async () => {
-  const game = new ClientGame();
+  // 1. UI管理インスタンスを生成
   const ui = new DomManipulator();
+  
+  // 2. Gameインスタンス生成時にUIを渡す（依存性注入）
+  const game = new ClientGame(ui);
+  
+  // 3. 全体を管理するフローに両方を渡す
   const appFlow = new AppFlowManager(ui, game);
 
   await game.init();

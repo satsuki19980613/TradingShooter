@@ -7,20 +7,24 @@ import { ChartRenderer } from "../infrastructure/rendering/canvas/ChartRenderer.
 import { RadarRenderer } from "../infrastructure/rendering/canvas/RadarRenderer.js";
 import { MagazineRenderer } from "../infrastructure/rendering/canvas/MagazineRenderer.js";
 import { DomManipulator } from "../infrastructure/ui/DomManipulator.js";
+import { ScreenScaler } from "../infrastructure/ui/ScreenScaler.js"; 
 import { ClientConfig } from "../core/config/ClientConfig.js";
 
 export class ClientGame {
-  constructor() {
+  constructor(uiManipulator) {
     this.renderer = new PixiRenderer("game-field");
     this.inputManager = new InputManager();
     this.network = new NetworkClient();
-    this.uiManipulator = new DomManipulator();
+    this.uiManipulator = uiManipulator || new DomManipulator();
+    this.screenScaler = new ScreenScaler(); 
 
     this.chartRenderer = new ChartRenderer();
     this.radarRenderer = new RadarRenderer();
     this.magazineRenderer = new MagazineRenderer();
 
     this.mobileControls = new MobileControlManager(this.inputManager);
+    this.uiManipulator.setMobileControlManager(this.mobileControls);
+
     this.syncManager = null;
     this.userId = null;
     this.tradeState = {
@@ -43,12 +47,13 @@ export class ClientGame {
   }
 
   async init() {
+    this.screenScaler.init();
     this.resize();
     window.addEventListener("resize", () => this.resize());
-
     await this.renderer.init();
     this.inputManager.init(document.getElementById("game-field"));
-    this.mobileControls.init();
+    
+    // this.mobileControls.init(); 
 
     this.renderer.setupBackground(3000, 3000);
 
@@ -82,7 +87,7 @@ export class ClientGame {
     });
     this.network.on("disconnect", () => {
       this.stopLoop();
-      this.uiManipulator.showScreen("gameover");
+      this.uiManipulator.showGameOverScreen(0);
       this.uiManipulator.setLoadingText("Disconnected");
     });
   }
@@ -94,21 +99,42 @@ export class ClientGame {
     const width = container.clientWidth;
     const height = container.clientHeight;
 
-    const targetWorldWidth =
-      ClientConfig.GRID_SIZE * ClientConfig.VIEWPORT_GRID_WIDTH;
-    this.gameScale = width / targetWorldWidth;
+    // UIスケールを取得 (ScreenScalerで設定されたCSS変数を読み取る)
+    let uiScale = 1;
+    try {
+      const val = getComputedStyle(document.body).getPropertyValue("--ui-scale");
+      if (val) uiScale = parseFloat(val);
+    } catch (e) {}
+    if (!uiScale || isNaN(uiScale)) uiScale = 1;
 
+    const targetWorldWidth = ClientConfig.GRID_SIZE * ClientConfig.VIEWPORT_GRID_WIDTH;
+    this.gameScale = width / targetWorldWidth;
+    
     if (this.renderer) {
       this.renderer.resize(width, height);
     }
 
+    // ★修正: 2D Canvasのリサイズ処理を旧コードに合わせて復元
+    // dpr * uiScale を適用して解像度を確保し、styleで表示サイズを固定する
     const resizeSubCanvas = (canvas) => {
       if (canvas && canvas.parentElement) {
         const w = canvas.parentElement.clientWidth;
         const h = canvas.parentElement.clientHeight;
+        const dpr = window.devicePixelRatio || 1;
 
-        canvas.width = w;
-        canvas.height = h;
+        if (w > 0 && h > 0) {
+          // 内部バッファサイズ（高解像度）
+          canvas.width = Math.floor(w * dpr * uiScale);
+          canvas.height = Math.floor(h * dpr * uiScale);
+          // 表示サイズ（CSSピクセル）
+          canvas.style.width = `${w}px`;
+          canvas.style.height = `${h}px`;
+          
+          // コンテキストのスケールは各Renderer内で ratio を使って計算されているため、
+          // ここで setTransform する必要はないが、念のためリセットしておく
+          const ctx = canvas.getContext("2d");
+          if (ctx) ctx.setTransform(1, 0, 0, 1, 0, 0);
+        }
       }
     };
 
@@ -118,6 +144,8 @@ export class ClientGame {
   }
 
   async connect(userName) {
+    this.inputManager.resetActionStates();
+
     const tempId = "user_" + Math.random().toString(36).substr(2, 9);
     this.userId = tempId;
     this.syncManager = new StateSyncManager(this.userId);
@@ -163,21 +191,14 @@ export class ClientGame {
       this.renderer.render(this.syncManager.visualState);
 
       if (myPlayer) {
-        this.uiManipulator.updateHUD(
-          myPlayer.hp,
-          100,
-          myPlayer.ep,
-          myPlayer.chargeBetAmount,
-          0
-        );
-        this.mobileControls.updateDisplay(myPlayer);
+        this.uiManipulator.updateHUD(myPlayer, this.tradeState);
 
         if (this.chartCanvas) {
           const ctx = this.chartCanvas.getContext("2d");
           ctx.clearRect(0, 0, this.chartCanvas.width, this.chartCanvas.height);
           this.chartRenderer.draw(
             ctx,
-            this.chartCanvas.width,
+            this.chartCanvas.width, // 高解像度化されたwidthが渡される
             this.chartCanvas.height,
             this.tradeState,
             myPlayer
@@ -194,7 +215,7 @@ export class ClientGame {
             3000,
             myPlayer,
             Array.from(this.syncManager.visualState.enemies.values()),
-            [],
+            Array.from(this.syncManager.visualState.obstacles.values()),
             Array.from(this.syncManager.visualState.players.values())
           );
         }
@@ -214,6 +235,12 @@ export class ClientGame {
           );
         }
       }
+
+      if (this.uiManipulator.isDebugMode && this.network) {
+          const stats = this.network.getStats();
+          const simStats = { avg_bps: 0 }; 
+          this.uiManipulator.updateDebugHUD(stats, simStats, this.serverStats);
+      }
     }
 
     this.renderLoopId = requestAnimationFrame((t) => this.loop(t));
@@ -226,7 +253,6 @@ export class ClientGame {
     const screenCenterY = window.innerHeight / 2;
 
     const mouseState = this.inputManager.mousePos;
-
     this.inputManager.mouseWorldPos.x =
       (mouseState.x - screenCenterX) / this.gameScale + myPlayer.x;
     this.inputManager.mouseWorldPos.y =
