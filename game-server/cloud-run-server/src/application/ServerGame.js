@@ -25,10 +25,10 @@ let CACHED_MAP_DATA = null;
 try {
   const mapPath = path.join(__dirname, "../../maps/map_default.json");
   if (fs.existsSync(mapPath)) {
-      const mapJson = fs.readFileSync(mapPath, "utf8");
-      CACHED_MAP_DATA = JSON.parse(mapJson);
+    const mapJson = fs.readFileSync(mapPath, "utf8");
+    CACHED_MAP_DATA = JSON.parse(mapJson);
   } else {
-      CACHED_MAP_DATA = {}; 
+    CACHED_MAP_DATA = {};
   }
 } catch (error) {
   CACHED_MAP_DATA = {};
@@ -38,18 +38,20 @@ export class ServerGame {
   constructor(roomId, firestore, onRoomEmptyCallback) {
     this.roomId = roomId;
     this.onRoomEmptyCallback = onRoomEmptyCallback;
-    
+
     this.worldState = new WorldState();
-    
-    // Systems
-    this.physicsSystem = new PhysicsSystem(GameConstants.WORLD_WIDTH, GameConstants.WORLD_HEIGHT);
+
+    this.physicsSystem = new PhysicsSystem(
+      GameConstants.WORLD_WIDTH,
+      GameConstants.WORLD_HEIGHT
+    );
     this.networkSystem = new NetworkSystem();
     this.persistenceSystem = new PersistenceSystem(firestore);
     this.tradingSystem = new TradingSystem();
     this.warmupSystem = new WarmupSystem(this);
     this.enemySystem = new EnemySystem(this);
     this.playerSystem = new PlayerSystem(this);
-    
+
     this.loopManager = new GameLoop();
   }
 
@@ -60,10 +62,9 @@ export class ServerGame {
   initWorld() {
     MapLoader.loadMapData(this.worldState, CACHED_MAP_DATA || {});
     this.tradingSystem.init();
-    
-    // 初期敵スポーン
+
     for (let i = 0; i < 3; i++) {
-        this.enemySystem.spawnEnemy();
+      this.enemySystem.spawnEnemy();
     }
   }
 
@@ -71,10 +72,26 @@ export class ServerGame {
     if (this.worldState.isRunning) return;
     this.worldState.isRunning = true;
 
-    this.loopManager.start("update", this.update.bind(this), GameConstants.GAME_LOOP_INTERVAL);
-    this.loopManager.start("broadcast", this.broadcastGameState.bind(this), GameConstants.BROADCAST_INTERVAL);
-    this.loopManager.start("chart", this.updateChart.bind(this), GameConstants.CHART_UPDATE_INTERVAL);
-    this.loopManager.start("leaderboard", this.broadcastLeaderboard.bind(this), 2000);
+    this.loopManager.start(
+      "update",
+      this.update.bind(this),
+      GameConstants.GAME_LOOP_INTERVAL
+    );
+    this.loopManager.start(
+      "broadcast",
+      this.broadcastGameState.bind(this),
+      GameConstants.BROADCAST_INTERVAL
+    );
+    this.loopManager.start(
+      "chart",
+      this.updateChart.bind(this),
+      GameConstants.CHART_UPDATE_INTERVAL
+    );
+    this.loopManager.start(
+      "leaderboard",
+      this.broadcastLeaderboard.bind(this),
+      2000
+    );
   }
 
   stopLoop() {
@@ -85,64 +102,77 @@ export class ServerGame {
 
   update() {
     const dt = 1.0;
-    
-    // 1. Idle Check
+
     const now = Date.now();
-    this.worldState.players.forEach(p => {
-        if (!p.isDead && !p.isPaused && (now - p.lastInputTime > GameConstants.IDLE_TIMEOUT_TIME)) {
-            if (p.ws) p.ws.close(1000, "Idle timeout");
-        }
+    this.worldState.players.forEach((p) => {
+      if (
+        !p.isDead &&
+        !p.isPaused &&
+        now - p.lastInputTime > GameConstants.IDLE_TIMEOUT_TIME
+      ) {
+        if (p.ws) p.ws.close(1000, "Idle timeout");
+      }
+    });
+    this.worldState.players.forEach((p) => {
+      if (p.isDead) {
+        this.handlePlayerDeath(p, null);
+      }
     });
 
-    // 2. System Updates
     this.playerSystem.update();
     this.enemySystem.update();
-    
-    // 3. Physics Update
+
     this.physicsSystem.update(this.worldState, dt);
 
-    // 4. Item Maintenance (例: 敵が減ったら追加)
     if (this.worldState.enemies.length < 3) {
-        if (Math.random() < 0.02) this.enemySystem.spawnEnemy();
+      if (Math.random() < 0.02) this.enemySystem.spawnEnemy();
     }
   }
 
   broadcastGameState() {
-    this.networkSystem.broadcastGameState(this.worldState.players, this.worldState);
+    this.networkSystem.broadcastGameState(
+      this.worldState.players,
+      this.worldState
+    );
     this.worldState.frameEvents = [];
   }
 
   updateChart() {
     const chartDelta = this.tradingSystem.updateChart();
     const msg = JSON.stringify({ type: "chart_update", payload: chartDelta });
-    this.worldState.players.forEach(p => {
-        if(p.ws && p.ws.readyState === WebSocket.OPEN) p.ws.send(msg);
+    this.worldState.players.forEach((p) => {
+      if (p.ws && p.ws.readyState === WebSocket.OPEN) p.ws.send(msg);
     });
   }
 
   broadcastLeaderboard() {
-      const leaderboard = Array.from(this.worldState.players.values())
-        .filter(p => !p.isDead && p.score > 0)
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 5)
-        .map(p => ({ id: p.id, name: p.name, score: p.score }));
-      const msg = JSON.stringify({ type: "leaderboard_update", payload: { leaderboardData: leaderboard } });
-      this.worldState.players.forEach(p => {
-          if(p.ws && p.ws.readyState === WebSocket.OPEN) p.ws.send(msg);
-      });
+    const leaderboard = Array.from(this.worldState.players.values())
+      .filter((p) => !p.isDead && p.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5)
+      .map((p) => ({ id: p.id, name: p.name, score: p.score }));
+    const msg = JSON.stringify({
+      type: "leaderboard_update",
+      payload: { leaderboardData: leaderboard },
+    });
+    this.worldState.players.forEach((p) => {
+      if (p.ws && p.ws.readyState === WebSocket.OPEN) p.ws.send(msg);
+    });
   }
 
   addPlayer(userId, playerName, ws, isDebug) {
     if (!this.worldState.isReady) {
-        this.warmupSystem.addPendingPlayer(userId, playerName, ws, isDebug);
-        return null;
+      this.warmupSystem.addPendingPlayer(userId, playerName, ws, isDebug);
+      return null;
     }
-    
+
     const joinData = this.joinPlayerToGame(userId, playerName, ws, isDebug);
     if (joinData) {
-        try { ws.send(JSON.stringify(joinData)); } catch(e) {}
+      try {
+        ws.send(JSON.stringify(joinData));
+      } catch (e) {}
     }
-    return { id: userId, x: 0, y: 0 }; 
+    return { id: userId, x: 0, y: 0 };
   }
 
   joinPlayerToGame(userId, playerName, ws, isDebug) {
@@ -158,80 +188,95 @@ export class ServerGame {
     this.worldState.players.set(userId, player);
 
     this.networkSystem.sendSnapshot(player, this.worldState);
-    
+
     const staticState = {
-        obstacles: this.worldState.obstacles,
-        playerSpawns: this.worldState.playerSpawns,
-        enemySpawns: this.worldState.enemySpawns
+      obstacles: this.worldState.obstacles,
+      playerSpawns: this.worldState.playerSpawns,
+      enemySpawns: this.worldState.enemySpawns,
     };
     ws.send(JSON.stringify({ type: "static_state", payload: staticState }));
-    
-    ws.send(JSON.stringify({ 
-        type: "chart_state", 
-        payload: this.tradingSystem.getChartState()
-    }));
+
+    ws.send(
+      JSON.stringify({
+        type: "chart_state",
+        payload: this.tradingSystem.getChartState(),
+      })
+    );
 
     return {
-        type: "join_success",
-        roomId: this.roomId,
-        worldConfig: { width: this.worldState.width, height: this.worldState.height }
+      type: "join_success",
+      roomId: this.roomId,
+      worldConfig: {
+        width: this.worldState.width,
+        height: this.worldState.height,
+      },
     };
   }
 
   removePlayer(userId) {
-      const player = this.worldState.players.get(userId);
-      if (player) {
-          this.persistenceSystem.saveScore(player.id, player.name, player.score);
-          this.worldState.players.delete(userId);
+    const player = this.worldState.players.get(userId);
+    if (player) {
+      this.persistenceSystem.saveScore(player.id, player.name, player.score);
+      if (player.ws && player.ws.readyState === WebSocket.OPEN) {
+        player.ws.close(4000, "Game Over");
       }
-      if (this.worldState.players.size === 0) this.stopLoop();
+      this.worldState.players.delete(userId);
+    }
+    if (this.worldState.players.size === 0) this.stopLoop();
   }
 
   addBullet(bullet) {
-      bullet.id = `b_${this.worldState.bulletIdCounter++}`;
-      this.worldState.bullets.push(bullet);
+    bullet.id = `b_${this.worldState.bulletIdCounter++}`;
+    this.worldState.bullets.push(bullet);
   }
 
   handlePlayerInput(userId, input) {
-      const player = this.worldState.players.get(userId);
-      if (!player) return;
-      
-      player.lastInputTime = Date.now();
-      player.inputs = input.states || {};
-      if (input.seq) {
-          player.lastProcessedInputSeq = input.seq;
+    const player = this.worldState.players.get(userId);
+    if (!player) return;
+
+    player.lastInputTime = Date.now();
+    player.inputs = input.states || {};
+    if (input.seq) {
+      player.lastProcessedInputSeq = input.seq;
+    }
+
+    if (input.wasPressed) {
+      if (input.wasPressed.shoot) {
+        this.playerSystem.handleShoot(player, input.mouseWorldPos);
       }
-      
-      if (input.wasPressed) {
-          if (input.wasPressed.shoot) {
-              this.playerSystem.handleShoot(player, input.mouseWorldPos);
-          }
-          
-          if (input.wasPressed.trade_long) this.tradingSystem.handleEntry(player, "long");
-          if (input.wasPressed.trade_short) this.tradingSystem.handleEntry(player, "short");
-          if (input.wasPressed.trade_settle) this.tradingSystem.handleSettle(player, this);
-          
-          const betActions = ["bet_up", "bet_down", "bet_all", "bet_min"];
-          betActions.forEach(action => {
-              if (input.wasPressed[action]) {
-                 this.playerSystem.handleShoot(player);
-              }
-          });
-      }
+
+      if (input.wasPressed.trade_long)
+        this.tradingSystem.handleEntry(player, "long");
+      if (input.wasPressed.trade_short)
+        this.tradingSystem.handleEntry(player, "short");
+      if (input.wasPressed.trade_settle)
+        this.tradingSystem.handleSettle(player, this);
+
+      const betActions = ["bet_up", "bet_down", "bet_all", "bet_min"];
+      betActions.forEach((action) => {
+        if (input.wasPressed[action]) {
+          this.playerSystem.handleShoot(player);
+        }
+      });
+    }
   }
 
   handlePlayerDeath(player, attackerPlayer) {
-      if (attackerPlayer && attackerPlayer.id !== player.id && !attackerPlayer.isDead) {
-          attackerPlayer.ep += player.ep;
-          attackerPlayer.hp = Math.min(100, attackerPlayer.hp + 20);
+    if (
+      attackerPlayer &&
+      attackerPlayer.id !== player.id &&
+      !attackerPlayer.isDead
+    ) {
+      attackerPlayer.ep += player.ep;
+      attackerPlayer.hp = Math.min(100, attackerPlayer.hp + 20);
+    }
+    this.persistenceSystem.saveScore(player.id, player.name, player.score);
+    player.ep = 0;
+
+    setTimeout(() => {
+      if (this.worldState.players.has(player.id)) {
+        this.removePlayer(player.id);
       }
-      this.persistenceSystem.saveScore(player.id, player.name, player.score);
-      player.ep = 0;
-      
-      setTimeout(() => {
-          if (this.worldState.players.has(player.id)) {
-              this.removePlayer(player.id);
-          }
-      }, 0);
+    }, 0);
   }
 }

@@ -90,7 +90,8 @@ export class NetworkSystem {
       writer.string(p.id);
       writer.f32(p.x);
       writer.f32(p.y);
-      writer.u8(Math.min(Math.max(0, Math.ceil(p.hp)), 255));
+      const safeHp = Number.isNaN(p.hp) ? 0 : p.hp; // NaNチェック
+      writer.u8(Math.min(Math.max(0, Math.ceil(safeHp)), 255));
       writer.f32(p.angle);
       writer.f32(p.aimAngle || 0);
       writer.string(p.name || "Guest");
