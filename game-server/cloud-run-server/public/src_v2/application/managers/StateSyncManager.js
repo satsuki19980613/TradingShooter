@@ -165,7 +165,8 @@ export class StateSyncManager {
     vp.ep = state.e;
     vp.name = state.n;
 
-    vp.targetAimAngle = state.a;
+    vp.rotationAngle = state.a;      
+    vp.targetTurretAngle = state.ta;
     vp.isDead = !!state.d;
     vp.chargeBetAmount = state.ba;
     vp.stockedBullets = state.sb || [];
@@ -216,7 +217,6 @@ export class StateSyncManager {
         dt
       );
 
-      p.aimAngle = p.rotationAngle;
     });
     this.visualState.enemies.forEach((e) => {
       e.x = InterpolationLogic.calculateNextPosition(e.x, e.targetX || e.x, dt);
