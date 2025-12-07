@@ -36,6 +36,37 @@ export class AppFlowManager {
         this.ui.showScreen("loading");
         this.game.connect("Guest").then(() => this.ui.showScreen("game"));
       });
+
+    const retireBtn = document.getElementById("btn-retire");
+    if (retireBtn) {
+      retireBtn.addEventListener("click", () => this.handleRetire());
+    }
+
+    const homeBtn = document.getElementById("btn-gameover-home");
+    if (homeBtn) {
+      homeBtn.addEventListener("click", () => this.handleBackToHome());
+    }
+  }
+
+  handleRetire() {
+    if (confirm("ゲームを終了してホームに戻りますか？")) {
+      this.game.stopLoop();
+
+      if (this.game.network) {
+        this.game.network.disconnect();
+      }
+
+      this.ui.showScreen("home");
+
+      const bgVideo = document.getElementById("bg-video");
+      if (bgVideo) bgVideo.style.display = "block";
+    }
+  }
+
+  handleBackToHome() {
+    this.ui.showScreen("home");
+    const bgVideo = document.getElementById("bg-video");
+    if (bgVideo) bgVideo.style.display = "block";
   }
 
   async handleStartGame(playerName) {
@@ -49,6 +80,9 @@ export class AppFlowManager {
     this.ui.showScreen("loading");
     this.ui.setLoadingText("Connecting...");
     try {
+      const bgVideo = document.getElementById("bg-video");
+      if (bgVideo) bgVideo.style.display = "none";
+
       await this.game.connect("Guest");
       this.ui.showScreen("game");
       this.game.startLoop();
