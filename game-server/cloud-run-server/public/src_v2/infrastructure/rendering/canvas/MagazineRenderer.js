@@ -1,15 +1,7 @@
 ﻿export class MagazineRenderer {
-  draw(ctx, playerState, canvasWidth, canvasHeight) {
+  draw(ctx, playerState, canvasWidth, canvasHeight, uiScale = 1.0) {
     if (!playerState) return;
     const dpr = window.devicePixelRatio || 1;
-    let uiScale = 1;
-    try {
-      const val = getComputedStyle(document.body).getPropertyValue(
-        "--ui-scale"
-      );
-      if (val) uiScale = parseFloat(val);
-    } catch (e) {}
-    if (!uiScale || isNaN(uiScale)) uiScale = 1;
     const ratio = dpr * uiScale;
     const stockedBullets = playerState.stockedBullets || [];
     const maxStock = playerState.maxStock || 10;
@@ -33,7 +25,7 @@
       const damageVal =
         typeof bulletInfo === "object" ? bulletInfo.damage : bulletInfo;
 
-      ctx.beginPath();
+      ctx.beginPath();  
       ctx.rect(startX, currentY, contentWidth, slotHeight);
       ctx.fillStyle = "rgba(0, 20, 30, 0.5)";
       ctx.fill();

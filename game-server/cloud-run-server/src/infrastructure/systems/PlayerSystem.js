@@ -5,6 +5,7 @@ import { AimingService } from "../../domain/services/AimingService.js";
 export class PlayerSystem {
   constructor(game) {
     this.game = game;
+    this.tempVelocityResult = { vx: 0, vy: 0, angle: null };
   }
 
   update() {
@@ -20,16 +21,23 @@ export class PlayerSystem {
       return;
     }
 
-    const { vx, vy, angle } = PlayerLogic.calculateVelocity(
+    PlayerLogic.calculateVelocity(
       player.inputs,
-      player.speed
+      player.speed,
+      player.angle, // 現在の角度
+      player.vx,    // 現在のVX
+      player.vy,    // 現在のVY
+      this.tempVelocityResult
     );
-    player.vx = vx;
-    player.vy = vy;
 
-    if (angle !== null) {
-      player.angle = angle;
+    player.vx = this.tempVelocityResult.vx;
+    player.vy = this.tempVelocityResult.vy;
+    
+    // 角度も必ず更新する（旋回したかもしれないので）
+    if (this.tempVelocityResult.angle !== null) {
+        player.angle = this.tempVelocityResult.angle;
     }
+    
     const autoAimAngle = AimingService.determineShootAngle(
       player,
       this.game.physicsSystem
@@ -41,10 +49,9 @@ export class PlayerSystem {
       player.aimAngle = angle;
     }
 
-    if (vx !== 0 || vy !== 0) {
+    if (player.vx !== 0 || player.vy !== 0) {
       player.isDirty = true;
     }
-
     if (player.shootCooldown > 0) {
       player.shootCooldown--;
     }

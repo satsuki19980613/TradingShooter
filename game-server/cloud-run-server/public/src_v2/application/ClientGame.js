@@ -7,7 +7,7 @@ import { ChartRenderer } from "../infrastructure/rendering/canvas/ChartRenderer.
 import { RadarRenderer } from "../infrastructure/rendering/canvas/RadarRenderer.js";
 import { MagazineRenderer } from "../infrastructure/rendering/canvas/MagazineRenderer.js";
 import { DomManipulator } from "../infrastructure/ui/DomManipulator.js";
-import { ScreenScaler } from "../infrastructure/ui/ScreenScaler.js"; 
+import { ScreenScaler } from "../infrastructure/ui/ScreenScaler.js";
 import { ClientConfig } from "../core/config/ClientConfig.js";
 
 export class ClientGame {
@@ -16,7 +16,7 @@ export class ClientGame {
     this.inputManager = new InputManager();
     this.network = new NetworkClient();
     this.uiManipulator = uiManipulator || new DomManipulator();
-    this.screenScaler = new ScreenScaler(); 
+    this.screenScaler = new ScreenScaler();
 
     this.chartRenderer = new ChartRenderer();
     this.radarRenderer = new RadarRenderer();
@@ -44,6 +44,7 @@ export class ClientGame {
     this.magazineCanvas = document.getElementById("magazine-canvas");
 
     this.gameScale = 1.0;
+    this.cachedUiScale = 1.0;
   }
 
   async init() {
@@ -52,8 +53,6 @@ export class ClientGame {
     window.addEventListener("resize", () => this.resize());
     await this.renderer.init();
     this.inputManager.init(document.getElementById("game-field"));
-    
-    // this.mobileControls.init(); 
 
     this.renderer.setupBackground(3000, 3000);
 
@@ -99,23 +98,25 @@ export class ClientGame {
     const width = container.clientWidth;
     const height = container.clientHeight;
 
-    // UIスケールを取得 (ScreenScalerで設定されたCSS変数を読み取る)
     let uiScale = 1;
     try {
-      const val = getComputedStyle(document.body).getPropertyValue("--ui-scale");
+      const val = getComputedStyle(document.body).getPropertyValue(
+        "--ui-scale"
+      );
       if (val) uiScale = parseFloat(val);
     } catch (e) {}
     if (!uiScale || isNaN(uiScale)) uiScale = 1;
 
-    const targetWorldWidth = ClientConfig.GRID_SIZE * ClientConfig.VIEWPORT_GRID_WIDTH;
+    this.cachedUiScale = uiScale;
+
+    const targetWorldWidth =
+      ClientConfig.GRID_SIZE * ClientConfig.VIEWPORT_GRID_WIDTH;
     this.gameScale = width / targetWorldWidth;
-    
+
     if (this.renderer) {
       this.renderer.resize(width, height);
     }
 
-    // ★修正: 2D Canvasのリサイズ処理を旧コードに合わせて復元
-    // dpr * uiScale を適用して解像度を確保し、styleで表示サイズを固定する
     const resizeSubCanvas = (canvas) => {
       if (canvas && canvas.parentElement) {
         const w = canvas.parentElement.clientWidth;
@@ -123,15 +124,12 @@ export class ClientGame {
         const dpr = window.devicePixelRatio || 1;
 
         if (w > 0 && h > 0) {
-          // 内部バッファサイズ（高解像度）
           canvas.width = Math.floor(w * dpr * uiScale);
           canvas.height = Math.floor(h * dpr * uiScale);
-          // 表示サイズ（CSSピクセル）
+
           canvas.style.width = `${w}px`;
           canvas.style.height = `${h}px`;
-          
-          // コンテキストのスケールは各Renderer内で ratio を使って計算されているため、
-          // ここで setTransform する必要はないが、念のためリセットしておく
+
           const ctx = canvas.getContext("2d");
           if (ctx) ctx.setTransform(1, 0, 0, 1, 0, 0);
         }
@@ -199,10 +197,11 @@ export class ClientGame {
           ctx.clearRect(0, 0, this.chartCanvas.width, this.chartCanvas.height);
           this.chartRenderer.draw(
             ctx,
-            this.chartCanvas.width, // 高解像度化されたwidthが渡される
+            this.chartCanvas.width,
             this.chartCanvas.height,
             this.tradeState,
-            myPlayer
+            myPlayer,
+            this.cachedUiScale
           );
         }
         if (this.radarCanvas) {
@@ -217,7 +216,8 @@ export class ClientGame {
             myPlayer,
             Array.from(this.syncManager.visualState.enemies.values()),
             Array.from(this.syncManager.visualState.obstacles.values()),
-            Array.from(this.syncManager.visualState.players.values())
+            Array.from(this.syncManager.visualState.players.values()),
+            this.cachedUiScale
           );
         }
         if (this.magazineCanvas) {
@@ -232,15 +232,16 @@ export class ClientGame {
             ctx,
             myPlayer,
             this.magazineCanvas.width,
-            this.magazineCanvas.height
+            this.magazineCanvas.height,
+            this.cachedUiScale
           );
         }
       }
 
       if (this.uiManipulator.isDebugMode && this.network) {
-          const stats = this.network.getStats();
-          const simStats = { avg_bps: 0 }; 
-          this.uiManipulator.updateDebugHUD(stats, simStats, this.serverStats);
+        const stats = this.network.getStats();
+        const simStats = { avg_bps: 0 };
+        this.uiManipulator.updateDebugHUD(stats, simStats, this.serverStats);
       }
     }
 

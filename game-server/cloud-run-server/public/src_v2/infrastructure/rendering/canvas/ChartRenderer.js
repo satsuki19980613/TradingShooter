@@ -1,14 +1,7 @@
 export class ChartRenderer {
-  draw(ctx, canvasWidth, canvasHeight, tradeState, playerState) {
+  draw(ctx, canvasWidth, canvasHeight, tradeState, playerState, uiScale = 1.0){
     const dpr = window.devicePixelRatio || 1;
-    let uiScale = 1;
-    try {
-      const val = getComputedStyle(document.body).getPropertyValue(
-        "--ui-scale"
-      );
-      if (val) uiScale = parseFloat(val);
-    } catch (e) {}
-    if (!uiScale || isNaN(uiScale)) uiScale = 1;
+
     const ratio = dpr * uiScale;
 
     const chartData = tradeState.chartData || [];

@@ -8,17 +8,11 @@ export class RadarRenderer {
     playerState,
     enemiesState,
     obstaclesState,
-    otherPlayersState
+    otherPlayersState,
+    uiScale = 1.0 // <--- ★重要: これがないと ReferenceError になります
   ) {
     const dpr = window.devicePixelRatio || 1;
-    let uiScale = 1;
-    try {
-      const val = getComputedStyle(document.body).getPropertyValue(
-        "--ui-scale"
-      );
-      if (val) uiScale = parseFloat(val);
-    } catch (e) {}
-    if (!uiScale || isNaN(uiScale)) uiScale = 1;
+    
     const ratio = dpr * uiScale;
 
     const size = Math.min(canvasWidth, canvasHeight);

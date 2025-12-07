@@ -2,6 +2,7 @@ export class MobileControlManager {
   constructor(inputManager) {
     this.inputManager = inputManager;
     this.mobileControlsLayer = document.getElementById("mobile-controls-layer");
+    this.mcLotDisplay = document.getElementById("mc-lot-display");
     this.mcJoystickArea = document.getElementById("mc-joystick-area");
     this.mcJoystickKnob = document.getElementById("mc-joystick-knob");
     this.mcLotDisplay = document.getElementById("mc-lot-display");
@@ -22,43 +23,15 @@ export class MobileControlManager {
 
   setupControls() {
     if (!this.mobileControlsLayer) return;
-
     const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
     if (isMobile) {
       document.body.classList.add("is-mobile");
     }
 
-    const moveJoy = (clientX, clientY) => {
-      if (!this.joystickState.active) return;
-      const isPortrait = window.innerHeight > window.innerWidth;
-
-      let rawDx = clientX - this.joystickState.startX;
-      let rawDy = clientY - this.joystickState.startY;
-      let dx, dy;
-
-      if (isPortrait) {
-        dx = rawDy;
-        dy = -rawDx;
-      } else {
-        dx = rawDx;
-        dy = rawDy;
-      }
-
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      const max = this.joystickState.maxDist;
-      if (dist > max) {
-        dx = (dx / dist) * max;
-        dy = (dy / dist) * max;
-      }
-
-      this.updateJoystickVisual(dx, dy);
-      if (this.inputManager) {
-        this.inputManager.setJoystickVector(dx / max, dy / max);
-      }
-    };
-
-    const addInputListener = (elem, action) => {
+    const addInputListener = (elemId, action) => {
+      const elem = document.getElementById(elemId);
       if (!elem) return;
+
       const startHandler = (e) => {
         e.preventDefault();
         if (this.inputManager) {
@@ -78,12 +51,14 @@ export class MobileControlManager {
       elem.addEventListener("mousedown", startHandler);
       elem.addEventListener("touchend", endHandler);
       elem.addEventListener("mouseup", endHandler);
+
+      elem.addEventListener("mouseleave", endHandler);
     };
 
-    addInputListener(document.getElementById("mc-btn-fire"), "shoot");
-    addInputListener(document.getElementById("mc-btn-short"), "trade_short");
-    addInputListener(document.getElementById("mc-btn-long"), "trade_long");
-    addInputListener(document.getElementById("mc-btn-settle"), "trade_settle");
+    addInputListener("mc-btn-fire", "shoot");
+    addInputListener("mc-btn-short", "trade_short");
+    addInputListener("mc-btn-long", "trade_long");
+    addInputListener("mc-btn-settle", "trade_settle");
 
     const setupTrigger = (id, action) => {
       const btn = document.getElementById(id);
@@ -104,57 +79,11 @@ export class MobileControlManager {
     setupTrigger("mc-btn-lot-plus", "bet_up");
     setupTrigger("mc-btn-lot-minus", "bet_down");
 
-    if (this.mcJoystickArea) {
-      const startJoy = (clientX, clientY) => {
-        this.joystickState.active = true;
-        this.joystickState.startX = clientX;
-        this.joystickState.startY = clientY;
-        this.updateJoystickVisual(0, 0);
-      };
-
-      const endJoy = () => {
-        this.joystickState.active = false;
-        this.updateJoystickVisual(0, 0);
-        if (this.inputManager) {
-          this.inputManager.setJoystickVector(0, 0);
-        }
-      };
-
-      this.mcJoystickArea.addEventListener(
-        "touchstart",
-        (e) => {
-          e.preventDefault();
-          startJoy(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
-        },
-        { passive: false }
-      );
-      this.mcJoystickArea.addEventListener(
-        "touchmove",
-        (e) => {
-          e.preventDefault();
-          moveJoy(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
-        },
-        { passive: false }
-      );
-      this.mcJoystickArea.addEventListener("touchend", (e) => {
-        e.preventDefault();
-        endJoy();
-      });
-      this.mcJoystickArea.addEventListener("mousedown", (e) => {
-        startJoy(e.clientX, e.clientY);
-      });
-      window.addEventListener("mousemove", (e) => {
-        if (this.joystickState.active) moveJoy(e.clientX, e.clientY);
-      });
-      window.addEventListener("mouseup", endJoy);
-    }
+    addInputListener("mc-btn-turn-left", "move_left");
+    addInputListener("mc-btn-turn-right", "move_right");
   }
 
-  updateJoystickVisual(x, y) {
-    if (this.mcJoystickKnob) {
-      this.mcJoystickKnob.style.transform = `translate(${x}px, ${y}px)`;
-    }
-  }
+
 
   updateDisplay(playerState) {
     if (this.mcLotDisplay && playerState) {

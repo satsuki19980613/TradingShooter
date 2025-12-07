@@ -50,8 +50,17 @@ export const AILogic = {
   /**
    * 射撃判定とクールダウン時間の決定
    */
-  shouldShoot(enemy, targetPlayer) {
-    if (!targetPlayer) return { shouldShoot: false, nextCooldown: 60 };
+  shouldShoot(enemy, targetPlayer, outResult) {
+    // 書き込み先の確保（安全策）
+    if (!outResult) {
+        outResult = { shouldShoot: false, angle: 0, nextCooldown: 60 };
+    }
+
+    if (!targetPlayer) {
+        outResult.shouldShoot = false;
+        outResult.nextCooldown = 60;
+        return outResult;
+    }
 
     const dist = CollisionLogic.getDistance(
       enemy.x,
@@ -65,9 +74,17 @@ export const AILogic = {
         targetPlayer.y - enemy.y,
         targetPlayer.x - enemy.x
       );
-      return { shouldShoot: true, angle, nextCooldown: 120 };
+      
+      // 結果を書き込む
+      outResult.shouldShoot = true;
+      outResult.angle = angle;
+      outResult.nextCooldown = 120;
+      return outResult;
     }
 
-    return { shouldShoot: false, nextCooldown: 60 };
+    // 結果を書き込む
+    outResult.shouldShoot = false;
+    outResult.nextCooldown = 60;
+    return outResult;
   },
 };

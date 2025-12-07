@@ -1,54 +1,64 @@
 export const PlayerLogic = {
   /**
-   * 入力状態から移動速度と角度を計算
+   * 旋回と慣性移動の計算（常時前進）
+   * @param {Object} inputs 入力
+   * @param {number} speed 基本速度
+   * @param {number} currentAngle 現在の角度
+   * @param {number} currentVx 現在の速度X
+   * @param {number} currentVy 現在の速度Y
+   * @param {Object} outResult 結果格納用
    */
-  calculateVelocity(inputs, speed) {
-    let dx = 0;
-    let dy = 0;
+  calculateVelocity(inputs, speed, currentAngle, currentVx, currentVy, outResult) {
+    // パラメータ調整（お好みで調整してください）
+    const ROTATION_SPEED = 0.06; // 旋回速度
+    const INERTIA = 0.08;        // 慣性係数（小さいほどツルツル滑る）
 
-    if (inputs.move_up) dy -= 1;
-    if (inputs.move_down) dy += 1;
-    if (inputs.move_left) dx -= 1;
-    if (inputs.move_right) dx += 1;
+    let nextAngle = currentAngle || 0;
 
-    let vx = 0;
-    let vy = 0;
-    let angle = null;
-    if (dx !== 0 || dy !== 0) {
-      const length = Math.sqrt(dx * dx + dy * dy);
-      dx /= length;
-      dy /= length;
+    // 左右入力で「角度」を変える
+    if (inputs.move_left) nextAngle -= ROTATION_SPEED;
+    if (inputs.move_right) nextAngle += ROTATION_SPEED;
 
-      vx = dx * speed;
-      vy = dy * speed;
-      angle = Math.atan2(dy, dx);
+    // 常に「向いている方向」へ最高速で進もうとする力
+    const targetVx = Math.cos(nextAngle) * speed;
+    const targetVy = Math.sin(nextAngle) * speed;
+
+    // 現在の速度と目標速度を混ぜる（慣性）
+    const nextVx = currentVx + (targetVx - currentVx) * INERTIA;
+    const nextVy = currentVy + (targetVy - currentVy) * INERTIA;
+
+    if (!outResult) {
+      outResult = { vx: 0, vy: 0, angle: 0 };
     }
 
-    return { vx, vy, angle };
+    outResult.vx = nextVx;
+    outResult.vy = nextVy;
+    outResult.angle = nextAngle;
+
+    return outResult;
   },
 
   /**
    * オートエイム: 最も近いターゲットを探して角度を返す
-   * @param {Object} player 
-   * @param {Set|Array} nearbyEntities 
-   * @param {number} searchRadius 
+   * @param {Object} player
+   * @param {Set|Array} nearbyEntities
+   * @param {number} searchRadius
    */
   calculateAutoAimAngle(player, nearbyEntities, searchRadius = 750) {
     let closestTarget = null;
     let minDistSq = searchRadius * searchRadius;
 
-    // Set または Array のエンティティリストを走査
     for (const entity of nearbyEntities) {
       if (entity.id === player.id) continue;
-      // 死亡フラグのチェック (hp <= 0 または isDead)
-      if ((entity.hp !== undefined && entity.hp <= 0) || entity.isDead) continue;
-      
-      // 敵または他プレイヤーを対象 (typeプロパティを持っている前提)
+
+      if ((entity.hp !== undefined && entity.hp <= 0) || entity.isDead)
+        continue;
+
       if (entity.type === "enemy" || entity.type === "player") {
         const dx = entity.x - player.x;
         const dy = entity.y - player.y;
         const distSq = dx * dx + dy * dy;
-        
+
         if (distSq < minDistSq) {
           minDistSq = distSq;
           closestTarget = entity;
@@ -59,8 +69,8 @@ export const PlayerLogic = {
     if (closestTarget) {
       return Math.atan2(closestTarget.y - player.y, closestTarget.x - player.x);
     }
-    
-    return null; 
+
+    return null;
   },
 
   /**
@@ -82,5 +92,5 @@ export const PlayerLogic = {
     }
 
     return { speed, radius };
-  }
+  },
 };
