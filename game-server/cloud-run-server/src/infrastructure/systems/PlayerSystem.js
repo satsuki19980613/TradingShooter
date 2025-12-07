@@ -30,6 +30,16 @@ export class PlayerSystem {
     if (angle !== null) {
       player.angle = angle;
     }
+    const autoAimAngle = AimingService.determineShootAngle(
+      player,
+      this.game.physicsSystem
+    );
+
+    if (autoAimAngle !== null && autoAimAngle !== undefined) {
+      player.aimAngle = autoAimAngle;
+    } else if (angle !== null) {
+      player.aimAngle = angle;
+    }
 
     if (vx !== 0 || vy !== 0) {
       player.isDirty = true;
@@ -46,25 +56,25 @@ export class PlayerSystem {
 
   /**
    * 射撃処理の実行
-   * @param {Object} player 
+   * @param {Object} player
    */
-  handleShoot(player) { // ★修正: inputMousePos 引数を削除
+  handleShoot(player) {
     if (player.shootCooldown > 0 || player.stockedBullets.length === 0) {
       return;
     }
 
     const bulletData = player.stockedBullets.pop();
-    const damage = typeof bulletData === "object" ? bulletData.damage : bulletData;
-    const type = typeof bulletData === "object" ? bulletData.type : "player_special_1";
+    const damage =
+      typeof bulletData === "object" ? bulletData.damage : bulletData;
+    const type =
+      typeof bulletData === "object" ? bulletData.type : "player_special_1";
     player.isDirty = true;
 
-    // ★修正: AimingService を使用し、オートエイムの結果のみを適用
     const shootAngle = AimingService.determineShootAngle(
-        player, 
-        this.game.physicsSystem
+      player,
+      this.game.physicsSystem
     );
 
-    // 射撃した方向へプレイヤーを向かせる
     player.angle = shootAngle;
 
     const { speed, radius } = PlayerLogic.getBulletParams(type);
@@ -78,7 +88,7 @@ export class PlayerSystem {
       damage,
       player.id
     );
-    
+
     this.game.addBullet(bullet);
     player.shootCooldown = 15;
   }

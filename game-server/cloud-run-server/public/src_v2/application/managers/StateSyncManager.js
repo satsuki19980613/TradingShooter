@@ -210,6 +210,12 @@ export class StateSyncManager {
         dt
       );
 
+      p.aimAngle = InterpolationLogic.calculateNextAngle(
+        p.aimAngle,
+        p.targetTurretAngle,
+        dt
+      );
+
       p.aimAngle = p.rotationAngle;
     });
     this.visualState.enemies.forEach((e) => {

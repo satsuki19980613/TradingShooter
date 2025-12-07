@@ -86,6 +86,7 @@ export class NetworkSystem {
       writer.f32(p.y);
       writer.u8(Math.min(Math.max(0, Math.ceil(p.hp)), 255));
       writer.f32(p.angle);
+      writer.f32(p.aimAngle || 0);
       writer.string(p.name || "Guest");
       writer.u32(p.lastProcessedInputSeq || 0);
       writer.u8(p.isDead ? 1 : 0);

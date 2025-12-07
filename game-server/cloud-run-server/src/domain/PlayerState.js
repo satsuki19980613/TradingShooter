@@ -10,7 +10,8 @@ export class PlayerState extends BaseState {
     this.name = name;
     this.ws = ws;
     this.isDebugPlayer = isDebug;
-    
+    this.angle = 0;      
+    this.aimAngle = 0
     this.vx = 0;
     this.vy = 0;
     this.score = 0;
