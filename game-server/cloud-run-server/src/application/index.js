@@ -80,6 +80,7 @@ wss.on("connection", (ws, req) => {
                 const msgType = buf.readUInt8(0);
                 if (msgType === 2) { 
                     const mask = buf.readUInt16LE(1);
+                    const seq = buf.readUInt32LE(3);
                     const mouseX = buf.readFloatLE(7);
                     const mouseY = buf.readFloatLE(11);
 

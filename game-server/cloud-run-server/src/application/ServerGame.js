@@ -198,6 +198,9 @@ export class ServerGame {
       
       player.lastInputTime = Date.now();
       player.inputs = input.states || {};
+      if (input.seq) {
+          player.lastProcessedInputSeq = input.seq;
+      }
       
       if (input.wasPressed) {
           if (input.wasPressed.shoot) {

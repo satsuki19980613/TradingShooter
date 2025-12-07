@@ -160,7 +160,7 @@ export class NetworkSystem {
   }
 
   getRelevantEntityMapsFor(player, worldState) {
-    const viewportRadius = 1500;
+    const viewportRadius = 750;
 
     const playersMap = new Map();
     const enemiesMap = new Map();

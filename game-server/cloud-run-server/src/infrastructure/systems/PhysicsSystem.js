@@ -254,4 +254,27 @@ export class PhysicsSystem {
       }
     }
   }
+  getNearbyWithRadius(entity, radius) {
+    const minX = Math.floor((entity.x - radius) / this.cellSize);
+    const maxX = Math.floor((entity.x + radius) / this.cellSize);
+    const minY = Math.floor((entity.y - radius) / this.cellSize);
+    const maxY = Math.floor((entity.y + radius) / this.cellSize);
+
+    const result = new Set();
+    for (let x = minX; x <= maxX; x++) {
+      for (let y = minY; y <= maxY; y++) {
+        const key = `${x},${y}`;
+
+        if (this.staticGrid.has(key)) {
+          this.staticGrid.get(key).forEach((e) => result.add(e));
+        }
+        if (this.grid.has(key)) {
+          this.grid.get(key).forEach((e) => {
+            if (e !== entity) result.add(e);
+          });
+        }
+      }
+    }
+    return result;
+  }
 }
