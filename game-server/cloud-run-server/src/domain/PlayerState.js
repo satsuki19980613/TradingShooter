@@ -18,7 +18,7 @@ export class PlayerState extends BaseState {
     this.hp = 100;
     this.ep = 100;
     this.angle = 0;
-    this.defaultSpeed = 6.5;
+    this.defaultSpeed = 5;
     this.speed = this.defaultSpeed;
     this.shootCooldown = 0;
     this.isDead = false;

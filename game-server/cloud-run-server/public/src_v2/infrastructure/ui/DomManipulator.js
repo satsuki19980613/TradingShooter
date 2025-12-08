@@ -41,7 +41,12 @@ export class DomManipulator {
     this.isDebugMode = false;
     this.mobileControlManager = null; 
   }
-
+  enableDebugMode() {
+    this.isDebugMode = true;
+    if (this.debugPanelEl) {
+        this.debugPanelEl.style.display = "block";
+    }
+  }
   setMobileControlManager(manager) {
     this.mobileControlManager = manager;
   }
@@ -126,12 +131,61 @@ export class DomManipulator {
         this.mobileControlManager.updateDisplay(playerState);
     }
   }
-
+  enableDebugMode() {
+    this.isDebugMode = true;
+    if (this.debugPanelEl) {
+        this.debugPanelEl.style.display = "block";
+        if (!document.getElementById("debug-jitter-canvas")) {
+            const container = document.createElement("div");
+            container.style.marginTop = "10px";
+            
+            // Canvas
+            const canvas = document.createElement("canvas");
+            canvas.id = "debug-jitter-canvas";
+            canvas.width = 300;
+            canvas.height = 100;
+            canvas.style.width = "100%";
+            canvas.style.backgroundColor = "#222";
+            canvas.style.border = "1px solid #555";
+            
+            // Download Button
+            const btn = document.createElement("button");
+            btn.id = "btn-download-jitter";
+            btn.textContent = "Download JSON";
+            btn.className = "ui-button small"; // 既存スタイル流用
+            btn.style.marginTop = "5px";
+            btn.style.width = "100%";
+            
+            container.appendChild(canvas);
+            container.appendChild(btn);
+            this.debugPanelEl.appendChild(container);
+        }
+    }
+  }
+  setupDebugListeners(onDownload) {
+      const btn = document.getElementById("btn-download-jitter");
+      if (btn) {
+          btn.addEventListener("click", onDownload);
+      }
+  }
+  
+  getDebugCanvas() {
+      return document.getElementById("debug-jitter-canvas");
+  }
   updateDebugHUD(stats, simStats, serverStats) {
     if (!this.isDebugMode || !this.debugStatsContainerEl) return;
 
     let statsHtml = "";
     statsHtml += `<p><span class="stat-key">PPS Total:</span> <span class="stat-value">${stats.pps_total}</span></p>`;
+    if (stats.jitter !== undefined) {
+        const jitterVal = stats.jitter.toFixed(2);
+        // 5ms以下なら緑、10ms以下なら黄色、それ以上は赤
+        let color = "#4caf50"; 
+        if (stats.jitter > 5.0) color = "#ffeb3b";
+        if (stats.jitter > 10.0) color = "#f44336";
+        
+        statsHtml += `<p><span class="stat-key">Jitter:</span> <span class="stat-value" style="color:${color}">${jitterVal} ms</span></p>`;
+    }
     statsHtml += `<hr>`;
     statsHtml += `<p><span class="stat-key">BPS Total:</span> <span class="stat-value">${(stats.bps_total / 1024).toFixed(1)} KB/s</span></p>`;
     this.debugStatsContainerEl.innerHTML = statsHtml;

@@ -7,14 +7,18 @@ export class NetworkClient {
     this.messageHandlers = new Map();
     this.isConnected = false;
     this.isIntentionalClose = false;
-
+    this.isDebug = false;
+    this.lastPacketTime = 0;
     this.stats = {
       pps_total: 0,
       bps_total: 0,
       total_bytes: 0,
       total_seconds: 0,
+      jitter: 0,
+      avgPing: 0,
     };
     this.tempStats = { pps_total: 0, bps_total: 0 };
+    this.lastPacketTime = 0;
 
     this.statsInterval = setInterval(() => {
       if (this.stats) {
@@ -32,10 +36,11 @@ export class NetworkClient {
     this.messageHandlers.set(type, handler);
   }
 
-  connect(userId, playerName, isDebug) {
+  connect(userId, playerName, isDebug, jitterRecorder = null) {
     return new Promise((resolve, reject) => {
       this.isIntentionalClose = false;
-
+      this.isDebug = isDebug;
+      this.jitterRecorder = jitterRecorder;
       const url = `${this.serverUrl}/?userId=${encodeURIComponent(
         userId
       )}&playerName=${encodeURIComponent(playerName)}&debug=${isDebug}`;
@@ -49,6 +54,20 @@ export class NetworkClient {
       };
 
       this.ws.onmessage = (event) => {
+        if (this.isDebug) {
+          const now = performance.now();
+
+          if (this.lastPacketTime > 0) {
+            const interval = now - this.lastPacketTime;
+            const diff = Math.abs(interval - 33.33);
+            this.stats.jitter = (this.stats.jitter || 0) * 0.9 + diff * 0.1;
+            if (this.jitterRecorder) {
+                    this.jitterRecorder.addSample(diff);
+                }
+          }
+
+          this.lastPacketTime = now;
+        }
         this.tempStats.pps_total++;
         this.tempStats.bps_total += event.data.byteLength || event.data.length;
 
@@ -184,7 +203,13 @@ export class NetworkClient {
   }
 
   sendInput(seq, states, pressed, mousePos) {
-    if (!this.isConnected) return;
+    if (
+      !this.isConnected ||
+      !this.ws ||
+      this.ws.readyState !== WebSocket.OPEN
+    ) {
+      return;
+    }
     const buffer = new ArrayBuffer(15);
     const view = new DataView(buffer);
 

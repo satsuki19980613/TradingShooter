@@ -9,6 +9,9 @@ import { MagazineRenderer } from "../infrastructure/rendering/canvas/MagazineRen
 import { DomManipulator } from "../infrastructure/ui/DomManipulator.js";
 import { ScreenScaler } from "../infrastructure/ui/ScreenScaler.js";
 import { ClientConfig } from "../core/config/ClientConfig.js";
+import { JitterRecorder } from "../../domain/debug/JitterRecorder.js";
+import { DebugGraphRenderer } from "../../infrastructure/rendering/debug/DebugGraphRenderer.js";
+// ▲▲▲ 追加ここまで ▲▲▲
 
 export class ClientGame {
   constructor(uiManipulator) {
@@ -45,6 +48,8 @@ export class ClientGame {
 
     this.gameScale = 1.0;
     this.cachedUiScale = 1.0;
+    this.jitterRecorder = null;
+    this.debugGraphRenderer = null;
   }
 
   async init() {
@@ -141,15 +146,28 @@ export class ClientGame {
     resizeSubCanvas(this.magazineCanvas);
   }
 
-  async connect(userName) {
+  async connect(userName, isDebug = false) {
     this.stopLoop();
     this.inputManager.resetActionStates();
 
     const tempId = "user_" + Math.random().toString(36).substr(2, 9);
+    if (isDebug) {
+      this.jitterRecorder = new JitterRecorder();
+      this.debugGraphRenderer = new DebugGraphRenderer();
+
+      setTimeout(() => {
+        const canvas = this.uiManipulator.getDebugCanvas();
+        if (canvas) this.debugGraphRenderer.setCanvas(canvas);
+
+        this.uiManipulator.setupDebugListeners(() => {
+          this.jitterRecorder.downloadJson();
+        });
+      }, 100);
+    }
     this.userId = tempId;
     this.syncManager = new StateSyncManager(this.userId);
 
-    const joinData = await this.network.connect(this.userId, userName, false);
+    const joinData = await this.network.connect(this.userId, userName, isDebug, this.jitterRecorder);
     if (joinData && joinData.worldConfig) {
       this.renderer.setupBackground(
         joinData.worldConfig.width,
@@ -188,7 +206,9 @@ export class ClientGame {
 
       this.updateCamera(myPlayer);
       this.renderer.render(this.syncManager.visualState);
-
+      if (this.uiManipulator.isDebugMode && this.debugGraphRenderer && this.jitterRecorder) {
+          this.debugGraphRenderer.draw(this.jitterRecorder);
+      }
       if (myPlayer) {
         this.uiManipulator.updateHUD(myPlayer, this.tradeState);
 

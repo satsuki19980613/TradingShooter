@@ -1,6 +1,7 @@
 import { VisualPlayer } from "../../domain/view_models/VisualPlayer.js";
 import { InterpolationLogic } from "../../logic/InterpolationLogic.js";
 import { ParticleFactory } from "../../domain/factories/ParticleFactory.js";
+import { ClientConfig } from "../../core/config/ClientConfig.js";
 
 export class StateSyncManager {
   constructor(userId) {
@@ -117,9 +118,15 @@ export class StateSyncManager {
             };
             this.visualState.enemies.set(eState.i, e);
           }
-          e.targetX = eState.x;
-          e.targetY = eState.y;
-          e.targetAngle = eState.ta;
+          const ESTIMATED_SPEED_ENEMY = 1.5;
+          const predFactor = ClientConfig.PREDICTION_FACTOR || 15.0;
+
+          e.targetX =
+            eState.x + Math.cos(eState.ta) * ESTIMATED_SPEED_ENEMY * predFactor;
+
+          e.targetY =
+            eState.y + Math.sin(eState.ta) * ESTIMATED_SPEED_ENEMY * predFactor;
+
           e.hp = eState.h;
         });
       }
@@ -149,16 +156,23 @@ export class StateSyncManager {
       const dist = Math.sqrt(
         Math.pow(state.x - vp.x, 2) + Math.pow(state.y - vp.y, 2)
       );
-      if (dist > 20.0) {
+      if (dist > 50.0) {
         vp.targetX = state.x;
         vp.targetY = state.y;
-      } else {
-        vp.targetX = vp.x;
-        vp.targetY = vp.y;
       }
     } else {
-      vp.targetX = state.x;
-      vp.targetY = state.y;
+      const ESTIMATED_SPEED = 4.5;
+
+      const angle = state.a;
+      const predFactor = ClientConfig.PREDICTION_FACTOR || 15.0;
+
+      const predictedX =
+        state.x + Math.cos(angle) * ESTIMATED_SPEED * predFactor;
+      const predictedY =
+        state.y + Math.sin(angle) * ESTIMATED_SPEED * predFactor;
+
+      vp.targetX = predictedX;
+      vp.targetY = predictedY;
     }
 
     vp.hp = state.h;

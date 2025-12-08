@@ -5,7 +5,13 @@ import { DomManipulator } from "./infrastructure/ui/DomManipulator.js";
 window.addEventListener("load", async () => {
   // 1. UI管理インスタンスを生成
   const ui = new DomManipulator();
+  const params = new URLSearchParams(window.location.search);
+  const isDebug = params.get("debug") === "true";
   
+  if (isDebug) {
+      ui.enableDebugMode();
+      console.log("[Boot] Debug Mode Enabled");
+  }
   // 2. Gameインスタンス生成時にUIを渡す（依存性注入）
   const game = new ClientGame(ui);
   

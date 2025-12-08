@@ -6,7 +6,7 @@ export class AppFlowManager {
   constructor(uiManipulator, gameApp) {
     this.ui = uiManipulator;
     this.game = gameApp;
-
+    this.isDebug = this.ui.isDebugMode || false;
     this.assetLoader = new AssetLoader();
     this.audioManager = new AudioManager();
 
@@ -83,7 +83,7 @@ export class AppFlowManager {
       const bgVideo = document.getElementById("bg-video");
       if (bgVideo) bgVideo.style.display = "none";
 
-      await this.game.connect("Guest");
+      await this.game.connect("Guest", this.isDebug);
       this.ui.showScreen("game");
       this.game.startLoop();
     } catch (e) {

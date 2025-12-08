@@ -10,8 +10,8 @@ export const PlayerLogic = {
    */
   calculateVelocity(inputs, speed, currentAngle, currentVx, currentVy, outResult) {
     // パラメータ調整（お好みで調整してください）
-    const ROTATION_SPEED = 0.06; // 旋回速度
-    const INERTIA = 0.08;        // 慣性係数（小さいほどツルツル滑る）
+    const ROTATION_SPEED = 0.035; // 値を小さくすると、旋回がゆったりになります
+    const INERTIA = 0.04       // 慣性係数（小さいほどツルツル滑る）
 
     let nextAngle = currentAngle || 0;
 
