@@ -69,7 +69,7 @@ export class PixiRenderer {
       canvas: canvas,
       width: canvas.width,
       height: canvas.height,
-      backgroundColor: 0x1a1a1a,
+      backgroundColor: "#809494ff",
       resolution: window.devicePixelRatio || 1,
       autoDensity: true,
       antialias: false,
@@ -81,7 +81,7 @@ export class PixiRenderer {
 
   setupBackground(worldW, worldH, cellSize = 150) {
     this.layers.background.removeChildren();
-    const drawFn = GridSkin.drawTile("rgba(0, 100, 100, 0.2)", 2);
+    const drawFn = GridSkin.drawTile("rgba(255, 255, 255, 0.47)", 2);
     const gridTexture = skinFactory.getTexture(
       "bg_grid",
       cellSize,
@@ -238,7 +238,7 @@ export class PixiRenderer {
         if (sheet && sheet.animations) {
           const animKey = Object.keys(sheet.animations)[0];
           sprite = new PIXI.AnimatedSprite(sheet.animations[animKey]);
-          let targetSize = 80;
+          let targetSize = 80 * 2.5;
           const scale = targetSize / Math.max(sprite.width, sprite.height);
           sprite.scale.set(scale);
 

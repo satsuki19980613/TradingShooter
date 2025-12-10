@@ -173,16 +173,8 @@ export class NetworkClient {
           a: reader.f32(),
         };
         const tId = reader.u8();
-        const types = [
-          "player",
-          "enemy",
-          "player_special_1",
-          "item_ep",
-          "player_special_2",
-          "player_special_3",
-          "player_special_4",
-        ];
-        b.t = types[tId] || "player";
+        // 古い文字列変換を削除し、ID(数値)をそのまま渡す
+        b.t = tId; 
         delta.updated.bullets.push(b);
       }
 

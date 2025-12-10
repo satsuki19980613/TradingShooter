@@ -46,7 +46,7 @@ export class ChartRenderer {
     const firstPrice = visibleData[0];
 
     ctx.strokeStyle = lastPrice >= firstPrice ? "#00ff00" : "#ff0055";
-    ctx.lineWidth = 2.0;
+    ctx.lineWidth = 3.2;
 
     ctx.stroke();
 

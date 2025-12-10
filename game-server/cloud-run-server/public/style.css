@@ -131,6 +131,7 @@ canvas {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  background: rgba(0, 0, 0, 0.3) !important;
 }
 
 #bottom-chart-panel.dashboard-item {
@@ -1065,7 +1066,7 @@ canvas {
   #mc-right-bottom {
     width: 160px !important; /* ボタン2つ入る幅に広げる */
     height: 80px !important;
-    right: 20px !important;
-    bottom: 20px !important;
+    right: 90px !important;
+    bottom: 76px !important;
   }
 }
