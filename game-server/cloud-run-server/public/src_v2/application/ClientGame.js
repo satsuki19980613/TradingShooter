@@ -201,6 +201,10 @@ export class ClientGame {
 
     if (this.syncManager) {
       this.syncManager.updateInterpolation(deltaFrames);
+      while (this.syncManager.effectQueue.length > 0) {
+          const ef = this.syncManager.effectQueue.shift();
+          this.renderer.playOneShotEffect(ef.key, ef.x, ef.y, ef.rotation);
+      }
       const myPlayer = this.syncManager.visualState.players.get(this.userId);
 
       this.updateCamera(myPlayer);

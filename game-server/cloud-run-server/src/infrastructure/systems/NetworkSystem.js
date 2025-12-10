@@ -5,9 +5,7 @@ import { Protocol } from "../../core/constants/Protocol.js";
 export class NetworkSystem {
   constructor() {
     this.playerWriters = new WeakMap();
-    
-    // ★追加: プレイヤーごとのMapプールを管理するWeakMap
-    // Key: PlayerState, Value: { index: 0, buffers: [ {players, enemies, bullets}, ... ] }
+
     this.playerMapsPool = new WeakMap();
   }
 
@@ -17,7 +15,6 @@ export class NetworkSystem {
         return;
       }
 
-      // ★変更: プールからMapを取得して使用
       const relevantEntityMaps = this.getRelevantEntityMapsFor(
         player,
         worldState
@@ -41,12 +38,10 @@ export class NetworkSystem {
         this.safeSend(player.ws, binaryData);
       }
 
-      // 今回の状態を次回のために保持（参照を保持するだけなのでコピーコストなし）
       player.lastBroadcastState = relevantEntityMaps;
     });
   }
 
-  // ... (createBinaryDelta メソッドは変更なしのため省略) ...
   createBinaryDelta(oldEntityMaps, newEntityMaps, writer, events) {
     writer.u8(Protocol.MSG_TYPE_DELTA || 1);
 
@@ -94,7 +89,7 @@ export class NetworkSystem {
       writer.string(p.id);
       writer.f32(p.x);
       writer.f32(p.y);
-      const safeHp = Number.isNaN(p.hp) ? 0 : p.hp; 
+      const safeHp = Number.isNaN(p.hp) ? 0 : p.hp;
       writer.u8(Math.min(Math.max(0, Math.ceil(safeHp)), 255));
       writer.f32(p.angle);
       writer.f32(p.aimAngle || 0);
@@ -107,8 +102,7 @@ export class NetworkSystem {
         writer.u8(1);
         writer.f32(p.chargePosition.entryPrice);
         writer.f32(p.chargePosition.amount);
-        const typeId = p.chargePosition.type === "short" ?
-          1 : 0;
+        const typeId = p.chargePosition.type === "short" ? 1 : 0;
         writer.u8(typeId);
       } else {
         writer.u8(0);
@@ -117,8 +111,7 @@ export class NetworkSystem {
       const bullets = p.stockedBullets || [];
       writer.u8(Math.min(bullets.length, 255));
       for (const b of bullets) {
-        const dmg = typeof b === "object" ?
-          b.damage : b;
+        const dmg = typeof b === "object" ? b.damage : b;
         writer.u16(Math.ceil(dmg));
       }
     }
@@ -141,12 +134,12 @@ export class NetworkSystem {
       writer.f32(angle);
 
       let typeId = 0;
-      if (b.type === "enemy") typeId = 1;
-      else if (b.type === "player_special_1") typeId = 2;
-      else if (b.type === "item_ep") typeId = 3;
-      else if (b.type === "player_special_2") typeId = 4;
-      else if (b.type === "player_special_3") typeId = 5;
-      else if (b.type === "player_special_4") typeId = 6;
+
+      if (typeof b.type === "number") {
+        typeId = b.type;
+      } else {
+        if (b.type === "enemy") typeId = BulletType.ENEMY;
+      }
 
       writer.u8(typeId);
     }
@@ -166,33 +159,27 @@ export class NetworkSystem {
   }
 
   getRelevantEntityMapsFor(player, worldState) {
-    // ★最適化: 二乗距離での比較（sqrt除去）
     const VIEWPORT_RADIUS_SQ = 750 * 750;
 
-    // ★最適化: Mapのダブルバッファリング
     let poolData = this.playerMapsPool.get(player);
     if (!poolData) {
-        // バッファを2セット用意
-        poolData = {
-            index: 0,
-            buffers: [
-                { players: new Map(), enemies: new Map(), bullets: new Map() },
-                { players: new Map(), enemies: new Map(), bullets: new Map() }
-            ]
-        };
-        this.playerMapsPool.set(player, poolData);
+      poolData = {
+        index: 0,
+        buffers: [
+          { players: new Map(), enemies: new Map(), bullets: new Map() },
+          { players: new Map(), enemies: new Map(), bullets: new Map() },
+        ],
+      };
+      this.playerMapsPool.set(player, poolData);
     }
 
-    // カレントのバッファインデックスを切り替え (0 -> 1 -> 0 ...)
     poolData.index = (poolData.index + 1) % 2;
     const buffer = poolData.buffers[poolData.index];
 
-    // 内容をクリア（new Mapせず再利用）
     buffer.players.clear();
     buffer.enemies.clear();
     buffer.bullets.clear();
 
-    // ★最適化: forEach -> for...of
     for (const p of worldState.players.values()) {
       if (p.id === player.id) {
         buffer.players.set(p.id, p);
@@ -224,7 +211,6 @@ export class NetworkSystem {
     return buffer;
   }
 
-  // ... (sendSnapshot, broadcastLeaderboard, broadcastChartUpdate, safeSend は変更なしのため省略) ...
   sendSnapshot(player, worldState) {
     const entityMaps = this.getRelevantEntityMapsFor(player, worldState);
     const snapshotPayload = {

@@ -28,4 +28,24 @@ export class AssetLoader {
       await new Promise((r) => setTimeout(r, 10));
     }
   }
+
+  async loadSpriteAssets(config) {
+    console.log("[AssetLoader] Loading sprites...");
+    const bundles = [];
+
+    // PixiJSのAssetsシステムにエイリアスとURLを登録
+    for (const [key, path] of Object.entries(config.ASSETS)) {
+      const fullUrl = `${config.BASE_URL}/${path}`;
+      PIXI.Assets.add({ alias: key, src: fullUrl });
+      bundles.push(key);
+    }
+
+    try {
+      // 一括ロード実行
+      await PIXI.Assets.load(bundles);
+      console.log("[AssetLoader] All sprite assets loaded.");
+    } catch (e) {
+      console.error("[AssetLoader] Failed to load sprite assets:", e);
+    }
+  }
 }

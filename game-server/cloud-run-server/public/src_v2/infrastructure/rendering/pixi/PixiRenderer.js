@@ -1,11 +1,39 @@
 import { skinFactory } from "../skins/SkinFactory.js";
 import { PlayerSkins } from "../skins/players/PlayerSkins.js";
 import { EnemySkins } from "../skins/enemies/EnemySkins.js";
-import { BulletSkins } from "../skins/bullets/BulletSkins.js";
 import { ObstacleSkins } from "../skins/ObstacleSkins.js";
 import { GridSkin } from "../skins/environment/GridSkin.js";
-import { PixiParticleRenderer } from "./PixiParticleRenderer.js";
 import { PixiSpritePool } from "./PixiSpritePool.js";
+import { BulletType } from "../../../core/constants/Protocol.js";
+
+const ASSET_MAP = {
+  [BulletType.ORB]: {
+    bullet: "bullet_orb",
+    muzzle: "muzzle_orb",
+    hit: "hit_orb",
+  },
+  [BulletType.SLASH]: {
+    bullet: "bullet_slash",
+    muzzle: "muzzle_slash",
+    hit: "hit_slash",
+  },
+  [BulletType.FIREBALL]: {
+    bullet: "bullet_fireball",
+    muzzle: "muzzle_fireball",
+    hit: "hit_fireball",
+  },
+
+  [BulletType.ENEMY]: {
+    bullet: "bullet_orb",
+    muzzle: "muzzle_orb",
+    hit: "hit_orb",
+  },
+  [BulletType.DEFAULT]: {
+    bullet: "bullet_orb",
+    muzzle: "muzzle_orb",
+    hit: "hit_orb",
+  },
+};
 
 export class PixiRenderer {
   constructor(canvasId) {
@@ -30,7 +58,6 @@ export class PixiRenderer {
   async init() {
     const canvas = document.getElementById(this.canvasId);
     if (!canvas) return;
-
     this.app = new PIXI.Application();
     await this.app.init({
       canvas: canvas,
@@ -44,8 +71,6 @@ export class PixiRenderer {
     this.app.stage.addChild(this.layers.background);
     this.app.stage.addChild(this.layers.game);
     this.app.stage.addChild(this.layers.effect);
-
-    this.particleRenderer = new PixiParticleRenderer(this.layers.effect);
   }
 
   setupBackground(worldW, worldH, cellSize = 150) {
@@ -91,9 +116,6 @@ export class PixiRenderer {
     this.syncSprites(visualState.enemies, "enemy");
     this.syncSprites(visualState.bullets, "bullet");
     this.syncSprites(visualState.obstacles, "obstacle");
-    if (this.particleRenderer) {
-      this.particleRenderer.render(visualState.effects);
-    }
 
     this.cleanupSprites(visualState);
   }
@@ -104,14 +126,7 @@ export class PixiRenderer {
 
       if (!visual) {
         if (type === "bullet") {
-          const bulletType = entity.type || "player";
-          const poolKey = `bullet_${bulletType}`;
-
-          visual = this.pool.get(poolKey, () =>
-            this.createVisual(entity, type)
-          );
-          visual.poolKey = poolKey;
-          visual.type = type;
+          visual = this.createVisual(entity, type);
         } else {
           visual = this.createVisual(entity, type);
         }
@@ -168,12 +183,10 @@ export class PixiRenderer {
         this.PLAYER_SKIN_SIZE,
         PlayerSkins.turret(color)
       );
-
       const chassis = new PIXI.Sprite(chassisTex);
       chassis.anchor.set(0.5);
       const turret = new PIXI.Sprite(turretTex);
       turret.anchor.set(0.5);
-
       const textStyle = new PIXI.TextStyle({
         fontFamily: "'Roboto Mono', monospace",
         fontSize: 12,
@@ -208,24 +221,42 @@ export class PixiRenderer {
       container.addChild(body, hpBar);
       return { container, body, hpBar, type };
     } else if (type === "bullet") {
-      const size = entity.radius ? entity.radius * 4 : 32;
-      const bulletType = entity.type || "player";
-      const drawFunc = BulletSkins[bulletType] || BulletSkins["player"];
-      const funcToUse = (ctx, w, h) => {
-        const f = drawFunc(3000);
-        if (typeof f === "function") f(ctx, w, h);
-        else drawFunc()(ctx, w, h);
-      };
-      const texture = skinFactory.getTexture(
-        `bullet_${bulletType}`,
-        size,
-        size,
-        funcToUse
-      );
-      const sprite = new PIXI.Sprite(texture);
+      const typeId = entity.type || BulletType.ORB;
+
+      const mapping = ASSET_MAP[typeId] || ASSET_MAP[BulletType.ORB];
+      const assetKey = mapping.bullet;
+      let sprite;
+
+      try {
+        const sheet = PIXI.Assets.get(assetKey);
+        if (sheet && sheet.animations) {
+          const animKey = Object.keys(sheet.animations)[0];
+          sprite = new PIXI.AnimatedSprite(sheet.animations[animKey]);
+          sprite.animationSpeed = 0.5;
+          sprite.play();
+          sprite.blendMode = PIXI.BLEND_MODES.ADD;
+          this.playOneShotEffect(
+            mapping.muzzle,
+            entity.x,
+            entity.y,
+            entity.angle
+          );
+        } else {
+          throw new Error("Asset not found");
+        }
+      } catch (e) {
+        console.warn(`[PixiRenderer] Fallback for bullet ${assetKey}`, e);
+        sprite = new PIXI.Sprite(PIXI.Texture.WHITE);
+        sprite.width = 20;
+        sprite.height = 10;
+      }
+
       sprite.anchor.set(0.5);
+
+      sprite.rotation = 0;
+
       container.addChild(sprite);
-      return { container, sprite, type };
+      return { container, sprite, type, typeId };
     } else if (type === "obstacle") {
       const sprite = new PIXI.Sprite();
       sprite.anchor.set(0.5);
@@ -236,12 +267,35 @@ export class PixiRenderer {
     }
   }
 
+  playOneShotEffect(assetKey, x, y, rotation = 0) {
+    if (!assetKey) return;
+
+    const sheet = PIXI.Assets.get(assetKey);
+    if (!sheet || !sheet.animations) return;
+
+    const animKey = Object.keys(sheet.animations)[0];
+    const effect = new PIXI.AnimatedSprite(sheet.animations[animKey]);
+    effect.blendMode = PIXI.BLEND_MODES.ADD;
+    effect.anchor.set(0.5);
+    effect.x = x;
+    effect.y = y;
+    effect.rotation = rotation;
+    effect.loop = false;
+    effect.animationSpeed = 0.5;
+
+    effect.onComplete = () => {
+      effect.destroy();
+    };
+
+    this.layers.effect.addChild(effect);
+    effect.play();
+  }
+
   updateObstacleTexture(visual, entity) {
     const styleType = entity.styleType || "default";
     const width = entity.width || 100;
     const height = entity.height || 100;
     const isAnimated = styleType.includes("animated");
-
     if (!isAnimated) {
       const skinKey = `obs_${styleType}_${width}_${height}`;
       if (visual.currentSkinKey !== skinKey) {
@@ -266,10 +320,8 @@ export class PixiRenderer {
     } else {
       const skinKey = `obs_anim_${styleType}_${width}_${height}`;
       const skinFactoryFunc = ObstacleSkins[styleType];
-
       if (typeof skinFactoryFunc === "function") {
         const totalFrames = 60;
-
         const textures = skinFactory.getAnimationTextures(
           skinKey,
           width,
@@ -277,11 +329,9 @@ export class PixiRenderer {
           skinFactoryFunc,
           totalFrames
         );
-
         const loopTime = 4000;
         const progress = (Date.now() % loopTime) / loopTime;
         const frameIndex = Math.floor(progress * totalFrames);
-
         visual.sprite.texture = textures[frameIndex];
         visual.sprite.width = width;
         visual.sprite.height = height;
@@ -323,12 +373,7 @@ export class PixiRenderer {
       if (!activeIds.has(id)) {
         this.layers.game.removeChild(visual.container);
 
-        if (visual.type === "bullet" && visual.poolKey) {
-          this.pool.returnObject(visual.poolKey, visual);
-        } else {
-          visual.container.destroy({ children: true });
-        }
-
+        visual.container.destroy({ children: true });
         this.sprites.delete(id);
       }
     }

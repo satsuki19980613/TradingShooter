@@ -1,17 +1,18 @@
 import { TradeLogic } from "../../logic/TradeLogic.js";
+import { BulletType } from "../../core/constants/Protocol.js";
 
 export class TradingSystem {
   constructor() {
     this.MIN_BET = 10;
     this.MAX_CHART_POINTS = 300;
     this.MA_PERIODS = { short: 20, medium: 50, long: 100 };
-    
+
     this.state = {
-        chartData: [],
-        maData: { short: [], medium: [], long: [] },
-        currentPrice: 800,
-        minPrice: 1000,
-        maxPrice: 1000
+      chartData: [],
+      maData: { short: [], medium: [], long: [] },
+      currentPrice: 800,
+      minPrice: 1000,
+      maxPrice: 1000,
     };
   }
 
@@ -31,7 +32,7 @@ export class TradingSystem {
   updateChart() {
     this.updatePrice();
     this.state.chartData.push(this.state.currentPrice);
-    
+
     if (this.state.chartData.length > this.MAX_CHART_POINTS) {
       this.state.chartData.shift();
     }
@@ -53,7 +54,9 @@ export class TradingSystem {
   }
 
   updatePrice() {
-    this.state.currentPrice = TradeLogic.calculateNextPrice(this.state.currentPrice);
+    this.state.currentPrice = TradeLogic.calculateNextPrice(
+      this.state.currentPrice
+    );
   }
 
   calculateLatestMA() {
@@ -67,7 +70,7 @@ export class TradingSystem {
       if (this.state.chartData.length >= period) {
         val = TradeLogic.calculateMA(this.state.chartData, period);
       }
-      
+
       this.state.maData[type].push(val);
 
       if (this.state.maData[type].length > this.MAX_CHART_POINTS) {
@@ -78,26 +81,29 @@ export class TradingSystem {
 
   calculateMinMax() {
     if (this.state.chartData.length < 1) return;
-    
+
     this.state.minPrice = Math.min(...this.state.chartData);
     this.state.maxPrice = Math.max(...this.state.chartData);
   }
 
   handleBetInput(player, action) {
     if (player.chargePosition) return;
-    
+
     player.chargeBetAmount = TradeLogic.adjustBetAmount(
-        player.chargeBetAmount, 
-        player.ep, 
-        action, 
-        this.MIN_BET
+      player.chargeBetAmount,
+      player.ep,
+      action,
+      this.MIN_BET
     );
   }
 
   handleEntry(player, type) {
     if (player.isDead || player.chargePosition) return;
 
-    if (player.ep >= player.chargeBetAmount && player.chargeBetAmount >= this.MIN_BET) {
+    if (
+      player.ep >= player.chargeBetAmount &&
+      player.chargeBetAmount >= this.MIN_BET
+    ) {
       player.chargePosition = {
         entryPrice: this.state.currentPrice,
         amount: player.chargeBetAmount,
@@ -117,32 +123,35 @@ export class TradingSystem {
       player.chargePosition.amount,
       player.chargePosition.type
     );
-
     player.chargePosition = null;
 
     if (profit > 0) {
-      let bulletType = "player_special_1";
-      if (profit >= 100) bulletType = "player_special_4";
-      else if (profit >= 50) bulletType = "player_special_3";
-      else if (profit >= 25) bulletType = "player_special_2";
+      let typeId = BulletType.ORB;
+
+      if (profit >= 100) {
+        typeId = BulletType.FIREBALL;
+      } else if (profit >= 50) {
+        typeId = BulletType.SLASH;
+      }
 
       if (player.stockedBullets.length < player.maxStock) {
-          player.stockedBullets.push({ damage: profit, type: bulletType });
+        player.stockedBullets.push({ damage: profit, type: typeId });
       }
     } else {
       const damage = Math.abs(profit);
       player.hp -= damage;
       if (player.hp <= 0) {
-          player.isDead = true;
-          if (game && typeof game.handlePlayerDeath === 'function') {
-              game.handlePlayerDeath(player, null);
-          }
+        player.isDead = true;
+        if (game && typeof game.handlePlayerDeath === "function") {
+          game.handlePlayerDeath(player, null);
+        }
       }
     }
 
     player.chargeBetAmount = Math.min(player.ep, this.MIN_BET);
-    if (player.chargeBetAmount < this.MIN_BET) player.chargeBetAmount = this.MIN_BET;
-    
+    if (player.chargeBetAmount < this.MIN_BET)
+      player.chargeBetAmount = this.MIN_BET;
+
     player.isDirty = true;
   }
 

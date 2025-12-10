@@ -1,6 +1,5 @@
 import { VisualPlayer } from "../../domain/view_models/VisualPlayer.js";
 import { InterpolationLogic } from "../../logic/InterpolationLogic.js";
-import { ParticleFactory } from "../../domain/factories/ParticleFactory.js";
 import { ClientConfig } from "../../core/config/ClientConfig.js";
 
 export class StateSyncManager {
@@ -13,6 +12,7 @@ export class StateSyncManager {
       obstacles: new Map(),
       effects: [],
     };
+    this.effectQueue = [];
   }
 
   applySnapshot(snapshot) {
@@ -53,25 +53,26 @@ export class StateSyncManager {
     if (!delta) return;
     if (delta.events) {
       delta.events.forEach((ev) => {
-        let newParticles = [];
-        if (ev.type === "hit") {
-          newParticles = ParticleFactory.createHitEffect(
-            ev.x,
-            ev.y,
-            ev.color,
-            8
-          );
-        } else if (ev.type === "explosion") {
-          newParticles = ParticleFactory.createExplosionEffect(
-            ev.x,
-            ev.y,
-            ev.color
-          );
+        let effectKey = null;
+
+        if (ev.type === "hit" || ev.type === "explosion") {
+          if (ev.color === "#ff0000" || ev.color === "#ffffff") {
+            effectKey = "hit_fireball";
+          } else {
+            effectKey = "hit_orb";
+          }
         }
-        this.visualState.effects.push(...newParticles);
+
+        if (effectKey) {
+          this.effectQueue.push({
+            key: effectKey,
+            x: ev.x,
+            y: ev.y,
+            rotation: Math.random() * Math.PI * 2,
+          });
+        }
       });
     }
-
     if (delta.removed) {
       delta.removed.players.forEach((id) =>
         this.visualState.players.delete(id)

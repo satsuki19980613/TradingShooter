@@ -1,6 +1,5 @@
-/**
- * 通信プロトコルに関連する定数定義
- */
+// game-server/cloud-run-server/public/src_v2/core/constants/Protocol.js
+
 export const Protocol = {
   MSG_TYPE_DELTA: 1,
   MSG_TYPE_INPUT: 2,
@@ -19,6 +18,8 @@ export const Protocol = {
     trade_settle: 1 << 11,
   },
 };
+
+// 弾の種類ID定義
 export const BulletType = {
   DEFAULT: 0,
   ENEMY: 1,
