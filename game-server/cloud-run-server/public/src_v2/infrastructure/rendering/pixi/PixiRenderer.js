@@ -24,17 +24,17 @@ const ASSET_MAP = {
   },
 
   [BulletType.ENEMY]: {
-    bullet: "bullet_orb",
-    muzzle: "muzzle_orb",
-    hit: "hit_orb",
+    bullet: "bullet_trail_red",
+    muzzle: "muzzle_trail_red",
+    hit: "hit_trail_red",
   },
+  
   [BulletType.DEFAULT]: {
     bullet: "bullet_orb",
     muzzle: "muzzle_orb",
     hit: "hit_orb",
   },
 };
-
 export class PixiRenderer {
   constructor(canvasId) {
     this.canvasId = canvasId;
@@ -234,7 +234,7 @@ export class PixiRenderer {
           sprite = new PIXI.AnimatedSprite(sheet.animations[animKey]);
           sprite.animationSpeed = 0.5;
           sprite.play();
-          sprite.blendMode = PIXI.BLEND_MODES.ADD;
+          sprite.blendMode = 'add';
           this.playOneShotEffect(
             mapping.muzzle,
             entity.x,
@@ -275,7 +275,7 @@ export class PixiRenderer {
 
     const animKey = Object.keys(sheet.animations)[0];
     const effect = new PIXI.AnimatedSprite(sheet.animations[animKey]);
-    effect.blendMode = PIXI.BLEND_MODES.ADD;
+    effect.blendMode = 'add';
     effect.anchor.set(0.5);
     effect.x = x;
     effect.y = y;
