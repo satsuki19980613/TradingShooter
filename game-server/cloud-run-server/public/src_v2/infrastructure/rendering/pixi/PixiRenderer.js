@@ -28,7 +28,13 @@ const ASSET_MAP = {
     muzzle: "muzzle_trail_red",
     hit: "hit_trail_red",
   },
-  
+
+  enemy: {
+    bullet: "bullet_trail_red",
+    muzzle: "muzzle_trail_red",
+    hit: "hit_trail_red",
+  },
+
   [BulletType.DEFAULT]: {
     bullet: "bullet_orb",
     muzzle: "muzzle_orb",
@@ -232,13 +238,29 @@ export class PixiRenderer {
         if (sheet && sheet.animations) {
           const animKey = Object.keys(sheet.animations)[0];
           sprite = new PIXI.AnimatedSprite(sheet.animations[animKey]);
+          let targetSize = 80;
+          const scale = targetSize / Math.max(sprite.width, sprite.height);
+          sprite.scale.set(scale);
+
           sprite.animationSpeed = 0.5;
           sprite.play();
-          sprite.blendMode = 'add';
+          sprite.blendMode = "add";
+
+          let offsetDist = 0;
+
+          if (typeId === BulletType.ENEMY || typeId === "enemy") {
+            offsetDist = 70;
+          } else {
+            offsetDist = 85;
+          }
+
+          const muzzleX = entity.x + Math.cos(entity.angle) * offsetDist;
+          const muzzleY = entity.y + Math.sin(entity.angle) * offsetDist;
+
           this.playOneShotEffect(
             mapping.muzzle,
-            entity.x,
-            entity.y,
+            muzzleX,
+            muzzleY,
             entity.angle
           );
         } else {
@@ -275,7 +297,8 @@ export class PixiRenderer {
 
     const animKey = Object.keys(sheet.animations)[0];
     const effect = new PIXI.AnimatedSprite(sheet.animations[animKey]);
-    effect.blendMode = 'add';
+    effect.scale.set(0.5);
+    effect.blendMode = "add";
     effect.anchor.set(0.5);
     effect.x = x;
     effect.y = y;

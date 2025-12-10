@@ -129,6 +129,7 @@ export class StateSyncManager {
             eState.y + Math.sin(eState.ta) * ESTIMATED_SPEED_ENEMY * predFactor;
 
           e.hp = eState.h;
+          e.targetAngle = eState.ta;
         });
       }
       if (delta.updated.bullets) {

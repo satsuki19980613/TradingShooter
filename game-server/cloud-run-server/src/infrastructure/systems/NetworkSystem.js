@@ -1,7 +1,6 @@
 import { WebSocket } from "ws";
 import { PacketWriter } from "../utils/PacketWriter.js";
-import { Protocol } from "../../core/constants/Protocol.js";
-
+import { Protocol, BulletType } from "../../core/constants/Protocol.js";
 export class NetworkSystem {
   constructor() {
     this.playerWriters = new WeakMap();
