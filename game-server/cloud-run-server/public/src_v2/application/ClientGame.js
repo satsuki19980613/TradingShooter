@@ -9,9 +9,8 @@ import { MagazineRenderer } from "../infrastructure/rendering/canvas/MagazineRen
 import { DomManipulator } from "../infrastructure/ui/DomManipulator.js";
 import { ScreenScaler } from "../infrastructure/ui/ScreenScaler.js";
 import { ClientConfig } from "../core/config/ClientConfig.js";
-import { JitterRecorder } from "../../domain/debug/JitterRecorder.js";
-import { DebugGraphRenderer } from "../../infrastructure/rendering/debug/DebugGraphRenderer.js";
-// ▲▲▲ 追加ここまで ▲▲▲
+import { JitterRecorder } from "../domain/debug/JitterRecorder.js";
+import { DebugGraphRenderer } from "../domain/debug/DebugGraphRenderer.js";
 
 export class ClientGame {
   constructor(uiManipulator) {
