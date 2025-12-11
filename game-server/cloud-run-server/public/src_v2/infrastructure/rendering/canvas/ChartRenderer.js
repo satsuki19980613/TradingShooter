@@ -56,6 +56,8 @@ export class ChartRenderer {
       long: "#ff00e1",
     };
     ["short", "medium", "long"].forEach((type) => {
+      const el = document.getElementById(`ma-${type}`);
+      if (el && !el.checked) return;
       const maList = tradeState.maData[type];
       if (!maList || maList.length === 0) return;
 

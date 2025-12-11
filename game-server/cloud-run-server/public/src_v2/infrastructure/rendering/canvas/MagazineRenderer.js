@@ -77,7 +77,7 @@
     ctx.save();
 
     // 1. 背景
-    ctx.fillStyle = "rgba(5, 10, 16, 0.85)";
+    ctx.fillStyle = "rgba(5, 10, 16, 0.14)";
     this._drawCyberRect(ctx, areaX, areaY, areaWidth, areaHeight, 10 * ratio);
     ctx.fill();
 
@@ -87,16 +87,16 @@
     this._drawGridPattern(ctx, areaX, areaY, areaWidth, areaHeight, ratio);
     ctx.restore();
 
-    // 3. 外枠：ネオンシアンのグロー
+    // 3. 外枠：ネオンシアンのグロー (shadowBlur削除)
     ctx.shadowColor = "#00f3ff";
-    ctx.shadowBlur = 8 * ratio;
+    // ctx.shadowBlur = 8 * ratio; // 削除
     ctx.strokeStyle = "#00f3ff";
     ctx.lineWidth = 1 * ratio;
     this._drawCyberRect(ctx, areaX, areaY, areaWidth, areaHeight, 10 * ratio);
     ctx.stroke();
     
-    // 発光リセット
-    ctx.shadowBlur = 0;
+    // 発光リセット (削除)
+    // ctx.shadowBlur = 0;
 
     // 4. スロット区切りと番号
     ctx.textAlign = "right";
@@ -213,9 +213,9 @@
         grad.addColorStop(1, coreColor);
 
         ctx.fillStyle = grad;
-        // スケールに応じてグローの強さを調整
+        // スケールに応じてグローの強さを調整 (shadowBlur削除)
         ctx.shadowColor = baseColor;
-        ctx.shadowBlur = 15 * (currentScale / Math.min(baseScaleX, baseScaleY));
+        // ctx.shadowBlur = 15 * (currentScale / Math.min(baseScaleX, baseScaleY)); // 削除
         
         ctx.fill();
 
@@ -224,12 +224,7 @@
         ctx.globalAlpha = 0.8;
         ctx.stroke();
         
-        // オーバーレイライン
-        ctx.globalCompositeOperation = "source-atop";
-        ctx.fillStyle = "rgba(0,0,0,0.3)";
-        for(let k=0; k<10; k++) {
-             ctx.fillRect(-200 + k * 50, -50, 5, 100);
-        }
+
 
         ctx.restore();
       }

@@ -120,7 +120,7 @@ export class DomManipulator {
       if (level > 0) intLevel = Math.ceil(level);
       
       const levelText = intLevel === 0 ? "0" : (intLevel > 0 ? "+" : "") + intLevel;
-      const levelColor = intLevel > 0 ? "#4caf50" : intLevel < 0 ? "#f44336" : "white";
+      const levelColor = intLevel > 0 ? "#00ff00" : intLevel < 0 ? "#ff0055" : "white";
 
       this.powerLabelEl.textContent = "Power";
       this.powerValueEl.textContent = levelText;

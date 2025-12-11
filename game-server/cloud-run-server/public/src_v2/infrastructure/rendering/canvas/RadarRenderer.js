@@ -94,7 +94,7 @@ export class RadarRenderer {
     ctx.moveTo(0, 0);
     ctx.lineTo(scanRadius, 0);
     ctx.strokeStyle = `rgba(${rColor}, 0.9)`;
-    ctx.lineWidth = 2 * ratio;
+    ctx.lineWidth = 0 * ratio;
     ctx.stroke();
 
     ctx.restore(); // 回転終了
@@ -118,7 +118,7 @@ export class RadarRenderer {
     if (enemiesState && enemiesState.length > 0) {
       ctx.fillStyle = "#ff3333";
       ctx.shadowColor = "#ff0000";
-      ctx.shadowBlur = 5 * ratio;
+      // ctx.shadowBlur = 5 * ratio; // 削除
       
       const blipSize = 5 * ratio;
 
@@ -140,12 +140,12 @@ export class RadarRenderer {
           ctx.fill();
         }
       });
-      ctx.shadowBlur = 0; // リセット
+      // ctx.shadowBlur = 0; // 削除 (設定していないのでリセット不要)
     }
 
     // 他プレイヤーの描画（明るいグリーンの四角）
     if (otherPlayersState && otherPlayersState.length > 0) {
-      ctx.fillStyle = "#ccff00"; // 黄緑
+      ctx.fillStyle = "#ff0000ff"; // 黄緑
       const blipSize = 4 * ratio;
 
       otherPlayersState.forEach((p) => {
@@ -160,7 +160,7 @@ export class RadarRenderer {
           ctx.fill();
           
           // IDタグ風の線
-          ctx.strokeStyle = "#ccff00";
+          ctx.strokeStyle = "#ff0000ff";
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.moveTo(pos.x, pos.y - blipSize);
@@ -190,7 +190,7 @@ export class RadarRenderer {
     ctx.fillStyle = symbolColor;
     ctx.lineWidth = 1 * ratio;
     ctx.shadowColor = symbolColor;
-    ctx.shadowBlur = 4 * ratio;
+    // ctx.shadowBlur = 4 * ratio; // 削除
 
     const s = 6 * ratio;
     
@@ -237,7 +237,7 @@ export class RadarRenderer {
     ctx.fillRect(left, top, size, size);
 
     // --- B. グリッド（レンジリング・十字） ---
-    const gridColor = "rgba(0, 255, 50, 0.4)";
+    const gridColor = "rgba(0, 255, 51, 1)";
     ctx.strokeStyle = gridColor;
     ctx.lineWidth = 1 * ratio;
     
@@ -276,7 +276,7 @@ export class RadarRenderer {
     ctx.strokeStyle = frameColor;
     ctx.lineWidth = lineW;
     ctx.shadowColor = frameColor;
-    ctx.shadowBlur = 8 * ratio;
+    // ctx.shadowBlur = 8 * ratio; // 削除
     ctx.lineCap = "square";
     ctx.setLineDash([]);
 
@@ -309,7 +309,7 @@ export class RadarRenderer {
     ctx.stroke();
 
     // --- D. テキスト情報 (MFD OSD) ---
-    ctx.shadowBlur = 0; // テキストは滲ませない
+    // ctx.shadowBlur = 0; // 削除
     ctx.fillStyle = frameColor;
     ctx.font = `bold ${11 * ratio}px "Roboto Mono", monospace`;
     ctx.textAlign = "left";
@@ -320,17 +320,10 @@ export class RadarRenderer {
     ctx.textAlign = "right";
     
     // 中央の目盛り数値（レンジ）
-    ctx.fillStyle = "rgba(0, 255, 50, 0.7)";
+    ctx.fillStyle = "rgba(0, 255, 51, 1)";
     ctx.font = `${9 * ratio}px "Roboto Mono", monospace`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    // 上
-    ctx.fillText("1500", centerX, top + 10 * ratio);
-    // 右
-    ctx.fillText("90", right - 15 * ratio, centerY);
-    // 左
-    ctx.fillText("270", left + 15 * ratio, centerY);
-    // 下
-    ctx.fillText("180", centerX, bottom - 10 * ratio);
+   
   }
 }
