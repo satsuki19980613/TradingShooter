@@ -750,11 +750,13 @@ canvas {
   background: rgba(0, 188, 212, 0.25);
   border: 1px solid rgba(0, 188, 212, 0.5);
 }
-
-@media (max-width: 1024px), (pointer: coarse) {
+@media (pointer: coarse) {
   #mobile-controls-layer {
     display: block !important;
   }
+}
+@media (max-width: 1024px), (pointer: coarse) {
+ 
   #hud-status-area .stat-row {
     font-size: 16px !important;
   }
