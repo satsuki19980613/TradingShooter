@@ -101,7 +101,7 @@
     // 4. スロット区切りと番号
     ctx.textAlign = "right";
     ctx.textBaseline = "middle";
-    ctx.font = `bold ${6 * ratio}px "Courier New", monospace`;
+    ctx.font = `bold ${7.5 * ratio}px "Courier New", monospace`;
 
     for (let i = 0; i < maxStock; i++) {
       const currentSlotY = areaY + areaHeight - (i + 1) * (slotHeight + gap) + gap; 
