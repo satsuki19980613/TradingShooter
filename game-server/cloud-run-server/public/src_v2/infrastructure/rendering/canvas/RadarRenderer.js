@@ -1,4 +1,17 @@
 export class RadarRenderer {
+  constructor() {
+    // --- 1. 静的キャッシュ用のオフスクリーンCanvasを作成 ---
+    this.staticCanvas = document.createElement("canvas");
+    this.staticCtx = this.staticCanvas.getContext("2d");
+
+    // キャッシュの状態管理
+    this.cachedState = {
+      width: 0,
+      height: 0,
+      uiScale: 0,
+    };
+  }
+
   draw(
     ctx,
     canvasWidth,
@@ -9,73 +22,86 @@ export class RadarRenderer {
     enemiesState,
     obstaclesState,
     otherPlayersState,
-    uiScale = 1.0 // <--- ★重要: これがないと ReferenceError になります
+    uiScale = 1.0
   ) {
     const dpr = window.devicePixelRatio || 1;
-    
     const ratio = dpr * uiScale;
 
-    const size = Math.min(canvasWidth, canvasHeight);
+    // --- 2. キャッシュの有効性チェックと更新 ---
+    if (
+      this.cachedState.width !== canvasWidth ||
+      this.cachedState.height !== canvasHeight ||
+      this.cachedState.uiScale !== uiScale
+    ) {
+      this.updateStaticCache(canvasWidth, canvasHeight, ratio);
+      this.cachedState = {
+        width: canvasWidth,
+        height: canvasHeight,
+        uiScale: uiScale,
+      };
+    }
+
     const centerX = canvasWidth / 2;
     const centerY = canvasHeight / 2;
-    const radarRadius = (size * 0.9) / 2;
+    
+    // 短辺の85%をレーダーサイズとする
+    const size = Math.min(canvasWidth, canvasHeight) * 0.85;
+    const halfSize = size / 2;
 
+    // 表示範囲（ワールド座標上の半径）
     const viewRadiusWorld = 1500;
-    const scale = radarRadius / viewRadiusWorld;
-    const time = Date.now() / 1000;
+    const scale = halfSize / viewRadiusWorld;
+    
+    // --- 3. 静的レイヤー（背景・グリッド・枠）の描画 ---
+    ctx.drawImage(this.staticCanvas, 0, 0);
 
+    // 矩形クリッピング開始（スキャンとブリップ用）
     ctx.save();
     ctx.beginPath();
-    ctx.arc(centerX, centerY, radarRadius, 0, Math.PI * 2);
+    ctx.rect(centerX - halfSize, centerY - halfSize, size, size);
     ctx.clip();
 
-    ctx.fillStyle = "rgba(0, 20, 30, 0.3)";
-    ctx.fill();
-    ctx.strokeStyle = "rgba(0, 255, 255, 0.15)";
-    ctx.lineWidth = 1;
-
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, radarRadius * 0.33, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, radarRadius * 0.66, 0, Math.PI * 2);
-    ctx.stroke();
-
-    ctx.beginPath();
-    const gap = 10 * ratio;
-    ctx.moveTo(centerX - radarRadius, centerY);
-    ctx.lineTo(centerX - gap, centerY);
-    ctx.moveTo(centerX + gap, centerY);
-    ctx.lineTo(centerX + radarRadius, centerY);
-    ctx.moveTo(centerX, centerY - radarRadius);
-    ctx.lineTo(centerX, centerY - gap);
-    ctx.moveTo(centerX, centerY + gap);
-    ctx.lineTo(centerX, centerY + radarRadius);
-    ctx.stroke();
+    // --- 4. スキャンライン（動的） ---
+    const time = Date.now() / 1000;
+    const scanAngle = (time * Math.PI) % (Math.PI * 2); // 2秒で1回転
 
     ctx.save();
     ctx.translate(centerX, centerY);
-    ctx.rotate(time * 2);
-    const scanGrad = ctx.createLinearGradient(0, 0, radarRadius, 0);
-    scanGrad.addColorStop(0, "rgba(0, 255, 255, 0)");
-    scanGrad.addColorStop(1, "rgba(0, 255, 255, 0.15)");
+    ctx.rotate(scanAngle);
 
+    // レーダー色の定義 (Tactical Green)
+    const rColor = "0, 255, 50"; 
+    
+    // スキャンセクター（扇形）の描画
     ctx.beginPath();
     ctx.moveTo(0, 0);
-    ctx.arc(0, 0, radarRadius, -0.2, 0);
-    ctx.fillStyle = scanGrad;
+    // スキャンの残像（-45度）を描画したいが、四角い領域全体をカバーするために長めに描画
+    // ここでは円弧を描き、クリッピングで四角く見せる
+    const scanRadius = halfSize * 1.5; // 四隅まで届くように大きめに
+    ctx.arc(0, 0, scanRadius, -Math.PI / 4, 0); 
+    ctx.lineTo(0, 0);
+    
+    // スキャンのグラデーション
+    const sweepGrad = ctx.createLinearGradient(0, -halfSize, 0, 0);
+    sweepGrad.addColorStop(0, `rgba(${rColor}, 0)`);
+    sweepGrad.addColorStop(1, `rgba(${rColor}, 0.25)`);
+    
+    ctx.fillStyle = `rgba(${rColor}, 0.15)`; // 全体的に薄く塗る
     ctx.fill();
 
+    // スキャンの先端ライン
     ctx.beginPath();
     ctx.moveTo(0, 0);
-    ctx.lineTo(radarRadius, 0);
-    ctx.strokeStyle = "rgba(0, 255, 255, 0.5)";
-    ctx.lineWidth = 1;
+    ctx.lineTo(scanRadius, 0);
+    ctx.strokeStyle = `rgba(${rColor}, 0.9)`;
+    ctx.lineWidth = 2 * ratio;
     ctx.stroke();
-    ctx.restore();
 
+    ctx.restore(); // 回転終了
+
+    // --- 5. ターゲット（敵・他プレイヤー）の描画 ---
     if (!playerState) {
-      ctx.restore();
+      ctx.restore(); // クリップ解除
       return;
     }
 
@@ -88,67 +114,223 @@ export class RadarRenderer {
       };
     };
 
+    // 敵の描画（赤色のひし形、ネオン管風）
     if (enemiesState && enemiesState.length > 0) {
+      ctx.fillStyle = "#ff3333";
+      ctx.shadowColor = "#ff0000";
+      ctx.shadowBlur = 5 * ratio;
+      
+      const blipSize = 5 * ratio;
+
       enemiesState.forEach((enemy) => {
         const pos = getRadarPos(enemy.x, enemy.y);
-        const distSq = (pos.x - centerX) ** 2 + (pos.y - centerY) ** 2;
-        if (distSq <= radarRadius ** 2) {
+        
+        // 矩形範囲内判定
+        if (
+            pos.x >= centerX - halfSize && pos.x <= centerX + halfSize &&
+            pos.y >= centerY - halfSize && pos.y <= centerY + halfSize
+        ) {
           ctx.beginPath();
-          ctx.fillStyle = "#ff3333";
-
-          ctx.arc(pos.x, pos.y, 2.5 * ratio, 0, Math.PI * 2);
+          // ひし形
+          ctx.moveTo(pos.x, pos.y - blipSize);
+          ctx.lineTo(pos.x + blipSize, pos.y);
+          ctx.lineTo(pos.x, pos.y + blipSize);
+          ctx.lineTo(pos.x - blipSize, pos.y);
+          ctx.closePath();
           ctx.fill();
         }
       });
+      ctx.shadowBlur = 0; // リセット
     }
 
+    // 他プレイヤーの描画（明るいグリーンの四角）
     if (otherPlayersState && otherPlayersState.length > 0) {
+      ctx.fillStyle = "#ccff00"; // 黄緑
+      const blipSize = 4 * ratio;
+
       otherPlayersState.forEach((p) => {
         const pos = getRadarPos(p.x, p.y);
-        const distSq = (pos.x - centerX) ** 2 + (pos.y - centerY) ** 2;
-        if (distSq <= radarRadius ** 2) {
+        
+        if (
+            pos.x >= centerX - halfSize && pos.x <= centerX + halfSize &&
+            pos.y >= centerY - halfSize && pos.y <= centerY + halfSize
+        ) {
           ctx.beginPath();
-          ctx.fillStyle = "#00ff88";
-
-          ctx.arc(pos.x, pos.y, 2.5 * ratio, 0, Math.PI * 2);
+          ctx.rect(pos.x - blipSize/2, pos.y - blipSize/2, blipSize, blipSize);
           ctx.fill();
+          
+          // IDタグ風の線
+          ctx.strokeStyle = "#ccff00";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(pos.x, pos.y - blipSize);
+          ctx.lineTo(pos.x, pos.y - blipSize * 2);
+          ctx.stroke();
         }
       });
     }
 
+    ctx.restore(); // クリップ解除
+
+    // --- 6. 自機シンボル（中央） ---
+    // クリップの外に描画して、一番上に表示
     ctx.save();
     ctx.translate(centerX, centerY);
-    const myRot =
-      playerState.rotationAngle !== undefined
+    
+    // 自機の向きに合わせて回転
+    const myRot = playerState.rotationAngle !== undefined
         ? playerState.rotationAngle
         : playerState.aimAngle;
+    // 画面上は上が-90度(270度)なので補正
     ctx.rotate(myRot + Math.PI / 2);
 
-    ctx.fillStyle = "#00ffff";
+    // F-16 HUDシンボル風（中抜きの円＋機首ライン）
+    const symbolColor = "#00ff00"; // 完全な緑
+    ctx.strokeStyle = symbolColor;
+    ctx.fillStyle = symbolColor;
+    ctx.lineWidth = 1 * ratio;
+    ctx.shadowColor = symbolColor;
+    ctx.shadowBlur = 4 * ratio;
 
+    const s = 6 * ratio;
+    
+    // 機体シンボル
     ctx.beginPath();
-    const s = 4 * ratio;
-    ctx.moveTo(0, -s * 1.5);
-    ctx.lineTo(s, s);
+    // 三角形
+    ctx.moveTo(0, -s);
+    ctx.lineTo(s * 0.6, s * 0.8);
     ctx.lineTo(0, s * 0.5);
-    ctx.lineTo(-s, s);
+    ctx.lineTo(-s * 0.6, s * 0.8);
     ctx.closePath();
+    ctx.stroke();
+    // 中心点
+    ctx.beginPath();
+    ctx.arc(0, 0, 1 * ratio, 0, Math.PI * 2);
     ctx.fill();
+    
     ctx.restore();
+  }
 
+  /**
+   * 静的要素（背景、グリッド、MFDフレーム）のキャッシュを更新
+   */
+  updateStaticCache(width, height, ratio) {
+    this.staticCanvas.width = width;
+    this.staticCanvas.height = height;
+    const ctx = this.staticCtx;
+
+    // クリア
+    ctx.clearRect(0, 0, width, height);
+
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const size = Math.min(width, height) * 0.85;
+    const halfSize = size / 2;
+
+    const left = centerX - halfSize;
+    const right = centerX + halfSize;
+    const top = centerY - halfSize;
+    const bottom = centerY + halfSize;
+
+    // --- A. 背景（MFD風の黒/濃緑） ---
+    ctx.fillStyle = "rgba(0, 20, 10, 0)";
+    ctx.fillRect(left, top, size, size);
+
+    // --- B. グリッド（レンジリング・十字） ---
+    const gridColor = "rgba(0, 255, 50, 0.4)";
+    ctx.strokeStyle = gridColor;
+    ctx.lineWidth = 1 * ratio;
+    
+    // 十字線
+    ctx.setLineDash([4 * ratio, 4 * ratio]);
     ctx.beginPath();
-    ctx.arc(centerX, centerY, radarRadius, 0, Math.PI * 2);
-    ctx.strokeStyle = "#00bcd4";
-    ctx.lineWidth = 2;
+    ctx.moveTo(left, centerY);
+    ctx.lineTo(right, centerY);
+    ctx.moveTo(centerX, top);
+    ctx.lineTo(centerX, bottom);
+    ctx.stroke();
+    
+    // レンジリング（円弧だが四角の中だけ見えるイメージ）
+    // 3段階の距離円
+    const rings = 3;
+    const maxRadius = halfSize;
+    ctx.setLineDash([]); // 実線
+    ctx.lineWidth = 1 * ratio;
+    ctx.strokeStyle = "rgba(0, 255, 50, 0.2)";
+
+    for (let i = 1; i <= rings; i++) {
+        const r = (maxRadius / rings) * i;
+        ctx.beginPath();
+        // 四角からはみ出さないようにクリップして描くのが本来だが、
+        // ここでは単純に円を描き、後でメイン描画時に四角クリップされるので問題ない
+        // ただし四隅に余計な線が出ないよう、四角形の内接円までに留めるデザインにする
+        ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    // --- C. MFDフレーム（四隅のL字ブラケット） ---
+    const frameColor = "#00ff33"; // 鮮やかなグリーン
+    const cornerSize = 20 * ratio;
+    const lineW = 0.5 * ratio;
+
+    ctx.strokeStyle = frameColor;
+    ctx.lineWidth = lineW;
+    ctx.shadowColor = frameColor;
+    ctx.shadowBlur = 8 * ratio;
+    ctx.lineCap = "square";
+    ctx.setLineDash([]);
+
+    // 左上
+    ctx.beginPath();
+    ctx.moveTo(left, top + cornerSize);
+    ctx.lineTo(left, top);
+    ctx.lineTo(left + cornerSize, top);
     ctx.stroke();
 
+    // 右上
     ctx.beginPath();
-    ctx.arc(centerX, centerY, radarRadius + 3 * ratio, 0, Math.PI * 2);
-    ctx.strokeStyle = "rgba(0, 188, 212, 0.3)";
-    ctx.lineWidth = 1;
-    ctx.setLineDash([10 * ratio, 10 * ratio]);
+    ctx.moveTo(right - cornerSize, top);
+    ctx.lineTo(right, top);
+    ctx.lineTo(right, top + cornerSize);
     ctx.stroke();
 
-    ctx.restore();
+    // 右下
+    ctx.beginPath();
+    ctx.moveTo(right, bottom - cornerSize);
+    ctx.lineTo(right, bottom);
+    ctx.lineTo(right - cornerSize, bottom);
+    ctx.stroke();
+
+    // 左下
+    ctx.beginPath();
+    ctx.moveTo(left + cornerSize, bottom);
+    ctx.lineTo(left, bottom);
+    ctx.lineTo(left, bottom - cornerSize);
+    ctx.stroke();
+
+    // --- D. テキスト情報 (MFD OSD) ---
+    ctx.shadowBlur = 0; // テキストは滲ませない
+    ctx.fillStyle = frameColor;
+    ctx.font = `bold ${11 * ratio}px "Roboto Mono", monospace`;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+
+    // 上部情報
+    ctx.fillText("RDR", left + 5 * ratio, top + 5 * ratio);
+    ctx.textAlign = "right";
+    
+    // 中央の目盛り数値（レンジ）
+    ctx.fillStyle = "rgba(0, 255, 50, 0.7)";
+    ctx.font = `${9 * ratio}px "Roboto Mono", monospace`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    // 上
+    ctx.fillText("1500", centerX, top + 10 * ratio);
+    // 右
+    ctx.fillText("90", right - 15 * ratio, centerY);
+    // 左
+    ctx.fillText("270", left + 15 * ratio, centerY);
+    // 下
+    ctx.fillText("180", centerX, bottom - 10 * ratio);
   }
 }

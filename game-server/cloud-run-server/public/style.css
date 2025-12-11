@@ -107,8 +107,13 @@ canvas {
   display: flex;
   flex-direction: row;
   align-items: stretch !important;
+  
   gap: 5px;
-  height: 130px;
+  height: 140px; 
+
+  background: rgba(0, 0, 0, 0.3) !important;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5) !important;
+  border-radius: 0 !important;
 }
 
 .status-group {
@@ -118,11 +123,9 @@ canvas {
   margin-right: 0 !important;
   margin-bottom: 5px !important;
 
-  /* ▼▼▼ PC版用にもここに追加してください ▼▼▼ */
   width: 220px;
   min-width: 220px;
   flex-shrink: 0;
-  /* ▲▲▲ 追加ここまで ▲▲▲ */
 }
 
 .status-group .panel-module {
@@ -131,7 +134,11 @@ canvas {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.3) !important;
+  
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  border-radius: 0 !important;
 }
 
 #bottom-chart-panel.dashboard-item {
@@ -142,10 +149,14 @@ canvas {
   transform: none !important;
   margin: 0 !important;
   width: 350px !important;
-  background: rgba(0, 0, 0, 0.3) !important;
+  height: 100% !important;
+
+  background: transparent !important;
+  box-shadow: none !important;
   border: none !important;
+  border-radius: 0 !important;
+  
   padding: 0 !important;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5) !important;
   backdrop-filter: none !important;
 }
 
@@ -244,7 +255,7 @@ canvas {
 }
 
 .hud-group.top-right {
-  top: 5px;
+  top: -21px;
   right: 20px;
   transform-origin: top right;
   display: flex;
@@ -259,18 +270,6 @@ canvas {
   flex-direction: column;
   gap: 10px;
   align-items: center;
-}
-
-.hud-group.top-right .hud-row > .panel-module:nth-child(2) {
-  margin-left: 0 !important;
-  position: relative;
-  z-index: 10;
-}
-
-.hud-group.top-right .hud-row > .panel-module:nth-child(2) {
-  margin-left: -5px;
-  position: relative;
-  z-index: 10;
 }
 
 .hud-group.top-right .panel-module {
@@ -289,8 +288,34 @@ canvas {
 .hud-group.top-right .canvas-wrapper {
   background: transparent !important;
   border: none !important;
+  width: 140px !important;
+  height: 140px !important;
+}
+
+/* --- 新しいマガジンパネルの設定 (PC版) --- */
+#magazine-panel {
+  position: fixed !important;
+  bottom: 60px !important;
+  right: -25px !important;
+  
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  z-index: 20;
+
+  transform: scale(var(--ui-scale, 1));
+  transform-origin: bottom right;
+}
+
+#magazine-panel .canvas-wrapper {
+  background: transparent !important;
   width: 120px !important;
   height: 160px !important;
+}
+
+#magazine-panel h3 {
+  display: none !important;
 }
 
 #btn-retire {
@@ -794,10 +819,17 @@ canvas {
   }
 
   .hud-upper-row {
-    flex-direction: row;
-    align-items: flex-start !important;
-    height: auto;
-  }
+  display: flex;
+  flex-direction: row;
+  align-items: stretch !important;
+  
+  gap: 5px; 
+  height: 140px; 
+
+  background: rgba(0, 0, 0, 0.3) !important;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5) !important;
+  border-radius: 0 !important;
+}
 
   .status-group {
     transform: scale(1) !important;
@@ -805,13 +837,13 @@ canvas {
     margin-right: 0 !important;
     margin-bottom: 5px !important;
     width: 220px;
-    min-width: 220px; /* これ以上小さくならないようにする */
+    min-width: 220px;
     flex-shrink: 0;
   }
 
   #bottom-chart-panel.dashboard-item {
     width: 400px !important;
-    height: 180px !important;
+    height: 158px !important;
   }
 
   #ma-selection-panel {
@@ -824,49 +856,38 @@ canvas {
     gap: 20 !important;
   }
 
-  .hud-group.top-right .hud-row > .panel-module:nth-child(2) {
-    margin-left: -15px !important;
-    position: relative !important;
-    z-index: 10 !important;
+  /* --- スマホ版: マガジンパネルの調整 --- */
+  #magazine-panel {
+    position: absolute !important;
+    bottom: auto !important;
+    top: 10px !important;
+    right: 140px !important;
+    transform: scale(0.75) !important;
+    transform-origin: top right;
   }
 
   #btn-retire {
-    /* 位置合わせの重要設定 */
     position: absolute !important;
-    top: 180px !important; /* 上からの位置 */
-    right: 10px !important; /* 右からの位置 */
-
-    bottom: auto !important; /* ★重要: これで引き伸ばしを解除します */
-    height: auto !important; /* ★念のため高さも自動に戻します */
-
-    /* デザイン調整 */
+    top: 180px !important;
+    right: 10px !important;
+    bottom: auto !important;
+    height: auto !important;
     padding: 4px 8px !important;
     font-size: 10px !important;
     margin: 0 !important;
     width: auto !important;
-
-    /* スケール調整 */
     transform: scale(0.75) !important;
     transform-origin: top right;
   }
-/* --- スマホ版BGMテロップの位置調整 --- */
+  /* --- スマホ版BGMテロップの位置調整 --- */
   .music-notification {
-    /* 親要素(#cockpit-container)に合わせて回転させるため absolute に変更 */
     position: absolute !important; 
-    
-    /* マガジン(下端約130px)とリタイアボタン(上端180px)の間に配置 */
     top: 135px !important;
-    
-    /* 画面右外からスライドイン */
     right: -100% !important; 
-    
-    /* スマホ用にサイズ調整 */
     max-width: 220px;
     padding: 6px 12px;
     border-left-width: 3px;
     background: rgba(0, 0, 0, 0.85);
-    
-    /* コンテナ内での重なり順を最前面に */
     z-index: 2000; 
   }
 
@@ -878,7 +899,6 @@ canvas {
     font-size: 12px;
   }
 
-  /* 表示時は右端(right: 0)に配置 */
   .music-notification.show {
     right: 0 !important;
   }
@@ -958,27 +978,25 @@ canvas {
   }
 }
 
-
-/* --- Music Notification Style --- */
 .music-notification {
   position: fixed;
-  top: 80px; /* HUDの下あたり */
-  right: -300px; /* 最初は画面外(右)に隠す */
+  top: 80px;
+  right: -300px;
   background: rgba(0, 0, 0, 0.7);
-  border-left: 4px solid #00ffff; /* サイバーパンクなシアン色 */
+  border-left: 4px solid #00ffff;
   padding: 10px 20px;
   display: flex;
   align-items: center;
   gap: 15px;
   z-index: 1000;
-  transition: right 0.5s cubic-bezier(0.17, 0.84, 0.44, 1); /* シュッと出てくる動き */
+  transition: right 0.5s cubic-bezier(0.17, 0.84, 0.44, 1);
   backdrop-filter: blur(5px);
   border-radius: 4px 0 0 4px;
   box-shadow: -5px 5px 15px rgba(0, 255, 255, 0.2);
 }
 
 .music-notification.show {
-  right: 0; /* 画面右端に出てくる */
+  right: 0;
 }
 
 .music-icon {
@@ -1013,14 +1031,13 @@ canvas {
   100% { transform: scale(1); opacity: 1; }
 }
 
-/* --- Audio Loading Bar --- */
 .audio-loader {
-  display: none; /* 初期状態は非表示 */
-  width: 260px;  /* ボタンと同じくらいの幅 */
+  display: none;
+  width: 260px;
   height: 4px;
   background: #111;
   border: 1px solid #333;
-  margin-bottom: 15px; /* 下のボタンとの間隔 */
+  margin-bottom: 15px;
   border-radius: 2px;
   overflow: hidden;
 }
@@ -1033,7 +1050,6 @@ canvas {
   transition: width 0.1s linear;
 }
 
-/* --- 新しい旋回ボタンのスタイル --- */
 #mc-turn-controls {
   width: 100%;
   height: 100%;
@@ -1048,12 +1064,12 @@ canvas {
   height: 70px;
   background: rgba(0, 188, 212, 0.3);
   border: 2px solid #00ffff;
-  border-radius: 50%; /* 丸いボタンにする */
+  border-radius: 50%;
   color: #fff;
   font-size: 24px;
   font-weight: bold;
   backdrop-filter: blur(4px);
-  touch-action: none; /* スマホでの長押し拡大などを防止 */
+  touch-action: none;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -1063,10 +1079,9 @@ canvas {
   transform: scale(0.95);
 }
 
-/* スマホ横持ち時の微調整 */
 @media (max-width: 1024px) {
   #mc-right-bottom {
-    width: 160px !important; /* ボタン2つ入る幅に広げる */
+    width: 160px !important;
     height: 80px !important;
     right: 90px !important;
     bottom: 76px !important;
