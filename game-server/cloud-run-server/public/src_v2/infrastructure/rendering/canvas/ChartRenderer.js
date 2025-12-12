@@ -12,7 +12,7 @@ export class ChartRenderer {
     if (chartData.length < 2) return;
     const padding = {
       top: 10 * ratio,
-      right: 30 * ratio,
+      right: 50 * ratio,
       bottom: 5 * ratio,
       left: 0,
     };
@@ -134,17 +134,20 @@ export class ChartRenderer {
     ctx.font = `bold ${14 * ratio}px "Orbitron", sans-serif`;
     const priceText = currentPrice.toFixed(0);
     const textHeight = 14 * ratio;
-    const textX = chartX + chartWidth + 5 * ratio;
+    const textX = canvasWidth - 5 * ratio; 
+    
     const textY = Math.max(
       chartY + textHeight / 2,
       Math.min(currentY, chartY + chartHeight - textHeight / 2)
     );
+    
     ctx.save();
     ctx.fillStyle =
       lastPrice >= (chartData[chartData.length - 2] || 0)
         ? "#00ff00"
         : "#ff0055";
-    ctx.textAlign = "left";
+        
+    ctx.textAlign = "right"; // ← 「右揃え」に変更（右端から左に向かって文字を書く）
     ctx.textBaseline = "middle";
     ctx.fillText(priceText, textX, textY);
     ctx.restore();
