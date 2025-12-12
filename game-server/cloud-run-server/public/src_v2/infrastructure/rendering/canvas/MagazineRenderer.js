@@ -109,7 +109,7 @@
 
       // スロット番号の描画 (左側に配置)
       const label = (i + 1).toString().padStart(2, '0');
-      ctx.fillStyle = "rgba(34, 34, 34, 0.8)";
+      ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
       
       // 文字位置
       ctx.fillText(label, areaX - 8 * ratio, currentSlotY + slotHeight / 2);
