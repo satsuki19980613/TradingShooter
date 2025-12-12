@@ -7,43 +7,23 @@
       content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
     />
     <title>TradingShooter</title>
     <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="logo.css" />
   </head>
   <body>
-    <video autoplay muted loop playsinline id="bg-video">
-      <source
-        src="https://trading-charge-shooter.web.app/bg_video.mp4"
-        type="video/mp4"
-      />
-    </video>
 
-    <div id="screen-home" class="screen active">
-      <div class="screen-content">
-        <h1>TradingShooter</h1>
 
-        <button
-          id="btn-audio-toggle"
-          class="ui-button small"
-          style="
-            margin-bottom: 10px;
-            border-color: #00ffea;
-            color: #00ffea;
-            opacity: 0.5;
-          "
-        >
-          🔇 BGM: OFF
-        </button>
+    <div id="screen-home" class="screen active" style="background: transparent;">
+      <canvas id="menu-canvas" style="display: block; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;"></canvas>
 
-        <div id="audio-loading-container" class="audio-loader">
+      <div id="audio-loading-container" class="audio-loader" style="position: absolute; bottom: 160px; left: 50%; transform: translateX(-50%); z-index: 100;">
           <div id="audio-loading-bar" class="audio-loader-fill"></div>
-        </div>
-
-        <button id="btn-start-game" class="ui-button primary">Join Game</button>
       </div>
     </div>
     <div id="screen-loading" class="screen">

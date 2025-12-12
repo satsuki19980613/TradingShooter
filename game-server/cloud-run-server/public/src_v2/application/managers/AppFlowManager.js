@@ -31,7 +31,15 @@ export class AppFlowManager {
     const audioBtn = document.getElementById("btn-audio-toggle");
     if (audioBtn)
       audioBtn.addEventListener("click", () => this.handleAudioToggle());
-
+    this.ui.setupMenuCallbacks(
+        () => { // On Join Game
+            this.ui.tryFullscreen();
+            this.handleStartGame("Guest");
+        },
+        () => { // On Toggle Audio
+            this.handleAudioToggle();
+        }
+    );
     const retryBtn = document.getElementById("btn-gameover-retry");
     if (retryBtn)
       retryBtn.addEventListener("click", () => {
@@ -70,8 +78,11 @@ export class AppFlowManager {
   }
 
   async handleStartGame(playerName) {
+    // ワープ演出は MenuRenderer 内で完結し、ホワイトアウトした状態でこの関数が呼ばれる
+    
     if (this.isAudioLoading) {
       this.pendingGameStartName = playerName;
+      // Loading画面へ遷移（白画面からフェードインするような形になる）
       this.ui.showScreen("loading");
       this.ui.setLoadingText("音楽データを準備中...");
       return;
@@ -79,10 +90,8 @@ export class AppFlowManager {
 
     this.ui.showScreen("loading");
     this.ui.setLoadingText("Connecting...");
+    
     try {
-      const bgVideo = document.getElementById("bg-video");
-      if (bgVideo) bgVideo.style.display = "none";
-
       await this.game.connect("Guest", this.isDebug);
       this.ui.showScreen("game");
       this.game.startLoop();
@@ -91,7 +100,6 @@ export class AppFlowManager {
       this.ui.showErrorScreen("接続失敗", e);
     }
   }
-
   async handleAudioToggle() {
     if (this.isAudioLoading) return;
     if (!this.isAudioLoaded) {

@@ -311,7 +311,7 @@ export class RadarRenderer {
     // --- D. テキスト情報 (MFD OSD) ---
     // ctx.shadowBlur = 0; // 削除
     ctx.fillStyle = frameColor;
-    ctx.font = `bold ${11 * ratio}px "Roboto Mono", monospace`;
+    ctx.font = `bold ${11 * ratio}px "Orbitron", sans-serif`;
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
 

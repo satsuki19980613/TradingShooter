@@ -1,9 +1,11 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=ZCOOL+QingKe+HuangYou&display=swap');
+
 .hidden {
   display: none !important;
 }
 
 body {
-  font-family: "Verdana", "Noto Sans JP", sans-serif;
+  font-family: "Orbitron", "WDXL Lubrifont JP N", "ZCOOL QingKe HuangYou", sans-serif !important;
   background-color: #000000;
   color: #f0f0f0;
   overflow: hidden;
@@ -1099,3 +1101,63 @@ canvas {
     font-size: 14px !important; 
   }
 }
+/* =========================================
+   FONT OVERRIDE (ORBITRON & WDXL STYLE)
+   ========================================= */
+
+/* ベースフォント設定
+   1. Orbitron (英数字最優先)
+   2. WDXL Lubrifont JP N (ユーザー指定の日本語フォント)
+   3. ZCOOL QingKe HuangYou (WDXLが読み込めない場合のバックアップ。形状が酷似しています)
+   4. sans-serif (最終バックアップ)
+*/
+body {
+  font-family: "Orbitron", "WDXL Lubrifont JP N", "ZCOOL QingKe HuangYou", sans-serif !important;
+  letter-spacing: 1px; /* Orbitronは少し開けたほうがSF感が出ます */
+}
+
+/* --- タイトル・見出し --- */
+h1, h2, h3, h4 {
+  font-family: "Orbitron", sans-serif !important;
+  text-transform: uppercase;
+  font-weight: 900 !important; /* 太字でインパクトを */
+  letter-spacing: 2px;
+}
+
+/* --- HUDの数値 (HP, スコア, チャート価格など) --- */
+.stat-value, 
+#hp-value, 
+#size-value, 
+#power-value, 
+#gameover-score,
+#mc-lot-display {
+  font-family: "Orbitron", monospace !important;
+  font-weight: 700 !important;
+  /* 数字の等幅を保つための設定（Orbitronは可変幅なので） */
+  font-variant-numeric: tabular-nums; 
+}
+
+/* --- ボタン類 --- */
+.ui-button, 
+.mc-btn-entry, 
+.mc-btn-turn {
+  font-family: "Orbitron", "WDXL Lubrifont JP N", "ZCOOL QingKe HuangYou", sans-serif !important;
+  font-weight: 700;
+}
+
+/* --- ステータスのラベル (HP, EPなど) --- */
+#hud-status-area .stat-label {
+  font-family: "Orbitron", sans-serif !important;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+/* --- 日本語が含まれる可能性が高い箇所 --- */
+/* ローディング画面やメッセージ */
+#loading-text,
+.screen-content p,
+.modal-content,
+#error-message {
+  font-family: "Orbitron", "WDXL Lubrifont JP N", "ZCOOL QingKe HuangYou", sans-serif !important;
+}
+

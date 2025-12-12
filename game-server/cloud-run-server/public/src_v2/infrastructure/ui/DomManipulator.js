@@ -1,4 +1,5 @@
 import { MobileControlManager } from "../input/MobileControlManager.js";
+import { MenuRenderer } from "../rendering/canvas/MenuRenderer.js";
 
 export class DomManipulator {
   constructor() {
@@ -40,6 +41,11 @@ export class DomManipulator {
     this.activeScreen = this.screens.home;
     this.isDebugMode = false;
     this.mobileControlManager = null; 
+    this.menuRenderer = new MenuRenderer("menu-canvas");
+    this.menuRenderer.start();
+  }
+  setupMenuCallbacks(onJoinGame, onToggleAudio) {
+      this.menuRenderer.setCallbacks(onJoinGame, onToggleAudio);
   }
   enableDebugMode() {
     this.isDebugMode = true;
@@ -58,6 +64,14 @@ export class DomManipulator {
     const s = this.screens[screenId];
     if (s) s.classList.add("active");
     this.activeScreen = s;
+
+    // メニュー画面のCanvas制御
+    if (screenId === "home") {
+        this.menuRenderer.reset();
+        this.menuRenderer.start();
+    } else {
+        this.menuRenderer.stop();
+    }
 
     if (this.mobileControlManager) {
       this.mobileControlManager.applyScreenMode(screenId);
@@ -264,37 +278,14 @@ export class DomManipulator {
   }
 
   setAudioLoadingState(isLoading) {
-    if (this.audioUI.loadingContainer) {
-        this.audioUI.loadingContainer.style.display = isLoading ? "block" : "none";
-    }
-    
-    if (this.audioUI.btnStartGame) {
-        this.audioUI.btnStartGame.disabled = isLoading;
-        this.audioUI.btnStartGame.style.opacity = isLoading ? "0.5" : "1.0";
-        this.audioUI.btnStartGame.style.cursor = isLoading ? "not-allowed" : "pointer";
-    }
-
-    if (this.audioUI.btnToggle) {
-        this.audioUI.btnToggle.textContent = isLoading ? "⏳ LOADING..." : "🔊 BGM: ON";
-    }
-
-    if (isLoading) {
-        let warningEl = document.getElementById("bgm-warning-text");
-        if (!warningEl && this.audioUI.loadingContainer) {
-            warningEl = document.createElement("p");
-            warningEl.id = "bgm-warning-text";
-            warningEl.style.color = "#ff9800";
-            warningEl.style.fontSize = "12px";
-            warningEl.style.marginTop = "8px";
-            warningEl.style.textAlign = "center";
-            warningEl.textContent = "※ BGMデータをダウンロード中です。完了するまで開始できません。";
-            this.audioUI.loadingContainer.parentNode.insertBefore(warningEl, this.audioUI.loadingContainer.nextSibling);
-        }
-        if (warningEl) warningEl.style.display = "block";
-    } else {
-        const warningEl = document.getElementById("bgm-warning-text");
-        if (warningEl) warningEl.style.display = "none";
-    }
+      // ローディングバーの表示制御 (HTMLオーバーレイとして残すか、Canvasに描くか)
+      // ここでは簡易的にHTMLオーバーレイ（audio-loading-container）を利用する形を維持
+      if (this.audioUI.loadingContainer) {
+          this.audioUI.loadingContainer.style.display = isLoading ? "block" : "none";
+      }
+      
+      const status = isLoading ? "LOADING..." : "AUDIO: ON";
+      this.menuRenderer.setAudioStatus(status);
   }
 
   updateAudioLoadingProgress(percent) {
@@ -303,16 +294,9 @@ export class DomManipulator {
     }
   }
 
-  updateAudioButton(isMuted) {
-    if (this.audioUI.btnToggle) {
-        if (!isMuted) {
-            this.audioUI.btnToggle.textContent = "🔊 BGM: ON";
-            this.audioUI.btnToggle.style.opacity = "1.0";
-        } else {
-            this.audioUI.btnToggle.textContent = "🔇 BGM: OFF";
-            this.audioUI.btnToggle.style.opacity = "0.5";
-        }
-    }
+  updateAudioButton(isMuted) { // メニューCanvas内のテキストを更新
+    const text = isMuted ? "AUDIO: OFF" : "AUDIO: ONLINE";
+    this.menuRenderer.setAudioStatus(text);
   }
 
   showMusicNotification(title) {

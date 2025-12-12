@@ -131,7 +131,7 @@ export class ChartRenderer {
       ctx.textAlign = "left";
     }
 
-    ctx.font = `bold ${14 * ratio}px 'Roboto Mono', monospace`;
+    ctx.font = `bold ${14 * ratio}px "Orbitron", sans-serif`;
     const priceText = currentPrice.toFixed(0);
     const textHeight = 14 * ratio;
     const textX = chartX + chartWidth + 5 * ratio;
