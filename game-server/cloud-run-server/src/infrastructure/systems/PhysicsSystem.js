@@ -1,5 +1,6 @@
 import { CollisionLogic } from "../../logic/CollisionLogic.js";
-// MovementLogic はインライン化済みなのでインポート不要
+import { BulletType } from "../../core/constants/Protocol.js";
+import { ItemLogic } from "../../logic/ItemLogic.js";
 import { GameConstants } from "../../core/constants/GameConstants.js";
 
 class SpatialGrid {
@@ -234,9 +235,14 @@ export class PhysicsSystem {
   updateBullets(worldState) {
     for (let i = worldState.bullets.length - 1; i >= 0; i--) {
       const b = worldState.bullets[i];
-      b.x += b.vx;
-      b.y += b.vy;
 
+      // ★追加: EPアイテム以外は移動させる
+      if (b.type !== BulletType.ITEM_EP) {
+        b.x += b.vx;
+        b.y += b.vy;
+      }
+
+      // 画面外判定
       if (
         b.x < 0 ||
         b.x > this.worldWidth ||
@@ -252,6 +258,7 @@ export class PhysicsSystem {
       const nearby = this.grid.getNearby(b);
       for (const target of nearby) {
         if (target.type === "obstacle_wall") {
+          // 障害物との衝突判定
           const hasCollision = CollisionLogic.resolveObstacleCollision(
             b.x,
             b.y,
@@ -268,6 +275,7 @@ export class PhysicsSystem {
           if (target.isDead) continue;
           if (b.ownerId === target.id) continue;
 
+          // エンティティとの距離判定
           const distSq = CollisionLogic.getDistanceSq(
             b.x,
             b.y,
@@ -277,29 +285,55 @@ export class PhysicsSystem {
           const hitRadius = b.radius + target.radius;
 
           if (distSq < hitRadius * hitRadius) {
-            target.hp -= b.damage;
-            worldState.frameEvents.push({
-              type: "hit",
-              x: b.x,
-              y: b.y,
-              color: b.type === "enemy" ? "#ff0000" : "#00ffff",
-            });
-            hit = true;
+            
+            // ★追加: アイテム取得処理
+            if (b.type === BulletType.ITEM_EP) {
+              if (target.type === "player") {
+                // ItemLogicを使用してEP回復計算 (上限100)
+                const newEp = ItemLogic.calculateRecoveredEp(target.ep, 10);
+                if (newEp !== target.ep) {
+                  target.ep = newEp;
+                  target.isDirty = true;
+                }
 
-            if (target.hp <= 0) {
+                // 取得エフェクト
+                worldState.frameEvents.push({
+                  type: "hit",
+                  x: b.x,
+                  y: b.y,
+                  color: "#00ff00",
+                });
+                
+                hit = true; // 衝突扱いにして消滅させる
+              }
+            } 
+            // 通常弾の処理
+            else {
+              target.hp -= b.damage;
               worldState.frameEvents.push({
-                type: "explosion",
-                x: target.x,
-                y: target.y,
-                color: "#ffffff",
+                type: "hit",
+                x: b.x,
+                y: b.y,
+                color: b.type === "enemy" ? "#ff0000" : "#00ffff",
               });
-              if (target.type === "player") target.isDead = true;
-              else if (target.type === "enemy") {
-                const index = worldState.enemies.indexOf(target);
-                if (index > -1) worldState.enemies.splice(index, 1);
+              hit = true;
+
+              if (target.hp <= 0) {
+                worldState.frameEvents.push({
+                  type: "explosion",
+                  x: target.x,
+                  y: target.y,
+                  color: "#ffffff",
+                });
+                if (target.type === "player") target.isDead = true;
+                else if (target.type === "enemy") {
+                  const index = worldState.enemies.indexOf(target);
+                  if (index > -1) worldState.enemies.splice(index, 1);
+                }
               }
             }
-            break;
+            
+            if (hit) break;
           }
         }
       }

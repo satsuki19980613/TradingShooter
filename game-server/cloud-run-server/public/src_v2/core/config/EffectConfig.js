@@ -22,8 +22,9 @@ export const EffectConfig = {
     "hit_orb": "NS_Orb03_Blue/NS_Hit_Orb03_Blue_Json/NS_Hit_Orb03_Blue.json",
     "hit_slash": "NS_Slash01_Blue/NS_Hit_Slash01_Blue_Json/NS_Hit_Slash01_Blue.json",
     "hit_fireball": "NS_Fireball03_Orange/NS_Hit_Fireball03_Orange_Json/NS_Hit_Fireball03_Orange.json",
-    "hit_trail_red": "NS_Trail05_Red/NS_Hit_Trail05_Red_Json/NS_Hit_Trail05_Red.json"
-
+    "hit_trail_red": "NS_Trail05_Red/NS_Hit_Trail05_Red_Json/NS_Hit_Trail05_Red.json",
+    "item_ep_body": "../object/NS_WaterBall01_Green/NS_Object_WaterBall01_Blue_Json/NS_Object_WaterBall01_Blue.json",
+    "item_ep_get": "../object/NS_WaterBall01_Green/NS_Extinction_WaterBall01_Blue/NS_Extinction_WaterBall01_Blue.json"
     
   }
 };

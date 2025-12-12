@@ -40,6 +40,11 @@ const ASSET_MAP = {
     muzzle: "muzzle_orb",
     hit: "hit_orb",
   },
+  [BulletType.ITEM_EP]: {
+    bullet: "item_ep_body",
+    muzzle: null,
+    hit: "item_ep_get",
+  },
 };
 export class PixiRenderer {
   constructor(canvasId) {
@@ -242,7 +247,23 @@ export class PixiRenderer {
           const scale = targetSize / Math.max(sprite.width, sprite.height);
           sprite.scale.set(scale);
 
-          sprite.animationSpeed = 0.5;
+          const isItemEp =
+            typeId === BulletType.ITEM_EP ||
+            (assetKey && assetKey.includes("item_ep"));
+
+          if (isItemEp) {
+            sprite.animationSpeed = 0.4;
+            sprite.blendMode = "normal";
+
+            sprite.tint = 0x444444;
+
+            sprite.alpha = 1.2;
+          } else {
+            sprite.animationSpeed = 0.5;
+            sprite.blendMode = "add";
+            sprite.tint = 0xffffff;
+            sprite.alpha = 1.0;
+          }
           sprite.play();
           sprite.blendMode = "add";
 

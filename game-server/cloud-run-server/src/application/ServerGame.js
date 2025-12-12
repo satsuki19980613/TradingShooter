@@ -14,7 +14,7 @@ import { WarmupSystem } from "../infrastructure/systems/WarmupSystem.js";
 import { EnemySystem } from "../infrastructure/systems/EnemySystem.js";
 import { PlayerSystem } from "../infrastructure/systems/PlayerSystem.js";
 import { MapLoader } from "../infrastructure/factories/MapLoader.js";
-
+import { ItemSystem } from "../infrastructure/systems/ItemSystem.js";
 import { TradingSystem } from "../domain/systems/TradingSystem.js";
 import { GameLoop } from "./GameLoop.js";
 
@@ -38,7 +38,6 @@ export class ServerGame {
   constructor(roomId, firestore, onRoomEmptyCallback) {
     this.roomId = roomId;
     this.onRoomEmptyCallback = onRoomEmptyCallback;
-
     this.worldState = new WorldState();
 
     this.physicsSystem = new PhysicsSystem(
@@ -51,8 +50,8 @@ export class ServerGame {
     this.warmupSystem = new WarmupSystem(this);
     this.enemySystem = new EnemySystem(this);
     this.playerSystem = new PlayerSystem(this);
-
     this.loopManager = new GameLoop();
+    this.itemSystem = new ItemSystem(this);
   }
 
   async warmup() {
@@ -121,7 +120,7 @@ export class ServerGame {
 
     this.playerSystem.update();
     this.enemySystem.update();
-
+    this.itemSystem.update();
     this.physicsSystem.update(this.worldState, dt);
 
     if (this.worldState.enemies.length < 3) {

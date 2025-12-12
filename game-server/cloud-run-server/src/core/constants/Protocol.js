@@ -24,5 +24,6 @@ export const BulletType = {
   ENEMY: 1,
   ORB: 2,       // Power 0-50
   SLASH: 3,     // Power 50-100
-  FIREBALL: 4   // Power 100+
+  FIREBALL: 4,
+  ITEM_EP: 5  // Power 100+
 };
