@@ -74,7 +74,7 @@ export class PixiRenderer {
       canvas: canvas,
       width: canvas.width,
       height: canvas.height,
-      backgroundColor: "#80948eff",
+      backgroundColor: "#000000ff",
       resolution: window.devicePixelRatio || 1,
       autoDensity: true,
       antialias: false,
@@ -244,20 +244,25 @@ export class PixiRenderer {
           const animKey = Object.keys(sheet.animations)[0];
           sprite = new PIXI.AnimatedSprite(sheet.animations[animKey]);
           let targetSize = 80 * 2.5;
+
+          if (assetKey === "bullet_fireball") {
+            targetSize *= 2.0;
+          }
+
           const scale = targetSize / Math.max(sprite.width, sprite.height);
           sprite.scale.set(scale);
-
+          sprite.loop = true;
           const isItemEp =
             typeId === BulletType.ITEM_EP ||
             (assetKey && assetKey.includes("item_ep"));
 
           if (isItemEp) {
-            sprite.animationSpeed = 0.4;
+            sprite.animationSpeed = 0.35;
+
+            sprite.tint = 0xffffff;
+            sprite.alpha = 1.0;
+
             sprite.blendMode = "normal";
-
-            sprite.tint = 0x444444;
-
-            sprite.alpha = 1.2;
           } else {
             sprite.animationSpeed = 0.5;
             sprite.blendMode = "add";
@@ -312,7 +317,6 @@ export class PixiRenderer {
 
   playOneShotEffect(assetKey, x, y, rotation = 0) {
     if (!assetKey) return;
-
     const sheet = PIXI.Assets.get(assetKey);
     if (!sheet || !sheet.animations) return;
 
@@ -324,12 +328,25 @@ export class PixiRenderer {
     effect.x = x;
     effect.y = y;
     effect.rotation = rotation;
-    effect.loop = false;
-    effect.animationSpeed = 0.5;
 
-    effect.onComplete = () => {
-      effect.destroy();
-    };
+    if (assetKey === "muzzle_fireball") {
+      effect.loop = true;
+      effect.animationSpeed = 0.5;
+
+      effect.scale.set(1.0);
+
+      setTimeout(() => {
+        if (!effect.destroyed) {
+          effect.destroy();
+        }
+      }, 1200);
+    } else {
+      effect.loop = false;
+      effect.animationSpeed = 0.5;
+      effect.onComplete = () => {
+        effect.destroy();
+      };
+    }
 
     this.layers.effect.addChild(effect);
     effect.play();

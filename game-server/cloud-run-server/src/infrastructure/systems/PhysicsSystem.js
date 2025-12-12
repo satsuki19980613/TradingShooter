@@ -28,8 +28,7 @@ class SpatialGrid {
 
   _addToGrid(entity, map) {
     const r =
-      entity.radius ||
-      Math.max(entity.width || 0, entity.height || 0) / 2;
+      entity.radius || Math.max(entity.width || 0, entity.height || 0) / 2;
     const minX = Math.floor((entity.x - r) / this.cellSize);
     const maxX = Math.floor((entity.x + r) / this.cellSize);
     const minY = Math.floor((entity.y - r) / this.cellSize);
@@ -89,7 +88,7 @@ class SpatialGrid {
         if (this.staticGrid.has(key)) {
           const statics = this.staticGrid.get(key);
           for (const e of statics) {
-              result.add(e);
+            result.add(e);
           }
         }
         if (this.grid.has(key)) {
@@ -131,8 +130,7 @@ export class PhysicsSystem {
     if (!this.staticInitialized) this.initStatic(worldState.obstacles);
 
     this.grid.clearDynamic();
-    
-    // グリッド登録
+
     for (const p of worldState.players.values()) {
       if (!p.isDead) this.grid.insertDynamic(p);
     }
@@ -143,12 +141,10 @@ export class PhysicsSystem {
       this.grid.insertDynamic(b);
     }
 
-    // プレイヤー更新
     for (const p of worldState.players.values()) {
       if (!p.isDead) this._updateSingleEntity(p);
     }
 
-    // 敵更新
     for (const e of worldState.enemies) {
       this._updateSingleEntity(e);
     }
@@ -236,29 +232,36 @@ export class PhysicsSystem {
     for (let i = worldState.bullets.length - 1; i >= 0; i--) {
       const b = worldState.bullets[i];
 
-      // ★追加: EPアイテム以外は移動させる
-      if (b.type !== BulletType.ITEM_EP) {
-        b.x += b.vx;
-        b.y += b.vy;
-      }
+      if (b.chargeTimer && b.chargeTimer > 0) {
+        b.chargeTimer--;
 
-      // 画面外判定
-      if (
-        b.x < 0 ||
-        b.x > this.worldWidth ||
-        b.y < 0 ||
-        b.y > this.worldHeight
-      ) {
-        worldState.bullets.splice(i, 1);
+        if (b.shouldFollow) {
+          const owner = worldState.players.get(b.ownerId);
+          if (owner && !owner.isDead) {
+            b.x = owner.x;
+            b.y = owner.y;
+          }
+        }
+
+        if (b.chargeTimer <= 0) {
+          const speed = b.realSpeed || 15;
+          b.vx = Math.cos(b.angle) * speed;
+          b.vy = Math.sin(b.angle) * speed;
+
+          delete b.chargeTimer;
+          delete b.realSpeed;
+          delete b.shouldFollow;
+        }
+
         continue;
       }
+    
 
       let hit = false;
 
       const nearby = this.grid.getNearby(b);
       for (const target of nearby) {
         if (target.type === "obstacle_wall") {
-          // 障害物との衝突判定
           const hasCollision = CollisionLogic.resolveObstacleCollision(
             b.x,
             b.y,
@@ -271,11 +274,13 @@ export class PhysicsSystem {
             hit = true;
             break;
           }
-        } else if ((target.type === "player" || target.type === "enemy") && target.hp !== undefined) {
+        } else if (
+          (target.type === "player" || target.type === "enemy") &&
+          target.hp !== undefined
+        ) {
           if (target.isDead) continue;
           if (b.ownerId === target.id) continue;
 
-          // エンティティとの距離判定
           const distSq = CollisionLogic.getDistanceSq(
             b.x,
             b.y,
@@ -285,30 +290,24 @@ export class PhysicsSystem {
           const hitRadius = b.radius + target.radius;
 
           if (distSq < hitRadius * hitRadius) {
-            
-            // ★追加: アイテム取得処理
             if (b.type === BulletType.ITEM_EP) {
               if (target.type === "player") {
-                // ItemLogicを使用してEP回復計算 (上限100)
                 const newEp = ItemLogic.calculateRecoveredEp(target.ep, 10);
                 if (newEp !== target.ep) {
                   target.ep = newEp;
                   target.isDirty = true;
                 }
 
-                // 取得エフェクト
                 worldState.frameEvents.push({
                   type: "hit",
                   x: b.x,
                   y: b.y,
                   color: "#00ff00",
                 });
-                
-                hit = true; // 衝突扱いにして消滅させる
+
+                hit = true;
               }
-            } 
-            // 通常弾の処理
-            else {
+            } else {
               target.hp -= b.damage;
               worldState.frameEvents.push({
                 type: "hit",
@@ -332,7 +331,7 @@ export class PhysicsSystem {
                 }
               }
             }
-            
+
             if (hit) break;
           }
         }

@@ -1,3 +1,5 @@
+import { BulletType } from "../core/constants/Protocol.js"; // 必要であればインポート
+
 export const PlayerLogic = {
   /**
    * 旋回と慣性移動の計算（常時前進）
@@ -8,22 +10,25 @@ export const PlayerLogic = {
    * @param {number} currentVy 現在の速度Y
    * @param {Object} outResult 結果格納用
    */
-  calculateVelocity(inputs, speed, currentAngle, currentVx, currentVy, outResult) {
-    // パラメータ調整（お好みで調整してください）
-    const ROTATION_SPEED = 0.035; // 値を小さくすると、旋回がゆったりになります
-    const INERTIA = 0.04       // 慣性係数（小さいほどツルツル滑る）
+  calculateVelocity(
+    inputs,
+    speed,
+    currentAngle,
+    currentVx,
+    currentVy,
+    outResult
+  ) {
+    const ROTATION_SPEED = 0.035;
+    const INERTIA = 0.04;
 
     let nextAngle = currentAngle || 0;
 
-    // 左右入力で「角度」を変える
     if (inputs.move_left) nextAngle -= ROTATION_SPEED;
     if (inputs.move_right) nextAngle += ROTATION_SPEED;
 
-    // 常に「向いている方向」へ最高速で進もうとする力
     const targetVx = Math.cos(nextAngle) * speed;
     const targetVy = Math.sin(nextAngle) * speed;
 
-    // 現在の速度と目標速度を混ぜる（慣性）
     const nextVx = currentVx + (targetVx - currentVx) * INERTIA;
     const nextVy = currentVy + (targetVy - currentVy) * INERTIA;
 
@@ -77,20 +82,31 @@ export const PlayerLogic = {
    * 弾の種類に応じたパラメータを取得
    */
   getBulletParams(type) {
-    let speed = 9;
-    let radius = 6;
+    let params = {
+      speed: 16,
+      radius: 6,
+      delay: 8,
+      follow: false,
+      damage: 10,
+    };
 
-    if (type === "player_special_2") {
-      speed = 10;
-      radius = 12;
-    } else if (type === "player_special_3") {
-      speed = 11;
-      radius = 30;
-    } else if (type === "player_special_4") {
-      speed = 24;
-      radius = 45;
+    if (type === BulletType.SLASH || type === "player_special_2") {
+      params.speed = 18;
+      params.radius = 12;
+      params.delay = 12;
+    } else if (type === BulletType.ORB || type === "player_special_3") {
+      params.speed = 16;
+      params.radius = 30;
+      params.delay = 10;
+    } else if (type === BulletType.FIREBALL || type === "player_special_4") {
+      params.speed = 24;
+      params.radius = 45;
+      params.delay = 72;
+      params.follow = true;
+    } else {
+      params.speed = 16;
     }
 
-    return { speed, radius };
+    return params;
   },
 };

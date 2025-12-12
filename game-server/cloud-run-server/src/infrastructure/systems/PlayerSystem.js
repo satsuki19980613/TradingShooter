@@ -24,20 +24,19 @@ export class PlayerSystem {
     PlayerLogic.calculateVelocity(
       player.inputs,
       player.speed,
-      player.angle, // 現在の角度
-      player.vx,    // 現在のVX
-      player.vy,    // 現在のVY
+      player.angle,
+      player.vx,
+      player.vy,
       this.tempVelocityResult
     );
 
     player.vx = this.tempVelocityResult.vx;
     player.vy = this.tempVelocityResult.vy;
-    
-    // 角度も必ず更新する（旋回したかもしれないので）
+
     if (this.tempVelocityResult.angle !== null) {
-        player.angle = this.tempVelocityResult.angle;
+      player.angle = this.tempVelocityResult.angle;
     }
-    
+
     const autoAimAngle = AimingService.determineShootAngle(
       player,
       this.game.physicsSystem
@@ -81,22 +80,31 @@ export class PlayerSystem {
       player,
       this.game.physicsSystem
     );
-
     player.angle = shootAngle;
 
-    const { speed, radius } = PlayerLogic.getBulletParams(type);
+    const params = PlayerLogic.getBulletParams(type);
+
+    const initialSpeed = params.delay > 0 ? 0 : params.speed;
+
     const bullet = new BulletState(
       player.x,
       player.y,
-      radius,
+      params.radius,
       shootAngle,
-      speed,
+      initialSpeed,
       type,
       damage,
       player.id
     );
 
+    if (params.delay > 0) {
+      bullet.chargeTimer = params.delay;
+      bullet.realSpeed = params.speed;
+      bullet.shouldFollow = params.follow;
+    }
+
     this.game.addBullet(bullet);
-    player.shootCooldown = 15;
+
+    player.shootCooldown = params.delay + 15;
   }
 }

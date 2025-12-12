@@ -11,7 +11,7 @@ export class AssetLoader {
       try {
         const response = await fetch(track.url);
         if (!response.ok) throw new Error(`Failed to load ${track.title}`);
-        
+
         const blob = await response.blob();
         track.blobUrl = URL.createObjectURL(blob);
       } catch (e) {
@@ -20,11 +20,11 @@ export class AssetLoader {
 
       this.loadedCount++;
       const percent = (this.loadedCount / totalCount) * 100;
-      
+
       if (onProgress) {
         onProgress(percent);
       }
-      
+
       await new Promise((r) => setTimeout(r, 10));
     }
   }
@@ -33,15 +33,16 @@ export class AssetLoader {
     console.log("[AssetLoader] Loading sprites...");
     const bundles = [];
 
-    // PixiJSのAssetsシステムにエイリアスとURLを登録
+    const cacheBuster = `?v=${Date.now()}`;
+
     for (const [key, path] of Object.entries(config.ASSETS)) {
-      const fullUrl = `${config.BASE_URL}/${path}`;
+      const fullUrl = `${config.BASE_URL}/${path}${cacheBuster}`;
+
       PIXI.Assets.add({ alias: key, src: fullUrl });
       bundles.push(key);
     }
 
     try {
-      // 一括ロード実行
       await PIXI.Assets.load(bundles);
       console.log("[AssetLoader] All sprite assets loaded.");
     } catch (e) {
