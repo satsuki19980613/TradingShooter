@@ -227,14 +227,16 @@ export class PhysicsSystem {
       }
     }
   }
-
-  updateBullets(worldState) {
+updateBullets(worldState) {
     for (let i = worldState.bullets.length - 1; i >= 0; i--) {
       const b = worldState.bullets[i];
 
-      if (b.chargeTimer && b.chargeTimer > 0) {
+      // ▼▼▼▼▼▼▼▼▼ 修正: 待機(チャージ)処理の堅牢化 ▼▼▼▼▼▼▼▼▼
+      // chargeTimerが定義されており、かつ0より大きい場合は待機
+      if (typeof b.chargeTimer === 'number' && b.chargeTimer > 0) {
         b.chargeTimer--;
 
+        // 追従設定があればプレイヤー位置に同期
         if (b.shouldFollow) {
           const owner = worldState.players.get(b.ownerId);
           if (owner && !owner.isDead) {
@@ -243,23 +245,44 @@ export class PhysicsSystem {
           }
         }
 
+        // タイマーが0になったら発射（速度適用）
         if (b.chargeTimer <= 0) {
           const speed = b.realSpeed || 15;
           b.vx = Math.cos(b.angle) * speed;
           b.vy = Math.sin(b.angle) * speed;
-
+          
+          // タイマー情報を削除して、次フレームから通常移動へ
           delete b.chargeTimer;
           delete b.realSpeed;
           delete b.shouldFollow;
         }
 
+        // 待機中は移動・衝突判定をスキップして次の弾へ
         continue;
       }
-    
+      // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
+      // --- 通常移動処理 ---
+      if (b.type !== BulletType.ITEM_EP) {
+        b.x += b.vx;
+        b.y += b.vy;
+      }
+
+      // --- 画面外判定 ---
+      if (
+        b.x < 0 ||
+        b.x > this.worldWidth ||
+        b.y < 0 ||
+        b.y > this.worldHeight
+      ) {
+        worldState.bullets.splice(i, 1);
+        continue;
+      }
+
+      // --- 衝突判定 (既存ロジック) ---
       let hit = false;
-
       const nearby = this.grid.getNearby(b);
+
       for (const target of nearby) {
         if (target.type === "obstacle_wall") {
           const hasCollision = CollisionLogic.resolveObstacleCollision(
@@ -274,22 +297,15 @@ export class PhysicsSystem {
             hit = true;
             break;
           }
-        } else if (
-          (target.type === "player" || target.type === "enemy") &&
-          target.hp !== undefined
-        ) {
+        } else if ((target.type === "player" || target.type === "enemy") && target.hp !== undefined) {
           if (target.isDead) continue;
-          if (b.ownerId === target.id) continue;
+          if (b.ownerId === target.id) continue; // 自分の弾には当たらない
 
-          const distSq = CollisionLogic.getDistanceSq(
-            b.x,
-            b.y,
-            target.x,
-            target.y
-          );
+          const distSq = CollisionLogic.getDistanceSq(b.x, b.y, target.x, target.y);
           const hitRadius = b.radius + target.radius;
 
           if (distSq < hitRadius * hitRadius) {
+            // EPアイテムの処理
             if (b.type === BulletType.ITEM_EP) {
               if (target.type === "player") {
                 const newEp = ItemLogic.calculateRecoveredEp(target.ep, 10);
@@ -297,17 +313,12 @@ export class PhysicsSystem {
                   target.ep = newEp;
                   target.isDirty = true;
                 }
-
-                worldState.frameEvents.push({
-                  type: "hit",
-                  x: b.x,
-                  y: b.y,
-                  color: "#00ff00",
-                });
-
+                worldState.frameEvents.push({ type: "hit", x: b.x, y: b.y, color: "#00ff00" });
                 hit = true;
               }
-            } else {
+            } 
+            // 通常弾の処理
+            else {
               target.hp -= b.damage;
               worldState.frameEvents.push({
                 type: "hit",
@@ -318,12 +329,7 @@ export class PhysicsSystem {
               hit = true;
 
               if (target.hp <= 0) {
-                worldState.frameEvents.push({
-                  type: "explosion",
-                  x: target.x,
-                  y: target.y,
-                  color: "#ffffff",
-                });
+                worldState.frameEvents.push({ type: "explosion", x: target.x, y: target.y, color: "#ffffff" });
                 if (target.type === "player") target.isDead = true;
                 else if (target.type === "enemy") {
                   const index = worldState.enemies.indexOf(target);
@@ -331,7 +337,6 @@ export class PhysicsSystem {
                 }
               }
             }
-
             if (hit) break;
           }
         }

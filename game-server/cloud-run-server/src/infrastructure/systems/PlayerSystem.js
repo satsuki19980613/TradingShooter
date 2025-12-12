@@ -84,11 +84,15 @@ export class PlayerSystem {
 
     const params = PlayerLogic.getBulletParams(type);
 
+    const offsetDist = 85;
+    const spawnX = player.x + Math.cos(shootAngle) * offsetDist;
+    const spawnY = player.y + Math.sin(shootAngle) * offsetDist;
+
     const initialSpeed = params.delay > 0 ? 0 : params.speed;
 
     const bullet = new BulletState(
-      player.x,
-      player.y,
+      spawnX,
+      spawnY,
       params.radius,
       shootAngle,
       initialSpeed,
