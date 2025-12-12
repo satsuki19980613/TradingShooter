@@ -164,7 +164,6 @@ export class PixiRenderer {
         this.updateHPBar(visual.hpBar, entity.hp, 50, 50);
       } else if (type === "bullet") {
         visual.container.rotation = entity.angle;
-
       } else if (type === "obstacle") {
         visual.container.rotation = entity.rotation || 0;
         this.updateObstacleTexture(visual, entity);
@@ -278,7 +277,7 @@ export class PixiRenderer {
           if (typeId === BulletType.ENEMY || typeId === "enemy") {
             offsetDist = 70;
           } else {
-            offsetDist = 0;
+            offsetDist = 85;
           }
 
           const muzzleX = entity.x + Math.cos(entity.angle) * offsetDist;
@@ -318,6 +317,7 @@ export class PixiRenderer {
 
   playOneShotEffect(assetKey, x, y, rotation = 0) {
     if (!assetKey) return;
+
     const sheet = PIXI.Assets.get(assetKey);
     if (!sheet || !sheet.animations) return;
 
@@ -329,25 +329,12 @@ export class PixiRenderer {
     effect.x = x;
     effect.y = y;
     effect.rotation = rotation;
+    effect.loop = false;
+    effect.animationSpeed = 0.5;
 
-    if (assetKey === "muzzle_fireball") {
-      effect.loop = true;
-      effect.animationSpeed = 0.5;
-
-      effect.scale.set(1.0);
-
-      setTimeout(() => {
-        if (!effect.destroyed) {
-          effect.destroy();
-        }
-      }, 1200);
-    } else {
-      effect.loop = false;
-      effect.animationSpeed = 0.5;
-      effect.onComplete = () => {
-        effect.destroy();
-      };
-    }
+    effect.onComplete = () => {
+      effect.destroy();
+    };
 
     this.layers.effect.addChild(effect);
     effect.play();

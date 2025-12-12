@@ -10,7 +10,6 @@ export class BulletState extends BaseState {
     this.vy = Math.sin(angle) * speed;
     this.damage = damage;
     this.ownerId = ownerId;
-    this.id = null;
-    this.angle = angle; // ★この行を追加
+    this.id = null; 
   }
 }

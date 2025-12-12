@@ -62,8 +62,8 @@ export class NetworkClient {
             const diff = Math.abs(interval - 33.33);
             this.stats.jitter = (this.stats.jitter || 0) * 0.9 + diff * 0.1;
             if (this.jitterRecorder) {
-              this.jitterRecorder.addSample(diff);
-            }
+                    this.jitterRecorder.addSample(diff);
+                }
           }
 
           this.lastPacketTime = now;
@@ -173,9 +173,8 @@ export class NetworkClient {
           a: reader.f32(),
         };
         const tId = reader.u8();
-
-        b.t = tId;
-
+        // 古い文字列変換を削除し、ID(数値)をそのまま渡す
+        b.t = tId; 
         delta.updated.bullets.push(b);
       }
 
