@@ -231,36 +231,6 @@ updateBullets(worldState) {
     for (let i = worldState.bullets.length - 1; i >= 0; i--) {
       const b = worldState.bullets[i];
 
-      // ▼▼▼▼▼▼▼▼▼ 修正: 待機(チャージ)処理の堅牢化 ▼▼▼▼▼▼▼▼▼
-      // chargeTimerが定義されており、かつ0より大きい場合は待機
-      if (typeof b.chargeTimer === 'number' && b.chargeTimer > 0) {
-        b.chargeTimer--;
-
-        // 追従設定があればプレイヤー位置に同期
-        if (b.shouldFollow) {
-          const owner = worldState.players.get(b.ownerId);
-          if (owner && !owner.isDead) {
-            b.x = owner.x;
-            b.y = owner.y;
-          }
-        }
-
-        // タイマーが0になったら発射（速度適用）
-        if (b.chargeTimer <= 0) {
-          const speed = b.realSpeed || 15;
-          b.vx = Math.cos(b.angle) * speed;
-          b.vy = Math.sin(b.angle) * speed;
-          
-          // タイマー情報を削除して、次フレームから通常移動へ
-          delete b.chargeTimer;
-          delete b.realSpeed;
-          delete b.shouldFollow;
-        }
-
-        // 待機中は移動・衝突判定をスキップして次の弾へ
-        continue;
-      }
-      // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
       // --- 通常移動処理 ---
       if (b.type !== BulletType.ITEM_EP) {

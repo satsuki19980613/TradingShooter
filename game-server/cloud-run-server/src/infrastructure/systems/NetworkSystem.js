@@ -130,18 +130,22 @@ export class NetworkSystem {
       writer.f32(b.x);
       writer.f32(b.y);
       const angle = Math.atan2(b.vy, b.vx);
-      writer.f32(angle);
+    writer.f32(angle);
 
-      let typeId = 0;
-
-      if (typeof b.type === "number") {
-        typeId = b.type;
-      } else {
-        if (b.type === "enemy") typeId = BulletType.ENEMY;
-      }
-
-      writer.u8(typeId);
+    let typeId = 0;
+    if (typeof b.type === "number") {
+      typeId = b.type;
+    } else {
+      if (b.type === "enemy") typeId = BulletType.ENEMY;
     }
+
+    // ★追加: チャージ中（遅延中）ならビットフラグ(128)を立てる
+    if (b.chargeTimer > 0) {
+      typeId |= 128;
+    }
+
+    writer.u8(typeId);
+  }
 
     const safeEvents = events || [];
     writer.u8(Math.min(safeEvents.length, 255));

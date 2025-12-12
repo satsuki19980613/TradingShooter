@@ -85,24 +85,27 @@ export const PlayerLogic = {
     let params = {
       speed: 16,
       radius: 6,
-      delay: 8,
+      delay: 0,       // ★変更: 遅延なし
+      cooldown: 23,   // ★追加: 連射間隔 (元のdelay 8 + 15)
       follow: false,
       damage: 10,
     };
-
     if (type === BulletType.SLASH || type === "player_special_2") {
       params.speed = 18;
       params.radius = 12;
-      params.delay = 12;
+      params.delay = 0;      // ★変更
+      params.cooldown = 27;  // ★追加 (元のdelay 12 + 15)
     } else if (type === BulletType.ORB || type === "player_special_3") {
       params.speed = 16;
       params.radius = 30;
-      params.delay = 10;
+      params.delay = 0;      // ★変更
+      params.cooldown = 25;  // ★追加 (元のdelay 10 + 15)
     } else if (type === BulletType.FIREBALL || type === "player_special_4") {
       params.speed = 24;
       params.radius = 45;
-      params.delay = 72;
-      params.follow = true;
+      params.delay = 0;      // ★変更
+      params.cooldown = 87;  // ★追加 (元のdelay 72 + 15)
+      params.follow = false; // ★変更: 追従も不要
     } else {
       params.speed = 16;
     }

@@ -164,6 +164,7 @@ export class PixiRenderer {
         this.updateHPBar(visual.hpBar, entity.hp, 50, 50);
       } else if (type === "bullet") {
         visual.container.rotation = entity.angle;
+
       } else if (type === "obstacle") {
         visual.container.rotation = entity.rotation || 0;
         this.updateObstacleTexture(visual, entity);
@@ -277,7 +278,7 @@ export class PixiRenderer {
           if (typeId === BulletType.ENEMY || typeId === "enemy") {
             offsetDist = 70;
           } else {
-            offsetDist = 85;
+            offsetDist = 0;
           }
 
           const muzzleX = entity.x + Math.cos(entity.angle) * offsetDist;

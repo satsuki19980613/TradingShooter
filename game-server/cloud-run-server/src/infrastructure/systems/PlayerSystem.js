@@ -88,8 +88,8 @@ export class PlayerSystem {
     const spawnX = player.x + Math.cos(shootAngle) * offsetDist;
     const spawnY = player.y + Math.sin(shootAngle) * offsetDist;
 
-    const initialSpeed = params.delay > 0 ? 0 : params.speed;
-
+    const initialSpeed = params.speed;
+    
     const bullet = new BulletState(
       spawnX,
       spawnY,
@@ -107,8 +107,7 @@ export class PlayerSystem {
       bullet.shouldFollow = params.follow;
     }
 
-    this.game.addBullet(bullet);
 
-    player.shootCooldown = params.delay + 15;
+    player.shootCooldown = params.cooldown || 15;
   }
 }

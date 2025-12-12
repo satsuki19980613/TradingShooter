@@ -148,6 +148,7 @@ export class StateSyncManager {
           b.targetX = bState.x;
           b.targetY = bState.y;
           b.angle = bState.a;
+          b.isCharging = bState.isCharging; // ★追加: 状態を同期
         });
       }
     }
