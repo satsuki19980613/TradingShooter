@@ -9,15 +9,89 @@ export class AppFlowManager {
     this.isDebug = this.ui.isDebugMode || false;
     this.assetLoader = new AssetLoader();
     this.audioManager = new AudioManager();
-
+    this.accountManager = accountManager;
     this.isAudioLoaded = false;
     this.isAudioLoading = false;
     this.pendingGameStartName = null;
     this.audioManager.onTrackChanged = (title) => {
       this.ui.showMusicNotification(title);
     };
-
+    this.ui.setMenuActionCallback((actionId) => {
+        this.handleMenuAction(actionId);
+    });
     this.setupUI();
+  }
+
+  handleUserUpdate(userEntity) {
+    console.log("[AppFlow] User State Updated:", userEntity);
+
+    if (!userEntity) {
+        // 未ログイン -> 初期画面
+        this.ui.setBodyMode("initial"); 
+        this.ui.switchCanvasScene("initial"); 
+    } else {
+        // ログイン済み -> ホーム画面
+        this.ui.setBodyMode(userEntity.isGuest ? "guest" : "member");
+        this.ui.switchCanvasScene("home", userEntity);
+    }
+  }
+
+  handleMenuAction(actionId) {
+    console.log("[AppFlow] Action:", actionId);
+    
+    switch(actionId) {
+        case "start_guest":
+            this.ui.setLoadingText("Logging in as Guest...");
+            this.ui.showScreen("loading");
+            // 必ず this.accountManager を使う
+            this.accountManager.loginGuest().catch(e => {
+                console.error(e);
+                this.ui.showErrorScreen("Guest Login Failed", e);
+                this.ui.showScreen("home");
+            });
+            break;
+            
+        case "start_register":
+            const name = prompt("Please enter your pilot name (ALVOLT System):");
+            if (name) {
+                this.ui.setLoadingText("Registering...");
+                this.ui.showScreen("loading");
+                this.accountManager.registerPlayerName(name).catch(e => {
+                    console.error(e);
+                    this.ui.showErrorScreen("Registration Failed", e);
+                    this.ui.showScreen("home");
+                });
+            }
+            break;
+
+        case "game_start":
+            this.ui.tryFullscreen();
+            const currentUser = this.accountManager.currentUser;
+            // AppFlowManagerにあるはずの handleStartGame を呼び出す
+            // (まだ実装されていない場合は console.log で止める)
+            if (this.handleStartGame) {
+                this.handleStartGame(currentUser ? currentUser.name : "Guest");
+            } else {
+                console.log("Game Start Logic goes here.");
+            }
+            break;
+
+        case "open_register":
+            const regName = prompt("Register Formal Pilot Name:");
+            if (regName) {
+                this.accountManager.registerPlayerName(regName);
+            }
+            break;
+            
+        case "menu_delete":
+            if(confirm("WARNING: Account will be deleted permanently. Continue?")) {
+                alert("Delete logic not implemented yet.");
+            }
+            break;
+            
+        default:
+            console.warn("Unknown Action:", actionId);
+    }
   }
 
   setupUI() {
@@ -32,13 +106,13 @@ export class AppFlowManager {
     if (audioBtn)
       audioBtn.addEventListener("click", () => this.handleAudioToggle());
     this.ui.setupMenuCallbacks(
-        () => { // On Join Game
-            this.ui.tryFullscreen();
-            this.handleStartGame("Guest");
-        },
-        () => { // On Toggle Audio
-            this.handleAudioToggle();
-        }
+      () => {
+        this.ui.tryFullscreen();
+        this.handleStartGame("Guest");
+      },
+      () => {
+        this.handleAudioToggle();
+      }
     );
     const retryBtn = document.getElementById("btn-gameover-retry");
     if (retryBtn)
@@ -78,11 +152,9 @@ export class AppFlowManager {
   }
 
   async handleStartGame(playerName) {
-    // ワープ演出は MenuRenderer 内で完結し、ホワイトアウトした状態でこの関数が呼ばれるよふかしうた
-    
     if (this.isAudioLoading) {
       this.pendingGameStartName = playerName;
-      // Loading画面へ遷移（白画面からフェードインするような形になる）
+
       this.ui.showScreen("loading");
       this.ui.setLoadingText("音楽データを準備中...");
       return;
@@ -90,7 +162,7 @@ export class AppFlowManager {
 
     this.ui.showScreen("loading");
     this.ui.setLoadingText("Connecting...");
-    
+
     try {
       await this.game.connect("Guest", this.isDebug);
       this.ui.showScreen("game");

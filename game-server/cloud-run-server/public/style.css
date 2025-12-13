@@ -1160,4 +1160,21 @@ h1, h2, h3, h4 {
 #error-message {
   font-family: "Orbitron", "WDXL Lubrifont JP N", "ZCOOL QingKe HuangYou", sans-serif !important;
 }
+/* アカウント状態による表示制御 */
+body.mode-guest .member-only {
+    display: none !important;
+}
+body.mode-member .guest-only {
+    display: none !important;
+}
 
+/* Canvasは背景として最背面に */
+#menu-canvas {
+    z-index: 0;
+    pointer-events: auto; /* クリックを受け取るため */
+}
+
+/* HTMLの入力フォーム等はCanvasの上に浮く */
+.ui-modal {
+    z-index: 1000; /* 最前面 */
+}

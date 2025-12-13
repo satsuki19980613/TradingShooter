@@ -1,5 +1,6 @@
 import { MobileControlManager } from "../input/MobileControlManager.js";
 import { MenuRenderer } from "../rendering/canvas/MenuRenderer.js";
+import { CyberUIRenderer } from "../rendering/ui/CyberUIRenderer.js";
 
 export class DomManipulator {
   constructor() {
@@ -24,33 +25,66 @@ export class DomManipulator {
     this.loadingTextEl = document.getElementById("loading-text");
 
     this.debugPanelEl = document.getElementById("debug-panel");
-    this.debugStatsContainerEl = document.getElementById("debug-stats-container");
-    this.debugSimulationContainerEl = document.getElementById("debug-simulation-container");
+    this.debugStatsContainerEl = document.getElementById(
+      "debug-stats-container"
+    );
+    this.debugSimulationContainerEl = document.getElementById(
+      "debug-simulation-container"
+    );
     this.leaderboardListEl = document.getElementById("leaderboard-list");
 
     this.audioUI = {
-        btnToggle: document.getElementById("btn-audio-toggle"),
-        loadingContainer: document.getElementById("audio-loading-container"),
-        loadingBar: document.getElementById("audio-loading-bar"),
-        btnStartGame: document.getElementById("btn-start-game"),
-        notification: document.getElementById("music-notification"),
-        notificationTitle: document.getElementById("music-title")
+      btnToggle: document.getElementById("btn-audio-toggle"),
+      loadingContainer: document.getElementById("audio-loading-container"),
+      loadingBar: document.getElementById("audio-loading-bar"),
+      btnStartGame: document.getElementById("btn-start-game"),
+      notification: document.getElementById("music-notification"),
+      notificationTitle: document.getElementById("music-title"),
     };
 
     this.notificationTimer = null;
     this.activeScreen = this.screens.home;
     this.isDebugMode = false;
-    this.mobileControlManager = null; 
+    this.mobileControlManager = null;
     this.menuRenderer = new MenuRenderer("menu-canvas");
     this.menuRenderer.start();
+    this.uiRenderer = new CyberUIRenderer("menu-canvas");
+    this.uiRenderer.start();
+  }
+
+  setBodyMode(mode) {
+    document.body.classList.remove("mode-initial", "mode-guest", "mode-member");
+    document.body.classList.add(`mode-${mode}`);
+
+    if (mode === "initial") {
+      this.showScreen("home");
+    } else {
+      this.showScreen("home");
+    }
+  }
+
+  switchCanvasScene(sceneKey, data = null) {
+    this.uiRenderer.setScene(sceneKey, data);
+  }
+  setMenuActionCallback(callback) {
+    this.uiRenderer.setCallback(callback);
+  }
+
+  showScreen(screenId) {
+    if (screenId === "home") {
+      this.uiRenderer.setScene("initial");
+      this.uiRenderer.start();
+    } else if (screenId === "game") {
+      this.uiRenderer.stop();
+    }
   }
   setupMenuCallbacks(onJoinGame, onToggleAudio) {
-      this.menuRenderer.setCallbacks(onJoinGame, onToggleAudio);
+    this.menuRenderer.setCallbacks(onJoinGame, onToggleAudio);
   }
   enableDebugMode() {
     this.isDebugMode = true;
     if (this.debugPanelEl) {
-        this.debugPanelEl.style.display = "block";
+      this.debugPanelEl.style.display = "block";
     }
   }
   setMobileControlManager(manager) {
@@ -65,12 +99,11 @@ export class DomManipulator {
     if (s) s.classList.add("active");
     this.activeScreen = s;
 
-    // メニュー画面のCanvas制御
     if (screenId === "home") {
-        this.menuRenderer.reset();
-        this.menuRenderer.start();
+      this.menuRenderer.reset();
+      this.menuRenderer.start();
     } else {
-        this.menuRenderer.stop();
+      this.menuRenderer.stop();
     }
 
     if (this.mobileControlManager) {
@@ -84,20 +117,22 @@ export class DomManipulator {
 
   updateHUD(playerState, tradeState) {
     if (!playerState || !this.hpBarInnerEl) return;
-    
+
     const currentPrice = tradeState ? tradeState.currentPrice : 1000;
 
     if (playerState.hp !== undefined) {
       const hpPercent = (playerState.hp / 100) * 100;
       this.hpBarInnerEl.style.width = `${hpPercent}%`;
-      if (this.hpValueEl) this.hpValueEl.textContent = Math.ceil(playerState.hp);
+      if (this.hpValueEl)
+        this.hpValueEl.textContent = Math.ceil(playerState.hp);
     } else {
       this.hpBarInnerEl.style.width = `0%`;
       if (this.hpValueEl) this.hpValueEl.textContent = 0;
     }
 
     if (this.epValueEl) {
-      this.epValueEl.textContent = playerState.ep !== undefined ? Math.ceil(playerState.ep) : 0;
+      this.epValueEl.textContent =
+        playerState.ep !== undefined ? Math.ceil(playerState.ep) : 0;
     }
 
     if (this.sizeValueEl) {
@@ -132,9 +167,11 @@ export class DomManipulator {
 
       let intLevel = Math.floor(level);
       if (level > 0) intLevel = Math.ceil(level);
-      
-      const levelText = intLevel === 0 ? "0" : (intLevel > 0 ? "+" : "") + intLevel;
-      const levelColor = intLevel > 0 ? "#00ff00" : intLevel < 0 ? "#ff0055" : "white";
+
+      const levelText =
+        intLevel === 0 ? "0" : (intLevel > 0 ? "+" : "") + intLevel;
+      const levelColor =
+        intLevel > 0 ? "#00ff00" : intLevel < 0 ? "#ff0055" : "white";
 
       this.powerLabelEl.textContent = "Power";
       this.powerValueEl.textContent = levelText;
@@ -142,49 +179,47 @@ export class DomManipulator {
     }
 
     if (this.mobileControlManager) {
-        this.mobileControlManager.updateDisplay(playerState);
+      this.mobileControlManager.updateDisplay(playerState);
     }
   }
   enableDebugMode() {
     this.isDebugMode = true;
     if (this.debugPanelEl) {
-        this.debugPanelEl.style.display = "block";
-        if (!document.getElementById("debug-jitter-canvas")) {
-            const container = document.createElement("div");
-            container.style.marginTop = "10px";
-            
-            // Canvas
-            const canvas = document.createElement("canvas");
-            canvas.id = "debug-jitter-canvas";
-            canvas.width = 300;
-            canvas.height = 100;
-            canvas.style.width = "100%";
-            canvas.style.backgroundColor = "#222";
-            canvas.style.border = "1px solid #555";
-            
-            // Download Button
-            const btn = document.createElement("button");
-            btn.id = "btn-download-jitter";
-            btn.textContent = "Download JSON";
-            btn.className = "ui-button small"; // 既存スタイル流用
-            btn.style.marginTop = "5px";
-            btn.style.width = "100%";
-            
-            container.appendChild(canvas);
-            container.appendChild(btn);
-            this.debugPanelEl.appendChild(container);
-        }
+      this.debugPanelEl.style.display = "block";
+      if (!document.getElementById("debug-jitter-canvas")) {
+        const container = document.createElement("div");
+        container.style.marginTop = "10px";
+
+        const canvas = document.createElement("canvas");
+        canvas.id = "debug-jitter-canvas";
+        canvas.width = 300;
+        canvas.height = 100;
+        canvas.style.width = "100%";
+        canvas.style.backgroundColor = "#222";
+        canvas.style.border = "1px solid #555";
+
+        const btn = document.createElement("button");
+        btn.id = "btn-download-jitter";
+        btn.textContent = "Download JSON";
+        btn.className = "ui-button small";
+        btn.style.marginTop = "5px";
+        btn.style.width = "100%";
+
+        container.appendChild(canvas);
+        container.appendChild(btn);
+        this.debugPanelEl.appendChild(container);
+      }
     }
   }
   setupDebugListeners(onDownload) {
-      const btn = document.getElementById("btn-download-jitter");
-      if (btn) {
-          btn.addEventListener("click", onDownload);
-      }
+    const btn = document.getElementById("btn-download-jitter");
+    if (btn) {
+      btn.addEventListener("click", onDownload);
+    }
   }
-  
+
   getDebugCanvas() {
-      return document.getElementById("debug-jitter-canvas");
+    return document.getElementById("debug-jitter-canvas");
   }
   updateDebugHUD(stats, simStats, serverStats) {
     if (!this.isDebugMode || !this.debugStatsContainerEl) return;
@@ -192,16 +227,18 @@ export class DomManipulator {
     let statsHtml = "";
     statsHtml += `<p><span class="stat-key">PPS Total:</span> <span class="stat-value">${stats.pps_total}</span></p>`;
     if (stats.jitter !== undefined) {
-        const jitterVal = stats.jitter.toFixed(2);
-        // 5ms以下なら緑、10ms以下なら黄色、それ以上は赤
-        let color = "#4caf50"; 
-        if (stats.jitter > 5.0) color = "#ffeb3b";
-        if (stats.jitter > 10.0) color = "#f44336";
-        
-        statsHtml += `<p><span class="stat-key">Jitter:</span> <span class="stat-value" style="color:${color}">${jitterVal} ms</span></p>`;
+      const jitterVal = stats.jitter.toFixed(2);
+
+      let color = "#4caf50";
+      if (stats.jitter > 5.0) color = "#ffeb3b";
+      if (stats.jitter > 10.0) color = "#f44336";
+
+      statsHtml += `<p><span class="stat-key">Jitter:</span> <span class="stat-value" style="color:${color}">${jitterVal} ms</span></p>`;
     }
     statsHtml += `<hr>`;
-    statsHtml += `<p><span class="stat-key">BPS Total:</span> <span class="stat-value">${(stats.bps_total / 1024).toFixed(1)} KB/s</span></p>`;
+    statsHtml += `<p><span class="stat-key">BPS Total:</span> <span class="stat-value">${(
+      stats.bps_total / 1024
+    ).toFixed(1)} KB/s</span></p>`;
     this.debugStatsContainerEl.innerHTML = statsHtml;
 
     let serverHtml = "<h4>💻 Server Stats (Room)</h4>";
@@ -209,31 +246,42 @@ export class DomManipulator {
       const avgTick = parseFloat(serverStats.avgTickTime);
       const targetTick = serverStats.targetTickTime;
       const loadPercent = (avgTick / targetTick) * 100;
-      const tickColor = loadPercent > 80 ? "#f44336" : loadPercent > 50 ? "#ff9800" : "#4caf50";
+      const tickColor =
+        loadPercent > 80 ? "#f44336" : loadPercent > 50 ? "#ff9800" : "#4caf50";
 
-      serverHtml += `<p><span class="stat-key">Avg Tick Time:</span> <span class="stat-value" style="color: ${tickColor}">${avgTick.toFixed(2)} ms</span></p>`;
+      serverHtml += `<p><span class="stat-key">Avg Tick Time:</span> <span class="stat-value" style="color: ${tickColor}">${avgTick.toFixed(
+        2
+      )} ms</span></p>`;
       serverHtml += `<p><span class="stat-key">(Target):</span> <span class="stat-value">${targetTick} ms</span></p>`;
-      serverHtml += `<p><span class="stat-key">Server Load:</span> <span class="stat-value" style="color: ${tickColor}">${loadPercent.toFixed(1)} %</span></p>`;
+      serverHtml += `<p><span class="stat-key">Server Load:</span> <span class="stat-value" style="color: ${tickColor}">${loadPercent.toFixed(
+        1
+      )} %</span></p>`;
       serverHtml += `<hr>`;
       serverHtml += `<p><span class="stat-key">Players:</span> <span class="stat-value">${serverStats.playerCount}</span></p>`;
       serverHtml += `<p><span class="stat-key">Enemies:</span> <span class="stat-value">${serverStats.enemyCount}</span></p>`;
       serverHtml += `<p><span class="stat-key">Bullets:</span> <span class="stat-value">${serverStats.bulletCount}</span></p>`;
     } else {
-      serverHtml += `<p><span class="stat-key">Avg Speed:</span> <span class="stat-value">${(simStats.avg_bps / 1024).toFixed(1)} KB/s</span></p>`;
+      serverHtml += `<p><span class="stat-key">Avg Speed:</span> <span class="stat-value">${(
+        simStats.avg_bps / 1024
+      ).toFixed(1)} KB/s</span></p>`;
     }
     this.debugSimulationContainerEl.innerHTML = serverHtml;
   }
 
   showGameOverScreen(score) {
-    if (this.gameoverScoreEl) this.gameoverScoreEl.textContent = Math.round(score);
-    if (this.gameoverMessageEl) this.gameoverMessageEl.textContent = "スコアを保存中...";
+    if (this.gameoverScoreEl)
+      this.gameoverScoreEl.textContent = Math.round(score);
+    if (this.gameoverMessageEl)
+      this.gameoverMessageEl.textContent = "スコアを保存中...";
     this.showScreen("gameover");
   }
 
   showErrorScreen(message, error) {
     console.error(message, error);
     if (this.errorMessageEl) {
-      this.errorMessageEl.textContent = `${message} (${error.code || error.message})`;
+      this.errorMessageEl.textContent = `${message} (${
+        error.code || error.message
+      })`;
     }
     this.showScreen("error");
   }
@@ -262,7 +310,8 @@ export class DomManipulator {
         }
       } else {
         li.classList.add("empty");
-        li.innerHTML = '<span class="lb-name">...</span><span class="lb-score">-</span>';
+        li.innerHTML =
+          '<span class="lb-name">...</span><span class="lb-score">-</span>';
       }
       this.leaderboardListEl.appendChild(li);
     }
@@ -271,30 +320,34 @@ export class DomManipulator {
   tryFullscreen() {
     const doc = window.document;
     const docEl = doc.documentElement;
-    const requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+    const requestFullScreen =
+      docEl.requestFullscreen ||
+      docEl.mozRequestFullScreen ||
+      docEl.webkitRequestFullScreen ||
+      docEl.msRequestFullscreen;
     if (requestFullScreen) {
       requestFullScreen.call(docEl).catch((err) => console.warn(err));
     }
   }
 
   setAudioLoadingState(isLoading) {
-      // ローディングバーの表示制御 (HTMLオーバーレイとして残すか、Canvasに描くか)
-      // ここでは簡易的にHTMLオーバーレイ（audio-loading-container）を利用する形を維持
-      if (this.audioUI.loadingContainer) {
-          this.audioUI.loadingContainer.style.display = isLoading ? "block" : "none";
-      }
-      
-      const status = isLoading ? "LOADING..." : "AUDIO: ON";
-      this.menuRenderer.setAudioStatus(status);
+    if (this.audioUI.loadingContainer) {
+      this.audioUI.loadingContainer.style.display = isLoading
+        ? "block"
+        : "none";
+    }
+
+    const status = isLoading ? "LOADING..." : "AUDIO: ON";
+    this.menuRenderer.setAudioStatus(status);
   }
 
   updateAudioLoadingProgress(percent) {
     if (this.audioUI.loadingBar) {
-        this.audioUI.loadingBar.style.width = `${percent}%`;
+      this.audioUI.loadingBar.style.width = `${percent}%`;
     }
   }
 
-  updateAudioButton(isMuted) { // メニューCanvas内のテキストを更新
+  updateAudioButton(isMuted) {
     const text = isMuted ? "AUDIO: OFF" : "AUDIO: ONLINE";
     this.menuRenderer.setAudioStatus(text);
   }
@@ -304,15 +357,15 @@ export class DomManipulator {
     this.audioUI.notificationTitle.textContent = title;
     this.audioUI.notification.classList.remove("hidden");
     void this.audioUI.notification.offsetWidth;
-    
+
     requestAnimationFrame(() => {
-        this.audioUI.notification.classList.add("show");
+      this.audioUI.notification.classList.add("show");
     });
     if (this.notificationTimer) clearTimeout(this.notificationTimer);
-    
+
     this.notificationTimer = setTimeout(() => {
-        this.audioUI.notification.classList.remove("show");
-        setTimeout(() => this.audioUI.notification.classList.add("hidden"), 600);
+      this.audioUI.notification.classList.remove("show");
+      setTimeout(() => this.audioUI.notification.classList.add("hidden"), 600);
     }, 5000);
   }
 }
