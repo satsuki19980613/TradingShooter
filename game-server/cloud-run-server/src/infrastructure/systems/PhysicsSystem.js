@@ -275,7 +275,10 @@ export class PhysicsSystem {
           if (target.isDead) continue;
           if (b.ownerId === target.id) continue;
 
-          // エンティティとの距離判定
+          const isEnemyBullet = (b.type === "enemy" || b.type === BulletType.ENEMY);
+          if (isEnemyBullet && target.type === "enemy") {
+            continue; // 判定をスキップ
+          }
           const distSq = CollisionLogic.getDistanceSq(
             b.x,
             b.y,

@@ -149,6 +149,7 @@ export class RadarRenderer {
       const blipSize = 4 * ratio;
 
       otherPlayersState.forEach((p) => {
+        if (p.id === playerState.id || p.isMe) return;
         const pos = getRadarPos(p.x, p.y);
         
         if (

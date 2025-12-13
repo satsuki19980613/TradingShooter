@@ -111,8 +111,8 @@ canvas {
   align-items: stretch !important;
   gap: 5px;
   height: 140px;
-  background: rgb(0 0 0 / 0%) !important;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5) !important;
+  background: rgb(28 28 28 / 19%) !important;
+  box-shadow: 0 0 19px rgb(211 211 211 / 36%) !important;
   border-radius: 0 !important;
 }
 
