@@ -1,10 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=ZCOOL+QingKe+HuangYou&display=swap');
 
+/* =========================================
+   UTILITIES & RESET
+   ========================================= */
 .hidden {
   display: none !important;
 }
 
 body {
+  /* Font Priorities: Orbitron > WDXL > ZCOOL > sans-serif */
   font-family: "Orbitron", "WDXL Lubrifont JP N", "ZCOOL QingKe HuangYou", sans-serif !important;
   background-color: #000000;
   color: #f0f0f0;
@@ -14,13 +18,29 @@ body {
   position: relative;
   width: 100vw;
   height: 100vh;
-  height: 100dvh;
+  height: 100dvh; /* Modern mobile viewport fix */
   box-sizing: border-box;
   user-select: none;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right)
-    env(safe-area-inset-bottom) env(safe-area-inset-left);
+  /* Safe area for notched phones */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  letter-spacing: 1px;
 }
 
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Canvas background (lowest layer) */
+#menu-canvas {
+  z-index: 0;
+  pointer-events: auto;
+}
+
+/* =========================================
+   GAME CONTAINER & LAYERS
+   ========================================= */
 #cockpit-container {
   position: relative;
   width: 100%;
@@ -44,12 +64,6 @@ body {
   z-index: 1;
 }
 
-canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
 #obstacle-layer {
   position: absolute;
   top: 0;
@@ -58,21 +72,6 @@ canvas {
   height: 100%;
   z-index: 10;
   pointer-events: none;
-}
-
-#ui-fixed-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  transform: none !important;
-  z-index: 100;
-}
-
-#ui-fixed-container > * {
-  pointer-events: auto;
 }
 
 #hud-layer {
@@ -85,12 +84,13 @@ canvas {
   pointer-events: none;
 }
 
+/* =========================================
+   HUD DASHBOARD (Top Left)
+   ========================================= */
 #hud-dashboard {
   position: absolute;
   top: 20px;
   left: 20px;
-  bottom: auto;
-  right: auto;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -116,13 +116,12 @@ canvas {
   border-radius: 0 !important;
 }
 
+/* --- Status Group (HP/EP/Power) --- */
 .status-group {
   transform: scale(1) !important;
   transform-origin: top left;
-
   margin-right: 0 !important;
   margin-bottom: 5px !important;
-
   width: 220px;
   min-width: 220px;
   flex-shrink: 0;
@@ -134,13 +133,78 @@ canvas {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  
   background: transparent !important;
   box-shadow: none !important;
   border: none !important;
   border-radius: 0 !important;
 }
 
+#hud-status-area .stat-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 10px !important;
+}
+
+#hud-status-area .stat-row.no-bar {
+  justify-content: space-between;
+}
+
+#hud-status-area .stat-label {
+  width: 50px;
+  color: #00ffff;
+  font-weight: 700 !important;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+  font-family: "Orbitron", sans-serif !important;
+  letter-spacing: 1px;
+}
+
+.stat-bar-outer {
+  flex-grow: 1;
+  height: 6px;
+  background-color: rgba(0, 0, 0, 0.5);
+  border: 1px solid #333;
+  margin-right: 8px;
+  padding: 1px;
+}
+
+.stat-bar {
+  height: 100%;
+  transition: width 0.2s ease-out;
+}
+
+.stat-bar.hp {
+  background-color: #00bcd4;
+  box-shadow: 0 0 5px #00bcd4;
+}
+
+.stat-value {
+  width: 35px;
+  text-align: right;
+  font-family: "Orbitron", monospace !important;
+  font-weight: 700 !important;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Specific overrides for values */
+#hp-value, 
+#size-value, 
+#gameover-score,
+#mc-lot-display {
+  font-family: "Orbitron", monospace !important;
+  font-weight: 700 !important;
+  font-variant-numeric: tabular-nums;
+}
+
+#power-value {
+  font-family: "Orbitron", monospace !important;
+  font-variant-numeric: tabular-nums;
+  font-size: 14px !important; /* Matched to chart font size */
+  font-weight: bold !important;
+}
+
+/* --- Chart Panel --- */
 #bottom-chart-panel.dashboard-item {
   position: relative !important;
   bottom: auto !important;
@@ -150,12 +214,10 @@ canvas {
   margin: 0 !important;
   width: 350px !important;
   height: 100% !important;
-
   background: transparent !important;
   box-shadow: none !important;
   border: none !important;
   border-radius: 0 !important;
-  
   padding: 0 !important;
   backdrop-filter: none !important;
 }
@@ -176,6 +238,7 @@ canvas {
   display: none !important;
 }
 
+/* MA Selection (S/M/L buttons) */
 #ma-selection-panel {
   position: absolute !important;
   top: 0 !important;
@@ -231,25 +294,18 @@ canvas {
   border-color: currentColor;
 }
 
-.ma-option input#ma-short:checked + label {
-  color: #00ffff;
-  text-shadow: 0 0 5px #00ffff;
-}
-.ma-option input#ma-medium:checked + label {
-  color: #ffff00;
-  text-shadow: 0 0 5px #ffff00;
-}
-.ma-option input#ma-long:checked + label {
-  color: #ff00ff;
-  text-shadow: 0 0 5px #ff00ff;
-}
+.ma-option input#ma-short:checked + label { color: #00ffff; text-shadow: 0 0 5px #00ffff; }
+.ma-option input#ma-medium:checked + label { color: #ffff00; text-shadow: 0 0 5px #ffff00; }
+.ma-option input#ma-long:checked + label { color: #ff00ff; text-shadow: 0 0 5px #ff00ff; }
 
+/* =========================================
+   HUD GROUPS (Radar, etc.)
+   ========================================= */
 .hud-group {
   position: absolute;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  /* padding: 15px; */
   transition: transform 0.2s ease;
   pointer-events: none;
 }
@@ -258,10 +314,7 @@ canvas {
   top: 1px;
   right: 20px;
   transform-origin: top right;
-  display: flex;
-  flex-direction: column;
   align-items: flex-end;
-  gap: 10px;
   transform: scale(var(--ui-scale, 1));
 }
 
@@ -292,18 +345,18 @@ canvas {
   height: 168.75px !important;
 }
 
-/* --- 新しいマガジンパネルの設定 (PC版) --- */
+/* =========================================
+   MAGAZINE PANEL
+   ========================================= */
 #magazine-panel {
   position: fixed !important;
   bottom: 60px !important;
   right: -25px !important;
-  
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   padding: 0 !important;
   z-index: 20;
-
   transform: scale(var(--ui-scale, 1));
   transform-origin: bottom right;
 }
@@ -318,38 +371,9 @@ canvas {
   display: none !important;
 }
 
-#btn-retire {
-  pointer-events: auto;
-  background-color: #d32f2f;
-  width: auto;
-  opacity: 0.8;
-  font-size: 12px;
-  padding: 8px 20px;
-
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 100;
-
-  transform: none;
-  margin: 0;
-}
-.hud-group.bottom-left {
-  bottom: 0;
-  left: 0;
-  transform-origin: bottom left;
-}
-
-#debug-panel {
-  background: rgba(0, 0, 0, 0.8);
-  padding: 10px;
-  border: 1px solid #555;
-  font-family: monospace;
-  font-size: 11px;
-  display: none;
-  pointer-events: auto;
-}
-
+/* =========================================
+   PANEL MODULE BASICS
+   ========================================= */
 .panel-module {
   background: rgb(5 15 25 / 0%);
   border: 1px solid rgb(0 255 255 / 0%);
@@ -380,250 +404,83 @@ canvas {
   border-bottom: none;
 }
 
-.header-action-btn {
-  background: rgba(0, 255, 255, 0.1);
-  border: 1px solid rgba(0, 255, 255, 0.5);
+/* =========================================
+   DEBUG PANEL
+   ========================================= */
+.hud-group.bottom-left {
+  bottom: 0;
+  left: 0;
+  transform-origin: bottom left;
+}
+
+#debug-panel {
+  background: rgba(0, 0, 0, 0.8);
+  padding: 10px;
+  border: 1px solid #555;
+  font-family: monospace;
+  font-size: 11px;
+  display: none;
+  pointer-events: auto;
+  /* background override in HTML ignored here, assuming JS controls it or inline styles */
+}
+
+/* =========================================
+   BUTTONS & ACTIONS
+   ========================================= */
+#btn-retire {
+  pointer-events: auto;
+  background-color: #d32f2f;
+  width: auto;
+  opacity: 0.8;
+  font-size: 12px;
+  padding: 8px 20px;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 100;
+  transform: none;
+  margin: 0;
+}
+
+.ui-button {
+  font-family: "Orbitron", "WDXL Lubrifont JP N", "ZCOOL QingKe HuangYou", sans-serif !important;
+  font-weight: 700;
+  font-size: 16px;
+  padding: 12px 30px;
+  border: 1px solid #49a5a5;
   color: #00ffff;
-  font-size: 10px;
-  font-family: "Roboto Mono", monospace;
-  padding: 2px 8px;
+  background-color: rgba(0, 20, 30, 0.6);
   border-radius: 4px;
   cursor: pointer;
-  line-height: 1.2;
-  transition: all 0.2s ease;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+  width: 260px;
+  max-width: 100%;
+  margin: 0;
 }
 
-.header-action-btn:hover {
-  background: rgba(0, 255, 255, 0.3);
-  color: #ffffff;
-  box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
-}
-
-.header-action-btn:active {
-  background: rgba(0, 255, 255, 0.5);
-  transform: translateY(1px);
-}
-
-#hud-status-area .stat-row {
-  display: flex;
-  align-items: center;
-  margin-bottom: 8px;
-  font-size: 10px !important;
-}
-
-#hud-status-area .stat-label {
-  width: 50px;
-  color: #00ffff;
-  font-weight: bold;
-  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
-}
-
-.stat-bar-outer {
-  flex-grow: 1;
-  height: 6px;
-  background-color: rgba(0, 0, 0, 0.5);
-  border: 1px solid #333;
-  margin-right: 8px;
-  padding: 1px;
-}
-
-.stat-bar {
-  height: 100%;
-  transition: width 0.2s ease-out;
-}
-
-.stat-bar.hp {
-  background-color: #00bcd4;
-  box-shadow: 0 0 5px #00bcd4;
-}
-
-.stat-value {
-  width: 35px;
-  text-align: right;
-  font-family: "Roboto Mono", monospace;
+.ui-button:hover {
+  background-color: rgba(0, 255, 255, 0.2);
   color: #fff;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
 }
 
-.stat-row.no-bar {
-  justify-content: space-between;
-}
-
-#mobile-controls-layer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 200;
-  pointer-events: none;
-  display: none;
-}
-
-#mc-right-bottom {
-  position: absolute;
-  right: 40px;
-  bottom: 40px;
-  pointer-events: auto;
-  width: 120px;
-  height: 120px;
-}
-
-#mc-joystick-area {
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 100, 255, 0.2);
-  border: 1px solid #00aaffb8;
-  border-radius: 50%;
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-#mc-joystick-knob {
-  width: 40%;
-  height: 40%;
-  background: rgba(0, 200, 255, 0.8);
-  border-radius: 50%;
-  position: absolute;
-}
-
-#mc-left-bottom {
-  position: absolute;
-  left: 20px;
-  bottom: 20px;
-  pointer-events: auto;
-}
-
-#mc-action-cluster {
-  position: relative;
-  width: 241px;
-  height: 260px;
-}
-
-#mc-action-cluster > button,
-#mc-action-cluster > div {
-  position: absolute;
-  transform: translate(-29%, -11%);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-#mc-btn-fire {
-  width: 90px;
-  height: 90px;
-  border-radius: 50%;
-  background: rgb(187 9 9 / 49%);
-  border: 0px solid #ff5252;
-  color: white;
-  font-weight: bold;
-  font-size: 18px;
-  z-index: 10;
-  left: 60px;
-  top: 110px;
-}
-#mc-btn-fire:active {
-  background: #ff5252;
-  transform: translate(-50%, -50%) scale(0.95);
-}
-
-#mc-btn-settle {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: rgb(180 181 181 / 34%);
-  border: 0px solid #00ffff;
+.ui-button.primary {
+  background-color: rgba(0, 255, 255, 0.3);
+  border-color: #00ffff;
   color: #fff;
-  font-size: 10px;
-  font-weight: bold;
-  left: 60px;
-  top: 35px;
-}
-#mc-btn-settle:active {
-  background: #00ffff;
-  color: #000;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
 }
 
-#mc-btn-short {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: rgba(0, 188, 212, 0.25);
-  border: 0px solid #ffc107;
-  color: #fff;
-  font-size: 11px;
-  font-weight: bold;
-  left: 135px;
-  top: 70px;
-}
-#mc-btn-short:active {
-  background: #ffeb3b;
-  color: #000;
-}
-
-#mc-btn-long {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: rgb(227 101 101 / 34%);
-  border: 0px solid #ffc107;
-  color: #fff;
+.ui-button.small {
+  width: auto;
   font-size: 12px;
-  font-weight: bold;
-  left: 150px;
-  top: 150px;
-}
-#mc-btn-long:active {
-  background: #ffeb3b;
-  color: #000;
+  padding: 4px 12px;
 }
 
-#mc-lot-control {
-  width: 140px;
-  height: 50px;
-  transform: none;
-  display: flex;
-  gap: 5px;
-  left: 43px;
-  top: 210px;
-}
-
-.mc-btn-lot {
-  position: static !important;
-  transform: none !important;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgb(84 255 217 / 24%);
-  border: 0px solid #ffffff;
-  color: white;
-  font-size: 20px;
-  font-weight: bold;
-  box-shadow: none !important;
-}
-.mc-btn-lot:active {
-  background: #ff5252;
-}
-
-#mc-lot-display {
-  position: static !important;
-  transform: none !important;
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
-  font-family: monospace;
-  font-size: 18px;
-  font-weight: bold;
-  padding: 5px 10px;
-  border: 0px solid #ff5252;
-  border-radius: 4px;
-  min-width: 30px;
-  text-align: center;
-  box-shadow: none !important;
-}
-
+/* =========================================
+   SCREENS & MODALS
+   ========================================= */
 .screen {
   width: 100%;
   height: 100%;
@@ -656,7 +513,6 @@ canvas {
   min-width: 300px;
   max-width: 90%;
   transform-origin: center center;
-  transform: none !important;
 }
 
 .screen-content h1 {
@@ -664,41 +520,10 @@ canvas {
   margin: 0 0 20px 0;
   letter-spacing: 2px;
 }
+
 .screen-content h2 {
   color: #00ffff;
   margin: 0;
-}
-
-.ui-button {
-  font-size: 16px;
-  padding: 12px 30px;
-  border: 1px solid #49a5a5;
-  color: #00ffff;
-  background-color: rgba(0, 20, 30, 0.6);
-  border-radius: 4px;
-  cursor: pointer;
-  text-transform: uppercase;
-  transition: all 0.2s ease;
-  width: 260px;
-  max-width: 100%;
-  margin: 0;
-}
-
-.ui-button:hover {
-  background-color: rgba(0, 255, 255, 0.2);
-  color: #fff;
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
-}
-.ui-button.primary {
-  background-color: rgba(0, 255, 255, 0.3);
-  border-color: #00ffff;
-  color: #fff;
-  box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
-}
-.ui-button.small {
-  width: auto;
-  font-size: 12px;
-  padding: 4px 12px;
 }
 
 .ui-modal {
@@ -709,7 +534,7 @@ canvas {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 300;
+  z-index: 1000; /* High z-index */
 }
 
 .ui-modal.hidden {
@@ -723,461 +548,11 @@ canvas {
   border-radius: 8px;
   width: 350px;
   text-align: center;
-}
-
-#hud-leaderboard-container {
-  max-height: 150px;
-  overflow-y: auto;
-}
-#leaderboard-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  font-size: 12px;
-}
-.leaderboard-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 4px 8px;
-  margin-bottom: 2px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 2px;
-}
-.leaderboard-row.you {
-  background: rgba(0, 188, 212, 0.25);
-  border: 1px solid rgba(0, 188, 212, 0.5);
-}
-.lb-name {
-  color: #ddd;
-}
-.lb-score {
-  color: #00bcd4;
-  font-weight: bold;
-  font-family: "Roboto Mono", monospace;
-}
-
-#modal-ingame-leaderboard #leaderboard-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-#modal-ingame-leaderboard .leaderboard-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 12px;
-  margin-bottom: 4px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
-  font-family: "Roboto Mono", monospace;
-  font-size: 14px;
-}
-#modal-ingame-leaderboard .leaderboard-row.you {
-  background: rgba(0, 188, 212, 0.25);
-  border: 1px solid rgba(0, 188, 212, 0.5);
-}
-@media (pointer: coarse) {
-  #mobile-controls-layer {
-    display: block !important;
-  }
-}
-@media (max-width: 1024px), (pointer: coarse) {
- 
-  #hud-status-area .stat-row {
-    font-size: 16px !important;
-  }
-  #mc-left-bottom {
-    transform: scale(0.8);
-    transform-origin: bottom left;
-    left: 66px !important;
-    bottom: 32px !important;
-  }
-
-  #mc-right-bottom {
-    transform: scale(0.8);
-    transform-origin: bottom right;
-    right: 81px !important;
-    bottom: 68px !important;
-  }
-
-  .hud-group.top-right {
-    right: 10px !important;
-    top: 10px !important;
-    align-items: flex-end !important;
-    gap: -4px !important;
-    transform: scale(0.75) !important;
-  }
-
-  #hud-dashboard {
-    top: 10px;
-    left: 66px;
-    bottom: auto;
-    right: auto;
-    transform: scale(0.75) !important;
-    transform-origin: top left;
-    align-items: flex-start;
-    gap: 17px;
-  }
-
-  .hud-upper-row {
-  display: flex;
-  flex-direction: row;
-  align-items: stretch !important;
-  gap: 5px;
-  height: 140px;
-  background: rgb(0 0 0 / 0%) !important;
-  padding: 10px !important;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5) !important;
-  border-radius: 0 !important;
-}
-
-  .status-group {
-    transform: scale(1) !important;
-    transform-origin: top left;
-    margin-right: 0 !important;
-    margin-bottom: 5px !important;
-    width: 220px;
-    min-width: 220px;
-    flex-shrink: 0;
-  }
-
-  #bottom-chart-panel.dashboard-item {
-    width: 400px !important;
-    height: 158px !important;
-  }
-
-  #ma-selection-panel {
-    transform: scale(1);
-    transform-origin: top left;
-  }
-  .hud-group.top-right .hud-row {
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 20 !important;
-  }
-
-  /* --- スマホ版: マガジンパネルの調整 --- */
-  #magazine-panel {
-    position: absolute !important;
-    bottom: auto !important;
-    top: 10px !important;
-    right: 140px !important;
-    transform: scale(0.75) !important;
-    transform-origin: top right;
-  }
-
-  #btn-retire {
-    position: absolute !important;
-    top: 180px !important;
-    right: 10px !important;
-    bottom: auto !important;
-    height: auto !important;
-    padding: 4px 8px !important;
-    font-size: 10px !important;
-    margin: 0 !important;
-    width: auto !important;
-    transform: scale(0.75) !important;
-    transform-origin: top right;
-  }
-  /* --- スマホ版BGMテロップの位置調整 --- */
-  .music-notification {
-    position: absolute !important; 
-    top: 135px !important;
-    right: -100% !important; 
-    max-width: 220px;
-    padding: 6px 12px;
-    border-left-width: 3px;
-    background: rgba(0, 0, 0, 0.85);
-    z-index: 2000; 
-  }
-
-  .music-notification .music-icon {
-    font-size: 18px;
-  }
-
-  .music-notification .music-title {
-    font-size: 12px;
-  }
-
-  .music-notification.show {
-    right: 0 !important;
-  }
-}
-
-@media (max-width: 600px) {
-  #mc-left-bottom {
-    transform-origin: bottom left;
-    transform: scale(0.85);
-    left: 10px;
-    bottom: 10px;
-  }
-
-  #mc-right-bottom {
-    transform-origin: bottom right;
-    transform: scale(0.85);
-    right: 20px;
-    bottom: 20px;
-  }
-
-  .screen-content {
-    width: 85% !important;
-    min-width: auto !important;
-    padding: 20px !important;
-    gap: 10px !important;
-  }
-
-  .screen-content h1 {
-    font-size: 24px !important;
-    margin-bottom: 10px !important;
-  }
-
-  .ui-button {
-    width: 100% !important;
-    font-size: 14px !important;
-    padding: 10px !important;
-  }
-
-  .player-info-display {
-    font-size: 14px !important;
-    margin-bottom: 5px !important;
-  }
-}
-
-@media only screen and (orientation: portrait) {
-  #cockpit-container,
-  #screen-gameover,
-  #modal-ingame-leaderboard {
-    width: 100vh;
-    height: 100vw;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) rotate(90deg);
-    overflow: hidden;
-    touch-action: none;
-  }
-
-  #screen-ranking.active,
-  #screen-gameover.active {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-}
-
-@media only screen and (orientation: landscape) {
-  body.mode-menu #screen-ranking,
-  body.mode-menu #screen-gameover {
-    width: 100%;
-    height: 100%;
-    transform: none;
-    position: absolute;
-    top: 0;
-    left: 0;
-  }
-}
-
-.music-notification {
-  position: fixed;
-  top: 80px;
-  right: -300px;
-  background: rgba(0, 0, 0, 0.7);
-  border-left: 4px solid #00ffff;
-  padding: 10px 20px;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  z-index: 1000;
-  transition: right 0.5s cubic-bezier(0.17, 0.84, 0.44, 1);
-  backdrop-filter: blur(5px);
-  border-radius: 4px 0 0 4px;
-  box-shadow: -5px 5px 15px rgba(0, 255, 255, 0.2);
-}
-
-.music-notification.show {
-  right: 0;
-}
-
-.music-icon {
-  font-size: 24px;
-  color: #00ffff;
-  animation: pulse-icon 2s infinite;
-}
-
-.music-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.music-label {
-  font-size: 10px;
-  color: #aaa;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.music-title {
-  font-size: 14px;
-  color: #fff;
-  font-family: "Roboto Mono", monospace;
-  font-weight: bold;
-  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
-}
-
-@keyframes pulse-icon {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.2); opacity: 0.7; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-.audio-loader {
-  display: none;
-  width: 260px;
-  height: 4px;
-  background: #111;
-  border: 1px solid #333;
-  margin-bottom: 15px;
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.audio-loader-fill {
-  width: 0%;
-  height: 100%;
-  background-color: #00ffff;
-  box-shadow: 0 0 5px #00ffff;
-  transition: width 0.1s linear;
-}
-
-#mc-turn-controls {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  align-items: flex-end;
-}
-
-.mc-btn-turn {
-  width: 70px;
-  height: 70px;
-  background: rgba(0, 188, 212, 0.3);
-  border: 0px solid #00ffff;
-  border-radius: 50%;
-  color: #fff;
-  font-size: 24px;
-  font-weight: bold;
-  backdrop-filter: blur(4px);
-  touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-.mc-btn-turn:active {
-  background: rgba(0, 255, 255, 0.6);
-  transform: scale(0.95);
-}
-
-@media (max-width: 1024px) {
-  #mc-right-bottom {
-    width: 160px !important;
-    height: 80px !important;
-    right: 90px !important;
-    bottom: 76px !important;
-  }
-}
-
-/* Powerの数値だけを個別に調整 */
-#power-value {
-  font-size: 14px !important;  /* チャートと同じ14pxに拡大 */
-  font-weight: bold;           /* チャートに合わせて太字に */
-}
-
-/* もしスマホ版もチャートに合わせるなら以下も確認 */
-@media (max-width: 1024px) {
-  #power-value {
-    /* スマホ版チャートはUIスケールによっては少し小さく見えることがありますが、
-       視認性重視なら16px程度のままでも良いですし、14pxに統一してもOKです */
-    font-size: 14px !important; 
-  }
-}
-/* =========================================
-   FONT OVERRIDE (ORBITRON & WDXL STYLE)
-   ========================================= */
-
-/* ベースフォント設定
-   1. Orbitron (英数字最優先)
-   2. WDXL Lubrifont JP N (ユーザー指定の日本語フォント)
-   3. ZCOOL QingKe HuangYou (WDXLが読み込めない場合のバックアップ。形状が酷似しています)
-   4. sans-serif (最終バックアップ)
-*/
-body {
-  font-family: "Orbitron", "WDXL Lubrifont JP N", "ZCOOL QingKe HuangYou", sans-serif !important;
-  letter-spacing: 1px; /* Orbitronは少し開けたほうがSF感が出ます */
-}
-
-/* --- タイトル・見出し --- */
-h1, h2, h3, h4 {
-  font-family: "Orbitron", sans-serif !important;
-  text-transform: uppercase;
-  font-weight: 900 !important; /* 太字でインパクトを */
-  letter-spacing: 2px;
-}
-
-/* --- HUDの数値 (HP, スコア, チャート価格など) --- */
-.stat-value, 
-#hp-value, 
-#size-value, 
-#power-value, 
-#gameover-score,
-#mc-lot-display {
-  font-family: "Orbitron", monospace !important;
-  font-weight: 700 !important;
-  /* 数字の等幅を保つための設定（Orbitronは可変幅なので） */
-  font-variant-numeric: tabular-nums; 
-}
-
-/* --- ボタン類 --- */
-.ui-button, 
-.mc-btn-entry, 
-.mc-btn-turn {
-  font-family: "Orbitron", "WDXL Lubrifont JP N", "ZCOOL QingKe HuangYou", sans-serif !important;
-  font-weight: 700;
-}
-
-/* --- ステータスのラベル (HP, EPなど) --- */
-#hud-status-area .stat-label {
-  font-family: "Orbitron", sans-serif !important;
-  font-weight: 700;
-  letter-spacing: 1px;
-}
-
-/* --- 日本語が含まれる可能性が高い箇所 --- */
-/* ローディング画面やメッセージ */
-#loading-text,
-.screen-content p,
-.modal-content,
-#error-message {
+  /* Font inheritance */
   font-family: "Orbitron", "WDXL Lubrifont JP N", "ZCOOL QingKe HuangYou", sans-serif !important;
 }
-/* アカウント状態による表示制御 */
-body.mode-guest .member-only {
-    display: none !important;
-}
-body.mode-member .guest-only {
-    display: none !important;
-}
 
-/* Canvasは背景として最背面に */
-#menu-canvas {
-    z-index: 0;
-    pointer-events: auto; /* クリックを受け取るため */
-}
-
-/* HTMLの入力フォーム等はCanvasの上に浮く */
-.ui-modal {
-    z-index: 1000; /* 最前面 */
-}
-/* --- Step 4: Cyber Modal Styles --- */
+/* Cyber Panel Styles (Modals) */
 .cyber-panel {
   background: rgba(5, 10, 16, 0.95);
   border: 1px solid #00f3ff;
@@ -1189,7 +564,6 @@ body.mode-member .guest-only {
   position: relative;
 }
 
-/* 四隅の飾り（擬似要素で表現） */
 .cyber-panel::before {
   content: "";
   position: absolute;
@@ -1198,6 +572,7 @@ body.mode-member .guest-only {
   border-top: 3px solid #ff0055;
   border-left: 3px solid #ff0055;
 }
+
 .cyber-panel::after {
   content: "";
   position: absolute;
@@ -1207,37 +582,6 @@ body.mode-member .guest-only {
   border-right: 3px solid #ff0055;
 }
 
-.input-group {
-  margin: 20px 0;
-}
-
-input[type="text"] {
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid #555;
-  border-bottom: 2px solid #00f3ff;
-  color: #fff;
-  font-family: "Orbitron", sans-serif;
-  font-size: 18px;
-  padding: 10px;
-  width: 100%;
-  text-align: center;
-  outline: none;
-  transition: all 0.3s;
-}
-
-input[type="text"]:focus {
-  background: rgba(0, 243, 255, 0.1);
-  border-color: #ff0055;
-  box-shadow: 0 0 10px rgba(255, 0, 85, 0.3);
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-  margin-top: 20px;
-}
-
 .cyber-separator {
   border: 0;
   height: 1px;
@@ -1245,68 +589,12 @@ input[type="text"]:focus {
   margin: 20px 0;
 }
 
-.code-display {
-  font-family: "Courier New", monospace;
-  font-size: 24px;
-  letter-spacing: 4px;
-  color: #f9f002;
-  margin: 10px 0;
-  text-shadow: 0 0 10px rgba(249, 240, 2, 0.5);
-  user-select: all;
+/* Inputs */
+.input-group {
+  margin: 20px 0;
 }
 
-/* game-server/cloud-run-server/public/style.css */
-
-/* ... 既存のCSSの末尾に追加 ... */
-
-/* --- モバイル用：メニュー画面での縦画面強制警告 --- */
-#orientation-warning {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: #000;
-  z-index: 9999;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  color: #00ffff;
-  text-align: center;
-  padding: 20px;
-}
-
-#orientation-warning .icon {
-  font-size: 48px;
-  margin-bottom: 20px;
-  animation: rotate-phone 2s infinite;
-}
-
-/* スマホかつ横画面の場合のみ警告を表示 */
-@media screen 
-  and (max-width: 900px) 
-  and (orientation: landscape) 
-  and (hover: none) 
-  and (pointer: coarse) {
-
-  /* メニュー画面(screen-home) や 初回画面が表示されている時だけ警告 */
-  body:not(.mode-game) #orientation-warning {
-    display: flex;
-  }
-  
-  /* ゲーム画面以外のコンテンツを隠す */
-  body:not(.mode-game) #screen-home,
-  body:not(.mode-game) #screen-loading,
-  body:not(.mode-game) #screen-ranking {
-    visibility: hidden;
-  }
-}
-
-@keyframes rotate-phone {
-  0% { transform: rotate(0deg); }
-  25% { transform: rotate(-90deg); }
-  50% { transform: rotate(-90deg); }
-  75% { transform: rotate(0deg); }
-  100% { transform: rotate(0deg); }
-}
+input[type="text"] {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid #555;
+  border-bottom: 2px
