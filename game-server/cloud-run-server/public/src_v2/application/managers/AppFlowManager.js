@@ -78,7 +78,7 @@ export class AppFlowManager {
   }
 
   async handleStartGame(playerName) {
-    // ワープ演出は MenuRenderer 内で完結し、ホワイトアウトした状態でこの関数が呼ばれる
+    // ワープ演出は MenuRenderer 内で完結し、ホワイトアウトした状態でこの関数が呼ばれるよふかしうた
     
     if (this.isAudioLoading) {
       this.pendingGameStartName = playerName;
