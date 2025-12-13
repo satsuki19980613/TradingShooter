@@ -29,7 +29,47 @@
     <div id="screen-loading" class="screen">
       <div class="screen-content"><h2 id="loading-text">Loading...</h2></div>
     </div>
+    <div id="modal-register" class="ui-modal hidden">
+  <div class="modal-content cyber-panel">
+    <h3>PILOT REGISTRATION</h3>
+    <p>Please enter your codename.</p>
+    <div class="input-group">
+      <input type="text" id="reg-name-input" maxlength="10" placeholder="CODENAME" autocomplete="off">
+    </div>
+    <div class="modal-actions">
+      <button id="btn-do-register" class="ui-button primary">REGISTER</button>
+      <button id="btn-close-register" class="ui-button">CANCEL</button>
+    </div>
+  </div>
+</div>
 
+<div id="modal-transfer" class="ui-modal hidden">
+  <div class="modal-content cyber-panel">
+    <h3>DATA TRANSFER</h3>
+    
+    <div class="transfer-section">
+      <h4>RECOVER DATA</h4>
+      <p>Enter your transfer code to recover account.</p>
+      <div class="input-group">
+        <input type="text" id="recover-code-input" placeholder="TRANSFER CODE">
+      </div>
+      <button id="btn-do-recover" class="ui-button primary">RECOVER</button>
+    </div>
+
+    <hr class="cyber-separator">
+
+    <div id="section-issue-code" class="transfer-section member-only">
+      <h4>ISSUE CODE</h4>
+      <p>Issue a code to transfer this account.</p>
+      <div id="transfer-code-display" class="code-display">----</div>
+      <button id="btn-issue-code" class="ui-button">ISSUE CODE</button>
+    </div>
+
+    <div class="modal-actions">
+      <button id="btn-close-transfer" class="ui-button">CLOSE</button>
+    </div>
+  </div>
+</div>
     <div id="screen-game" class="screen">
       <div id="cockpit-container" class="overlay-layout">
         <div id="game-field-wrapper" class="full-screen-layer">
@@ -186,6 +226,15 @@
         <p>Score: <span id="gameover-score">0</span></p>
         <button id="btn-gameover-retry" class="ui-button primary">Retry</button>
         <button id="btn-gameover-home" class="ui-button">Home</button>
+      </div>
+    </div>
+    <div id="screen-ranking" class="screen">
+      <div class="screen-content cyber-panel">
+        <h2>LEADERBOARD</h2>
+        <div id="ranking-list-container" style="width: 100%; min-height: 200px; text-align: left;">
+            <ul id="full-ranking-list" style="list-style: none; padding: 0;"></ul>
+        </div>
+        <button id="btn-ranking-back" class="ui-button">BACK</button>
       </div>
     </div>
 

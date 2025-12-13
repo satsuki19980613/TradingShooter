@@ -4,7 +4,9 @@ import {
   signInAnonymously, 
   onAuthStateChanged,
   signOut,
-  updateProfile
+  updateProfile,
+  signInWithCustomToken,
+  deleteUser
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 // パスが間違っていないか確認してください
@@ -17,6 +19,55 @@ export class FirebaseAuthAdapter {
     this.app = initializeApp(FirebaseConfig);
     this.auth = getAuth(this.app);
     this.currentUserEntity = UserEntity.createGuest();
+  }
+  async getIdToken() {
+    if (!this.auth.currentUser) throw new Error("Not logged in");
+    return await this.auth.currentUser.getIdToken(true);
+  }
+
+  /**
+   * [Step 5] 引継ぎコードの発行リクエスト
+   */
+  async issueTransferCode() {
+    const token = await this.getIdToken();
+    
+    // サーバーAPIを叩く
+    const response = await fetch("/api/transfer/issue", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token })
+    });
+
+    if (!response.ok) throw new Error("Failed to issue code");
+    
+    const data = await response.json();
+    return data.code;
+  }
+
+  /**
+   * [Step 5] コードを使って復旧（カスタムトークンでログイン）
+   */
+  async recoverAccount(code) {
+    // 1. サーバーにコードを送ってカスタムトークンをもらう
+    const response = await fetch("/api/transfer/recover", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code })
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error || "Recovery failed");
+    }
+
+    const data = await response.json();
+    const customToken = data.customToken;
+
+    // 2. カスタムトークンを使ってFirebaseにサインイン
+    // これにより、クライアントのUser状態がコードに紐付いたアカウントに切り替わる
+    await signInWithCustomToken(this.auth, customToken);
+    
+    return true;
   }
 
   /**
@@ -81,5 +132,11 @@ export class FirebaseAuthAdapter {
    */
   async logout() {
     await signOut(this.auth);
+  }
+  async deleteAccount() {
+    const user = this.auth.currentUser;
+    if (user) {
+      await deleteUser(user);
+    }
   }
 }

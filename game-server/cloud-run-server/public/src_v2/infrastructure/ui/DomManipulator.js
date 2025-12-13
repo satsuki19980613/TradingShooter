@@ -1,5 +1,3 @@
-import { MobileControlManager } from "../input/MobileControlManager.js";
-import { MenuRenderer } from "../rendering/canvas/MenuRenderer.js";
 import { CyberUIRenderer } from "../rendering/ui/CyberUIRenderer.js";
 
 export class DomManipulator {
@@ -11,8 +9,12 @@ export class DomManipulator {
       gameover: document.getElementById("screen-gameover"),
       error: document.getElementById("screen-error"),
       idleWarning: document.getElementById("screen-idle-warning"),
+      ranking: document.getElementById("screen-ranking"),
     };
-
+    const btnRankingBack = document.getElementById("btn-ranking-back");
+    if(btnRankingBack) {
+        btnRankingBack.onclick = () => this.showScreen("home");
+    }
     this.hpBarInnerEl = document.getElementById("hp-bar-inner");
     this.hpValueEl = document.getElementById("hp-value");
     this.epValueEl = document.getElementById("ep-value");
@@ -43,13 +45,34 @@ export class DomManipulator {
     };
 
     this.notificationTimer = null;
+    this.modals = {
+        register: document.getElementById("modal-register"),
+        transfer: document.getElementById("modal-transfer")
+    };
     this.activeScreen = this.screens.home;
     this.isDebugMode = false;
     this.mobileControlManager = null;
-    this.menuRenderer = new MenuRenderer("menu-canvas");
-    this.menuRenderer.start();
     this.uiRenderer = new CyberUIRenderer("menu-canvas");
     this.uiRenderer.start();
+  }
+  openModal(modalType) {
+    Object.values(this.modals).forEach(
+      (el) => el && el.classList.add("hidden")
+    );
+
+    if (this.modals[modalType]) {
+      this.modals[modalType].classList.remove("hidden");
+
+      this.uiRenderer.setOverlay("modal");
+    }
+  }
+
+  closeAllModals() {
+    Object.values(this.modals).forEach(
+      (el) => el && el.classList.add("hidden")
+    );
+
+    this.uiRenderer.setOverlay(null);
   }
 
   setBodyMode(mode) {
@@ -78,9 +101,7 @@ export class DomManipulator {
       this.uiRenderer.stop();
     }
   }
-  setupMenuCallbacks(onJoinGame, onToggleAudio) {
-    this.menuRenderer.setCallbacks(onJoinGame, onToggleAudio);
-  }
+
   enableDebugMode() {
     this.isDebugMode = true;
     if (this.debugPanelEl) {
@@ -95,15 +116,17 @@ export class DomManipulator {
     for (const key in this.screens) {
       if (this.screens[key]) this.screens[key].classList.remove("active");
     }
+
     const s = this.screens[screenId];
     if (s) s.classList.add("active");
     this.activeScreen = s;
 
     if (screenId === "home") {
-      this.menuRenderer.reset();
-      this.menuRenderer.start();
+      this.uiRenderer.start();
+    } else if (screenId === "game") {
+      this.uiRenderer.stop();
     } else {
-      this.menuRenderer.stop();
+      this.uiRenderer.start();
     }
 
     if (this.mobileControlManager) {
@@ -328,17 +351,6 @@ export class DomManipulator {
     if (requestFullScreen) {
       requestFullScreen.call(docEl).catch((err) => console.warn(err));
     }
-  }
-
-  setAudioLoadingState(isLoading) {
-    if (this.audioUI.loadingContainer) {
-      this.audioUI.loadingContainer.style.display = isLoading
-        ? "block"
-        : "none";
-    }
-
-    const status = isLoading ? "LOADING..." : "AUDIO: ON";
-    this.menuRenderer.setAudioStatus(status);
   }
 
   updateAudioLoadingProgress(percent) {

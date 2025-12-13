@@ -1178,3 +1178,80 @@ body.mode-member .guest-only {
 .ui-modal {
     z-index: 1000; /* 最前面 */
 }
+/* --- Step 4: Cyber Modal Styles --- */
+.cyber-panel {
+  background: rgba(5, 10, 16, 0.95);
+  border: 1px solid #00f3ff;
+  box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
+  padding: 30px;
+  width: 400px;
+  max-width: 90%;
+  text-align: center;
+  position: relative;
+}
+
+/* 四隅の飾り（擬似要素で表現） */
+.cyber-panel::before {
+  content: "";
+  position: absolute;
+  top: -1px; left: -1px;
+  width: 20px; height: 20px;
+  border-top: 3px solid #ff0055;
+  border-left: 3px solid #ff0055;
+}
+.cyber-panel::after {
+  content: "";
+  position: absolute;
+  bottom: -1px; right: -1px;
+  width: 20px; height: 20px;
+  border-bottom: 3px solid #ff0055;
+  border-right: 3px solid #ff0055;
+}
+
+.input-group {
+  margin: 20px 0;
+}
+
+input[type="text"] {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid #555;
+  border-bottom: 2px solid #00f3ff;
+  color: #fff;
+  font-family: "Orbitron", sans-serif;
+  font-size: 18px;
+  padding: 10px;
+  width: 100%;
+  text-align: center;
+  outline: none;
+  transition: all 0.3s;
+}
+
+input[type="text"]:focus {
+  background: rgba(0, 243, 255, 0.1);
+  border-color: #ff0055;
+  box-shadow: 0 0 10px rgba(255, 0, 85, 0.3);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.cyber-separator {
+  border: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #00f3ff, transparent);
+  margin: 20px 0;
+}
+
+.code-display {
+  font-family: "Courier New", monospace;
+  font-size: 24px;
+  letter-spacing: 4px;
+  color: #f9f002;
+  margin: 10px 0;
+  text-shadow: 0 0 10px rgba(249, 240, 2, 0.5);
+  user-select: all;
+}

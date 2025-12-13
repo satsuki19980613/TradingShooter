@@ -3,97 +3,197 @@ import { AudioManager } from "../../infrastructure/audio/AudioManager.js";
 import { AudioConfig } from "../../core/config/AudioConfig.js";
 
 export class AppFlowManager {
-  constructor(uiManipulator, gameApp) {
+  constructor(uiManipulator, gameApp, accountManager) {
     this.ui = uiManipulator;
     this.game = gameApp;
+    this.accountManager = accountManager;
+
     this.isDebug = this.ui.isDebugMode || false;
     this.assetLoader = new AssetLoader();
     this.audioManager = new AudioManager();
-    this.accountManager = accountManager;
+
     this.isAudioLoaded = false;
     this.isAudioLoading = false;
     this.pendingGameStartName = null;
+
     this.audioManager.onTrackChanged = (title) => {
       this.ui.showMusicNotification(title);
     };
+
     this.ui.setMenuActionCallback((actionId) => {
-        this.handleMenuAction(actionId);
+      this.handleMenuAction(actionId);
     });
+    this.setupModalEvents();
     this.setupUI();
+  }
+  setupModalEvents() {
+    const btnReg = document.getElementById("btn-do-register");
+    const btnCloseReg = document.getElementById("btn-close-register");
+    const regInput = document.getElementById("reg-name-input");
+
+    if (btnReg) {
+      btnReg.onclick = () => {
+        const name = regInput ? regInput.value : "";
+        if (name) this.executeRegistration(name);
+      };
+    }
+    if (btnCloseReg) {
+      btnCloseReg.onclick = () => this.ui.closeAllModals();
+    }
+
+    const btnCloseTrans = document.getElementById("btn-close-transfer");
+    const btnIssue = document.getElementById("btn-issue-code");
+    const btnRecover = document.getElementById("btn-do-recover");
+    const codeDisplay = document.getElementById("transfer-code-display");
+    const recoverInput = document.getElementById("recover-code-input");
+
+    if (btnCloseTrans) {
+      btnCloseTrans.onclick = () => this.ui.closeAllModals();
+    }
+
+    if (btnIssue) {
+      btnIssue.onclick = async () => {
+        try {
+          btnIssue.disabled = true;
+          const originalText = btnIssue.textContent;
+          btnIssue.textContent = "ISSUING...";
+
+          const code = await this.accountManager.issueCode();
+
+          if (codeDisplay) codeDisplay.textContent = code;
+          btnIssue.textContent = "CODE ISSUED";
+
+          setTimeout(() => {
+            btnIssue.disabled = false;
+            btnIssue.textContent = originalText;
+          }, 3000);
+        } catch (e) {
+          console.error(e);
+          if (codeDisplay) codeDisplay.textContent = "ERROR";
+          btnIssue.textContent = "RETRY";
+          btnIssue.disabled = false;
+        }
+      };
+    }
+
+    if (btnRecover) {
+      btnRecover.onclick = async () => {
+        const code = recoverInput ? recoverInput.value.trim() : "";
+        if (!code) return;
+
+        try {
+          this.ui.setLoadingText("Recovering Data...");
+          this.ui.showScreen("loading");
+          this.ui.closeAllModals();
+
+          await this.accountManager.recover(code);
+
+          alert("Account recovered successfully! Reloading...");
+          location.reload();
+        } catch (e) {
+          console.error(e);
+          this.ui.showErrorScreen("Recovery Failed", e);
+
+          this.ui.showScreen("home");
+        }
+      };
+    }
   }
 
   handleUserUpdate(userEntity) {
     console.log("[AppFlow] User State Updated:", userEntity);
 
     if (!userEntity) {
-        // 未ログイン -> 初期画面
-        this.ui.setBodyMode("initial"); 
-        this.ui.switchCanvasScene("initial"); 
+      this.ui.setBodyMode("initial");
+      this.ui.switchCanvasScene("initial");
     } else {
-        // ログイン済み -> ホーム画面
-        this.ui.setBodyMode(userEntity.isGuest ? "guest" : "member");
-        this.ui.switchCanvasScene("home", userEntity);
+      this.ui.setBodyMode(userEntity.isGuest ? "guest" : "member");
+      this.ui.switchCanvasScene("home", userEntity);
     }
   }
 
   handleMenuAction(actionId) {
     console.log("[AppFlow] Action:", actionId);
-    
-    switch(actionId) {
-        case "start_guest":
-            this.ui.setLoadingText("Logging in as Guest...");
-            this.ui.showScreen("loading");
-            // 必ず this.accountManager を使う
-            this.accountManager.loginGuest().catch(e => {
-                console.error(e);
-                this.ui.showErrorScreen("Guest Login Failed", e);
-                this.ui.showScreen("home");
-            });
-            break;
-            
-        case "start_register":
-            const name = prompt("Please enter your pilot name (ALVOLT System):");
-            if (name) {
-                this.ui.setLoadingText("Registering...");
-                this.ui.showScreen("loading");
-                this.accountManager.registerPlayerName(name).catch(e => {
-                    console.error(e);
-                    this.ui.showErrorScreen("Registration Failed", e);
-                    this.ui.showScreen("home");
-                });
-            }
-            break;
 
-        case "game_start":
-            this.ui.tryFullscreen();
-            const currentUser = this.accountManager.currentUser;
-            // AppFlowManagerにあるはずの handleStartGame を呼び出す
-            // (まだ実装されていない場合は console.log で止める)
-            if (this.handleStartGame) {
-                this.handleStartGame(currentUser ? currentUser.name : "Guest");
-            } else {
-                console.log("Game Start Logic goes here.");
-            }
-            break;
+    switch (actionId) {
+      case "start_guest":
+        this.ui.setLoadingText("Logging in as Guest...");
+        this.ui.showScreen("loading");
+        this.accountManager.loginGuest().catch((e) => {
+          console.error(e);
+          this.ui.showErrorScreen("Guest Login Failed", e);
+          this.ui.showScreen("home");
+        });
+        break;
+      case "open_ranking":
+        this.ui.showScreen("ranking");
 
-        case "open_register":
-            const regName = prompt("Register Formal Pilot Name:");
-            if (regName) {
-                this.accountManager.registerPlayerName(regName);
-            }
-            break;
-            
-        case "menu_delete":
-            if(confirm("WARNING: Account will be deleted permanently. Continue?")) {
-                alert("Delete logic not implemented yet.");
-            }
-            break;
-            
-        default:
-            console.warn("Unknown Action:", actionId);
+        break;
+      case "start_register":
+      case "open_register":
+        this.ui.openModal("register");
+        break;
+
+      case "open_transfer":
+        this.ui.openModal("transfer");
+        break;
+
+      case "game_start":
+        this.ui.tryFullscreen();
+        const currentUser = this.accountManager.currentUser;
+
+        if (this.handleStartGame) {
+          this.handleStartGame(currentUser ? currentUser.name : "Guest");
+        } else {
+          console.error("Game Start Logic not found.");
+        }
+        break;
+
+      case "menu_delete":
+        if (
+          confirm("WARNING: Account will be deleted permanently. Continue?")
+        ) {
+          alert("Delete logic will be implemented in the next step.");
+        }
+        break;
+
+      default:
+        console.warn("Unknown Action:", actionId);
+      case "menu_delete":
+        if (
+          confirm("WARNING: Account will be deleted permanently. Continue?")
+        ) {
+          this.ui.setLoadingText("Deleting Account...");
+          this.ui.showScreen("loading");
+
+          this.accountManager.deleteUser().catch((e) => {
+            console.error(e);
+
+            this.ui.showErrorScreen("Delete Failed. Please re-login.", e);
+            this.ui.showScreen("home");
+          });
+        }
+        break;
     }
   }
+  executeRegistration(name) {
+    if (!name) return;
 
+    this.ui.setLoadingText("Registering...");
+    this.ui.showScreen("loading");
+
+    this.ui.closeAllModals();
+
+    this.accountManager
+      .registerPlayerName(name)
+      .then(() => {
+        console.log("Registered successfully.");
+      })
+      .catch((e) => {
+        console.error(e);
+        this.ui.showErrorScreen("Registration Failed", e);
+      });
+  }
   setupUI() {
     const startBtn = document.getElementById("btn-start-game");
     if (startBtn)
@@ -105,15 +205,7 @@ export class AppFlowManager {
     const audioBtn = document.getElementById("btn-audio-toggle");
     if (audioBtn)
       audioBtn.addEventListener("click", () => this.handleAudioToggle());
-    this.ui.setupMenuCallbacks(
-      () => {
-        this.ui.tryFullscreen();
-        this.handleStartGame("Guest");
-      },
-      () => {
-        this.handleAudioToggle();
-      }
-    );
+
     const retryBtn = document.getElementById("btn-gameover-retry");
     if (retryBtn)
       retryBtn.addEventListener("click", () => {
@@ -164,7 +256,7 @@ export class AppFlowManager {
     this.ui.setLoadingText("Connecting...");
 
     try {
-      await this.game.connect("Guest", this.isDebug);
+      await this.game.connect(playerName || "Guest", this.isDebug);
       this.ui.showScreen("game");
       this.game.startLoop();
     } catch (e) {
