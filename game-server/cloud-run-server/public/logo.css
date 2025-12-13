@@ -143,7 +143,7 @@
   100% { clip-path: inset(50% 0 30% 0); }
 }
 
-/* 電気的なスパーク（たまに強く光る） */
+/* 電気的なスパーク（たまに強く光る）ｓ */ 
 @keyframes spark-flash {
   0%, 90% {
     border-color: rgba(0, 255, 255, 0);
