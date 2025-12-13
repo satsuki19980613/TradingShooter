@@ -47,8 +47,24 @@ export class AccountManager {
     await this.auth.recoverAccount(code);
   }
   async deleteUser() {
-    await this.auth.deleteAccount();
-    // 削除後は自動的に onAuthStateChanged が発火して null になり、初期画面へ戻るはずです
-    location.reload(); 
+    try {
+      await this.auth.deleteAccount();
+      alert("アカウントとデータを削除しました。");
+      location.reload(); 
+    } catch (error) {
+      console.error("Delete failed:", error);
+      
+      // "auth/requires-recent-login" エラーの場合
+      if (error.code === 'auth/requires-recent-login') {
+        alert("セキュリティ保護のため、再ログインが必要です。ページをリロードしますので、もう一度削除操作を行ってください。");
+        // 一度ログアウトさせてリロード
+        await this.auth.logout();
+        location.reload();
+      } else {
+        // その他のエラーでも、不整合を防ぐためリロードを推奨
+        alert("削除中にエラーが発生しました: " + error.message);
+        location.reload();
+      }
+    }
   }
 }

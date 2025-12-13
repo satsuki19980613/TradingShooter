@@ -6,20 +6,30 @@ import {
   signOut,
   updateProfile,
   signInWithCustomToken,
-  deleteUser
+  deleteUser,
+  reauthenticateWithCredential,
+  EmailAuthProvider 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-// パスが間違っていないか確認してください
+// ★追加: Firestore操作用
+import { 
+    getFirestore, 
+    doc, 
+    deleteDoc 
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
 import { FirebaseConfig } from "../../core/config/FirebaseConfig.js";
 import { UserEntity } from "../../domain/auth/UserEntity.js";
 
 export class FirebaseAuthAdapter {
   constructor() {
-    console.log("[AuthAdapter] Initializing with config:", FirebaseConfig); // デバッグ用ログ
+    console.log("[AuthAdapter] Initializing with config:", FirebaseConfig);
     this.app = initializeApp(FirebaseConfig);
     this.auth = getAuth(this.app);
+    this.db = getFirestore(this.app); // ★追加: Firestoreの初期化
     this.currentUserEntity = UserEntity.createGuest();
   }
+
   async getIdToken() {
     if (!this.auth.currentUser) throw new Error("Not logged in");
     return await this.auth.currentUser.getIdToken(true);
@@ -30,7 +40,6 @@ export class FirebaseAuthAdapter {
    */
   async issueTransferCode() {
     const token = await this.getIdToken();
-    
     // サーバーAPIを叩く
     const response = await fetch("/api/transfer/issue", {
       method: "POST",
@@ -133,10 +142,26 @@ export class FirebaseAuthAdapter {
   async logout() {
     await signOut(this.auth);
   }
+
+  /**
+   * アカウントとデータの完全削除
+   */
   async deleteAccount() {
     const user = this.auth.currentUser;
     if (user) {
+      // 1. Firestoreデータの削除
+      try {
+        const userDocRef = doc(this.db, "ranking", user.uid);
+        await deleteDoc(userDocRef);
+        console.log("[Auth] Firestore data deleted.");
+      } catch (dbError) {
+        console.warn("[Auth] Failed to delete Firestore data (might not exist or permission denied):", dbError);
+        // データ削除に失敗しても、アカウント削除処理は続行させる
+      }
+
+      // 2. Authenticationユーザーの削除
       await deleteUser(user);
+      console.log("[Auth] User deleted.");
     }
   }
 }
