@@ -1,4 +1,5 @@
 import { CyberUIRenderer } from "../rendering/ui/CyberUIRenderer.js";
+import { FullscreenManager } from "./FullscreenManager.js"; // 【追加】インポートが必要
 
 export class DomManipulator {
   constructor() {
@@ -26,13 +27,13 @@ export class DomManipulator {
     this.loadingTextEl = document.getElementById("loading-text");
 
     this.debugPanelEl = document.getElementById("debug-panel");
-    this.debugStatsContainerEl = document.getElementById(
-      "debug-stats-container"
-    );
-    this.debugSimulationContainerEl = document.getElementById(
-      "debug-simulation-container"
-    );
+    this.debugStatsContainerEl = document.getElementById("debug-stats-container");
+    this.debugSimulationContainerEl = document.getElementById("debug-simulation-container");
     this.leaderboardListEl = document.getElementById("leaderboard-list");
+    
+    // FullscreenManagerの初期化
+    this.fullscreenManager = new FullscreenManager();
+    this.fullscreenManager.init();
 
     this.audioUI = {
       btnToggle: document.getElementById("btn-audio-toggle"),
@@ -54,6 +55,7 @@ export class DomManipulator {
     this.uiRenderer = new CyberUIRenderer("menu-canvas");
     this.uiRenderer.start();
   }
+
   openModal(modalType) {
     Object.values(this.modals).forEach(
       (el) => el && el.classList.add("hidden")
@@ -61,7 +63,6 @@ export class DomManipulator {
 
     if (this.modals[modalType]) {
       this.modals[modalType].classList.remove("hidden");
-
       this.uiRenderer.setOverlay("modal");
     }
   }
@@ -70,7 +71,6 @@ export class DomManipulator {
     Object.values(this.modals).forEach(
       (el) => el && el.classList.add("hidden")
     );
-
     this.uiRenderer.setOverlay(null);
   }
 
@@ -88,25 +88,11 @@ export class DomManipulator {
   switchCanvasScene(sceneKey, data = null) {
     this.uiRenderer.setScene(sceneKey, data);
   }
+
   setMenuActionCallback(callback) {
     this.uiRenderer.setCallback(callback);
   }
 
-  showScreen(screenId) {
-    if (screenId === "home") {
-      this.uiRenderer.setScene("initial");
-      this.uiRenderer.start();
-    } else if (screenId === "game") {
-      this.uiRenderer.stop();
-    }
-  }
-
-  enableDebugMode() {
-    this.isDebugMode = true;
-    if (this.debugPanelEl) {
-      this.debugPanelEl.style.display = "block";
-    }
-  }
   setMobileControlManager(manager) {
     this.mobileControlManager = manager;
   }
@@ -204,6 +190,7 @@ export class DomManipulator {
       this.mobileControlManager.updateDisplay(playerState);
     }
   }
+
   enableDebugMode() {
     this.isDebugMode = true;
     if (this.debugPanelEl) {
@@ -233,6 +220,7 @@ export class DomManipulator {
       }
     }
   }
+
   setupDebugListeners(onDownload) {
     const btn = document.getElementById("btn-download-jitter");
     if (btn) {
@@ -243,6 +231,7 @@ export class DomManipulator {
   getDebugCanvas() {
     return document.getElementById("debug-jitter-canvas");
   }
+
   updateDebugHUD(stats, simStats, serverStats) {
     if (!this.isDebugMode || !this.debugStatsContainerEl) return;
 
@@ -340,26 +329,21 @@ export class DomManipulator {
   }
 
   tryFullscreen() {
-    const doc = window.document;
-    const docEl = doc.documentElement;
-    const requestFullScreen =
-      docEl.requestFullscreen ||
-      docEl.mozRequestFullScreen ||
-      docEl.webkitRequestFullScreen ||
-      docEl.msRequestFullscreen;
-    if (requestFullScreen) {
-      requestFullScreen.call(docEl).catch((err) => console.warn(err));
-    }
+    this.fullscreenManager.request();
   }
+
   setAudioLoadingState(isLoading) {
     if (this.audioUI.loadingContainer) {
-      this.audioUI.loadingContainer.style.display = isLoading ? "block" : "none";
+      this.audioUI.loadingContainer.style.display = isLoading
+        ? "block"
+        : "none";
     }
-    // 読み込み開始時はバーを0%にリセット
+
     if (isLoading && this.audioUI.loadingBar) {
       this.audioUI.loadingBar.style.width = "0%";
     }
   }
+
   updateAudioLoadingProgress(percent) {
     if (this.audioUI.loadingBar) {
       this.audioUI.loadingBar.style.width = `${percent}%`;

@@ -138,7 +138,6 @@ export class AppFlowManager {
         this.ui.openModal("transfer");
         break;
 
-      // ★BGM切り替え機能（ここを追加）
       case "toggle_bgm":
         this.handleAudioToggle();
         break;
@@ -148,17 +147,18 @@ export class AppFlowManager {
         const currentUser = this.accountManager.currentUser;
         const playerName = currentUser ? currentUser.name : "Guest";
 
-        // ワープ演出を開始してからゲームへ接続
-        if (this.ui.uiRenderer && typeof this.ui.uiRenderer.startWarp === 'function') {
+        if (
+          this.ui.uiRenderer &&
+          typeof this.ui.uiRenderer.startWarp === "function"
+        ) {
           this.ui.uiRenderer.startWarp(() => {
-             if (this.handleStartGame) {
-               this.handleStartGame(playerName);
-             } else {
-               console.error("Game Start Logic not found.");
-             }
+            if (this.handleStartGame) {
+              this.handleStartGame(playerName);
+            } else {
+              console.error("Game Start Logic not found.");
+            }
           });
         } else {
-          // フォールバック（レンダラーが無い場合）
           if (this.handleStartGame) {
             this.handleStartGame(playerName);
           }
@@ -205,21 +205,25 @@ export class AppFlowManager {
   }
   setupUI() {
     const startBtn = document.getElementById("btn-start-game");
-    if (startBtn)
+    if (startBtn) {
+      // clickイベントで tryFullscreen を呼ぶようにする
       startBtn.addEventListener("click", () => {
-        this.ui.tryFullscreen();
+        this.ui.tryFullscreen(); // ★ここが重要
         this.handleStartGame();
       });
+    }
 
     const audioBtn = document.getElementById("btn-audio-toggle");
     if (audioBtn)
       audioBtn.addEventListener("click", () => this.handleAudioToggle());
 
     const retryBtn = document.getElementById("btn-gameover-retry");
-    if (retryBtn)
+    if (retryBtn) {
       retryBtn.addEventListener("click", () => {
+        this.ui.tryFullscreen(); // ★リトライ時も全画面化
         this.handleStartGame("Guest");
       });
+    }
     const retireBtn = document.getElementById("btn-retire");
     if (retireBtn) {
       retireBtn.addEventListener("click", () => this.handleRetire());
