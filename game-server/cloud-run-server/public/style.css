@@ -944,7 +944,6 @@ canvas {
 
 @media only screen and (orientation: portrait) {
   #cockpit-container,
-  #screen-ranking,
   #screen-gameover,
   #modal-ingame-leaderboard {
     width: 100vh;
@@ -1254,4 +1253,60 @@ input[type="text"]:focus {
   margin: 10px 0;
   text-shadow: 0 0 10px rgba(249, 240, 2, 0.5);
   user-select: all;
+}
+
+/* game-server/cloud-run-server/public/style.css */
+
+/* ... 既存のCSSの末尾に追加 ... */
+
+/* --- モバイル用：メニュー画面での縦画面強制警告 --- */
+#orientation-warning {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  z-index: 9999;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #00ffff;
+  text-align: center;
+  padding: 20px;
+}
+
+#orientation-warning .icon {
+  font-size: 48px;
+  margin-bottom: 20px;
+  animation: rotate-phone 2s infinite;
+}
+
+/* スマホかつ横画面の場合のみ警告を表示 */
+@media screen 
+  and (max-width: 900px) 
+  and (orientation: landscape) 
+  and (hover: none) 
+  and (pointer: coarse) {
+
+  /* メニュー画面(screen-home) や 初回画面が表示されている時だけ警告 */
+  body:not(.mode-game) #orientation-warning {
+    display: flex;
+  }
+  
+  /* ゲーム画面以外のコンテンツを隠す */
+  body:not(.mode-game) #screen-home,
+  body:not(.mode-game) #screen-loading,
+  body:not(.mode-game) #screen-ranking {
+    visibility: hidden;
+  }
+}
+
+@keyframes rotate-phone {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(-90deg); }
+  50% { transform: rotate(-90deg); }
+  75% { transform: rotate(0deg); }
+  100% { transform: rotate(0deg); }
 }

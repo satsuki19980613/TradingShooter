@@ -114,7 +114,6 @@ export class AppFlowManager {
 
   handleMenuAction(actionId) {
     console.log("[AppFlow] Action:", actionId);
-
     switch (actionId) {
       case "start_guest":
         this.ui.setLoadingText("Logging in as Guest...");
@@ -125,10 +124,11 @@ export class AppFlowManager {
           this.ui.showScreen("home");
         });
         break;
+
       case "open_ranking":
         this.ui.showScreen("ranking");
-
         break;
+
       case "start_register":
       case "open_register":
         this.ui.openModal("register");
@@ -138,27 +138,33 @@ export class AppFlowManager {
         this.ui.openModal("transfer");
         break;
 
+      // ★BGM切り替え機能（ここを追加）
+      case "toggle_bgm":
+        this.handleAudioToggle();
+        break;
+
       case "game_start":
         this.ui.tryFullscreen();
         const currentUser = this.accountManager.currentUser;
+        const playerName = currentUser ? currentUser.name : "Guest";
 
-        if (this.handleStartGame) {
-          this.handleStartGame(currentUser ? currentUser.name : "Guest");
+        // ワープ演出を開始してからゲームへ接続
+        if (this.ui.uiRenderer && typeof this.ui.uiRenderer.startWarp === 'function') {
+          this.ui.uiRenderer.startWarp(() => {
+             if (this.handleStartGame) {
+               this.handleStartGame(playerName);
+             } else {
+               console.error("Game Start Logic not found.");
+             }
+          });
         } else {
-          console.error("Game Start Logic not found.");
+          // フォールバック（レンダラーが無い場合）
+          if (this.handleStartGame) {
+            this.handleStartGame(playerName);
+          }
         }
         break;
 
-      case "menu_delete":
-        if (
-          confirm("WARNING: Account will be deleted permanently. Continue?")
-        ) {
-          alert("Delete logic will be implemented in the next step.");
-        }
-        break;
-
-      default:
-        console.warn("Unknown Action:", actionId);
       case "menu_delete":
         if (
           confirm("WARNING: Account will be deleted permanently. Continue?")
@@ -168,11 +174,14 @@ export class AppFlowManager {
 
           this.accountManager.deleteUser().catch((e) => {
             console.error(e);
-
             this.ui.showErrorScreen("Delete Failed. Please re-login.", e);
             this.ui.showScreen("home");
           });
         }
+        break;
+
+      default:
+        console.warn("Unknown Action:", actionId);
         break;
     }
   }

@@ -2,11 +2,9 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { WebSocket } from "ws";
-
 import { WorldState } from "../domain/WorldState.js";
 import { PlayerState } from "../domain/PlayerState.js";
 import { GameConstants } from "../core/constants/GameConstants.js";
-
 import { PhysicsSystem } from "../infrastructure/systems/PhysicsSystem.js";
 import { NetworkSystem } from "../infrastructure/systems/NetworkSystem.js";
 import { PersistenceSystem } from "../infrastructure/systems/PersistenceSystem.js";
@@ -101,17 +99,6 @@ export class ServerGame {
 
   update() {
     const dt = 1.0;
-
-    const now = Date.now();
-    this.worldState.players.forEach((p) => {
-      if (
-        !p.isDead &&
-        !p.isPaused &&
-        now - p.lastInputTime > GameConstants.IDLE_TIMEOUT_TIME
-      ) {
-        if (p.ws) p.ws.close(1000, "Idle timeout");
-      }
-    });
     this.worldState.players.forEach((p) => {
       if (p.isDead) {
         this.handlePlayerDeath(p, null);

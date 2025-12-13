@@ -17,12 +17,17 @@
     <link rel="stylesheet" href="logo.css" />
   </head>
   <body>
-
+<div id="orientation-warning">
+      <div class="icon">📱</div>
+      <h2>ROTATE DEVICE</h2>
+      <p>Please use Portrait Mode for Menu.</p>
+    </div>
 
     <div id="screen-home" class="screen active" style="background: transparent;">
       <canvas id="menu-canvas" style="display: block; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;"></canvas>
 
-      <div id="audio-loading-container" class="audio-loader" style="position: absolute; bottom: 160px; left: 50%; transform: translateX(-50%); z-index: 100;">
+      <div id="audio-loading-container" class="audio-loader" style="position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+          z-index: 100;">
           <div id="audio-loading-bar" class="audio-loader-fill"></div>
       </div>
     </div>
@@ -238,13 +243,6 @@
       </div>
     </div>
 
-    <div id="screen-error" class="screen">
-      <div class="screen-content">
-        <h2>Error</h2>
-        <p id="error-message"></p>
-        <button id="btn-error-home" class="ui-button">Home</button>
-      </div>
-    </div>
 
     <div id="screen-idle-warning" class="screen">
       <div class="screen-content">

@@ -1,11 +1,11 @@
-// src_v2/infrastructure/rendering/ui/scenes/HomeScene.js
 import { BaseScene } from "./BaseScene.js";
 
 export class HomeScene extends BaseScene {
   constructor(skinFactory) {
     super(skinFactory);
-    this.isGuest = true; // デフォルト
+    this.isGuest = true;
     this.userName = "Guest";
+    this.isMuted = true;
     this.buttons = [];
   }
 
@@ -17,61 +17,102 @@ export class HomeScene extends BaseScene {
     this.userName = userEntity.name || "Guest";
     this.rebuildButtons();
   }
+  setAudioState(isMuted) {
+    this.isMuted = isMuted;
 
-  rebuildButtons() {
-    // 画面サイズが未定の場合はrenderで再計算されるので、ここでは定義のみ
-    // 実際の座標計算は render() または resize() で行うのが安全です
     this.needsLayout = true;
   }
 
+  rebuildButtons() {
+    this.needsLayout = true;
+  }
   updateLayout(cx, cy) {
+    const width = cx * 2;
+    const height = cy * 2;
     const btnW = 260;
     const btnH = 50;
     const gap = 15;
-    let currentY = cy;
 
     this.buttons = [];
-
-    // 1. GAME START (共通)
     this.buttons.push({
-      id: "game_start", text: "JOIN GAME", 
-      w: btnW, h: btnH, active: true,
-      // 中央配置
+      id: "game_start",
+      text: "JOIN GAME",
+      w: btnW,
+      h: btnH,
+      active: true,
+    });
+    this.buttons.push({
+      id: "open_ranking",
+      text: "LEADERBOARD",
+      w: btnW,
+      h: btnH,
+      active: false,
     });
 
-    // 2. LEADERBOARD (共通)
-    this.buttons.push({
-      id: "open_ranking", text: "LEADERBOARD", 
-      w: btnW, h: btnH, active: false
-    });
-
-    // 3. TRANSFER / REGISTER (状態分岐)
     if (this.isGuest) {
-      // Menu A: Transfer, Register
       this.buttons.push({
-        id: "open_transfer", text: "DATA TRANSFER", 
-        w: btnW, h: btnH, active: false
+        id: "open_transfer",
+        text: "DATA TRANSFER",
+        w: btnW,
+        h: btnH,
+        active: false,
       });
       this.buttons.push({
-        id: "open_register", text: "REGISTER NAME", 
-        w: btnW, h: btnH, active: false // 重要: これがゲストのみ
+        id: "open_register",
+        text: "REGISTER NAME",
+        w: btnW,
+        h: btnH,
+        active: false,
       });
     } else {
-      // Menu B: Transfer/Issue, Delete
       this.buttons.push({
-        id: "open_transfer", text: "TRANSFER / ISSUE", 
-        w: btnW, h: btnH, active: false
+        id: "open_transfer",
+        text: "TRANSFER / ISSUE",
+        w: btnW,
+        h: btnH,
+        active: false,
       });
       this.buttons.push({
-        id: "menu_delete", text: "DELETE DATA", 
-        w: btnW, h: btnH, active: false
+        id: "menu_delete",
+        text: "DELETE DATA",
+        w: btnW,
+        h: btnH,
+        active: false,
       });
     }
 
-    // Y座標の割り当て (下から積み上げたり、中央揃えしたり)
-    // ここではシンプルに中央から下へ並べる
-    const totalH = this.buttons.length * (btnH + gap);
-    let startY = cy - totalH / 2 + 50; // 少し下にオフセット
+    const bgmText = this.isMuted ? "BGM: OFF" : "BGM: ON";
+    const bgmActive = !this.isMuted;
+    this.buttons.push({
+      id: "toggle_bgm",
+      text: bgmText,
+      w: btnW,
+      h: btnH,
+      active: bgmActive,
+    });
+
+    const totalButtons = this.buttons.length;
+    const totalBtnHeight = totalButtons * btnH + (totalButtons - 1) * gap;
+
+    const logoCenterY = Math.max(150, height * 0.35);
+
+    const logoBottomLimit = logoCenterY + 130;
+
+    let startY = height * 0.6;
+
+    if (startY < logoBottomLimit) {
+      startY = logoBottomLimit;
+    }
+
+    const marginBottom = 80;
+    const limitBottom = height - marginBottom;
+
+    if (startY + totalBtnHeight > limitBottom) {
+      startY = limitBottom - totalBtnHeight;
+      if (startY < logoBottomLimit) {
+        startY = logoBottomLimit;
+      }
+    }
 
     this.buttons.forEach((btn, index) => {
       btn.x = cx - btn.w / 2;
@@ -80,8 +121,13 @@ export class HomeScene extends BaseScene {
 
     this.needsLayout = false;
   }
-
   render(ctx, width, height, mousePos) {
+    if (this.lastWidth !== width || this.lastHeight !== height) {
+      this.needsLayout = true;
+      this.lastWidth = width;
+      this.lastHeight = height;
+    }
+
     const cx = width / 2;
     const cy = height / 2;
 
@@ -89,23 +135,26 @@ export class HomeScene extends BaseScene {
       this.updateLayout(cx, cy);
     }
 
-    // 1. ヘッダー情報の描画 (プレイヤー名など)
     ctx.save();
     ctx.textAlign = "right";
     ctx.fillStyle = this.isGuest ? "#aaaaaa" : "#00ff00";
     ctx.font = "14px 'Orbitron'";
     ctx.fillText(`PILOT: ${this.userName}`, width - 20, 30);
-    
-    // 状態表示
+
     ctx.textAlign = "left";
     ctx.fillStyle = "#555";
     ctx.fillText(this.isGuest ? "STATUS: GUEST" : "STATUS: REGISTERED", 20, 30);
     ctx.restore();
 
-    // 2. ボタン描画
     this.checkHover(mousePos.x, mousePos.y);
-    this.buttons.forEach(btn => {
-      const img = this.skinFactory.getButton(btn.w, btn.h, btn.text, btn.active, btn.isHover);
+    this.buttons.forEach((btn) => {
+      const img = this.skinFactory.getButton(
+        btn.w,
+        btn.h,
+        btn.text,
+        btn.active,
+        btn.isHover
+      );
       ctx.drawImage(img, btn.x - 10, btn.y - 10);
     });
   }

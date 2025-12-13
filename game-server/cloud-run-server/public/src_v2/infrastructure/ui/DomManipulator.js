@@ -8,12 +8,11 @@ export class DomManipulator {
       game: document.getElementById("screen-game"),
       gameover: document.getElementById("screen-gameover"),
       error: document.getElementById("screen-error"),
-      idleWarning: document.getElementById("screen-idle-warning"),
       ranking: document.getElementById("screen-ranking"),
     };
     const btnRankingBack = document.getElementById("btn-ranking-back");
-    if(btnRankingBack) {
-        btnRankingBack.onclick = () => this.showScreen("home");
+    if (btnRankingBack) {
+      btnRankingBack.onclick = () => this.showScreen("home");
     }
     this.hpBarInnerEl = document.getElementById("hp-bar-inner");
     this.hpValueEl = document.getElementById("hp-value");
@@ -46,8 +45,8 @@ export class DomManipulator {
 
     this.notificationTimer = null;
     this.modals = {
-        register: document.getElementById("modal-register"),
-        transfer: document.getElementById("modal-transfer")
+      register: document.getElementById("modal-register"),
+      transfer: document.getElementById("modal-transfer"),
     };
     this.activeScreen = this.screens.home;
     this.isDebugMode = false;
@@ -352,7 +351,15 @@ export class DomManipulator {
       requestFullScreen.call(docEl).catch((err) => console.warn(err));
     }
   }
-
+  setAudioLoadingState(isLoading) {
+    if (this.audioUI.loadingContainer) {
+      this.audioUI.loadingContainer.style.display = isLoading ? "block" : "none";
+    }
+    // 読み込み開始時はバーを0%にリセット
+    if (isLoading && this.audioUI.loadingBar) {
+      this.audioUI.loadingBar.style.width = "0%";
+    }
+  }
   updateAudioLoadingProgress(percent) {
     if (this.audioUI.loadingBar) {
       this.audioUI.loadingBar.style.width = `${percent}%`;
@@ -360,8 +367,15 @@ export class DomManipulator {
   }
 
   updateAudioButton(isMuted) {
-    const text = isMuted ? "AUDIO: OFF" : "AUDIO: ONLINE";
-    this.menuRenderer.setAudioStatus(text);
+    if (this.uiRenderer) {
+      this.uiRenderer.setAudioState(isMuted);
+    }
+
+    if (this.audioUI.btnToggle) {
+      this.audioUI.btnToggle.textContent = isMuted
+        ? "🔇 BGM: OFF"
+        : "🔊 BGM: ON";
+    }
   }
 
   showMusicNotification(title) {
