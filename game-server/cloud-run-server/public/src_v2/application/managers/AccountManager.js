@@ -1,21 +1,21 @@
+import { SessionMonitor } from "../services/SessionMonitor.js";
+
 export class AccountManager {
   constructor(authAdapter) {
     this.auth = authAdapter;
     this.currentUser = null;
     this.onUserUpdated = null;
-    this.sessionCheckInterval = null;
+
+    this.sessionMonitor = new SessionMonitor(this.auth);
   }
 
   init(onUserUpdatedCallback) {
     this.onUserUpdated = onUserUpdatedCallback;
-    
     this.auth.observeAuthState(async (userEntity) => {
-      // 【追加】ログイン状態に応じて監視を開始・停止
       if (userEntity) {
-        // ゲストでもメンバーでも、他の端末で引き継がれたら無効になるので監視する
-        this.startSessionWatch();
+        this.sessionMonitor.start();
       } else {
-        this.stopSessionWatch();
+        this.sessionMonitor.stop();
       }
 
       this.currentUser = userEntity;
@@ -24,30 +24,7 @@ export class AccountManager {
       }
     });
   }
-    startSessionWatch() {
-    this.stopSessionWatch(); // 多重起動防止
-    
-    // 5秒ごとにトークンの有効性を確認
-    this.sessionCheckInterval = setInterval(async () => {
-      try {
-        if (!this.auth.auth.currentUser) return;
-        // forceRefresh: true でサーバーに問い合わせる
-        await this.auth.auth.currentUser.getIdToken(true);
-      } catch (error) {
-        console.warn("Session revoked:", error);
-        this.stopSessionWatch();
-        await this.auth.logout();
-        alert("データが他の端末に引き継がれました。初期画面に戻ります。");
-        location.reload();
-      }
-    }, 5000);
-  }
-  stopSessionWatch() {
-    if (this.sessionCheckInterval) {
-      clearInterval(this.sessionCheckInterval);
-      this.sessionCheckInterval = null;
-    }
-  }
+
   async loginGuest() {
     return await this.auth.loginAsGuest();
   }
@@ -75,9 +52,12 @@ export class AccountManager {
 
   async recover(code) {
     if (!code || code.length < 4) throw new Error("Invalid code format");
-    this.stopSessionWatch();
+
+    this.sessionMonitor.stop();
+
     await this.auth.recoverAccount(code);
   }
+
   async deleteUser() {
     try {
       await this.auth.deleteAccount();
@@ -85,12 +65,10 @@ export class AccountManager {
       location.reload();
     } catch (error) {
       console.error("Delete failed:", error);
-
       if (error.code === "auth/requires-recent-login") {
         alert(
           "セキュリティ保護のため、再ログインが必要です。ページをリロードしますので、もう一度削除操作を行ってください。"
         );
-
         await this.auth.logout();
         location.reload();
       } else {

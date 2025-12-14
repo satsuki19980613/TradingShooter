@@ -15,6 +15,7 @@ import { MapLoader } from "../infrastructure/factories/MapLoader.js";
 import { ItemSystem } from "../infrastructure/systems/ItemSystem.js";
 import { TradingSystem } from "../domain/systems/TradingSystem.js";
 import { GameLoop } from "./GameLoop.js";
+import { PlayerActionDispatcher } from "./services/PlayerActionDispatcher.js"; // 【新規】インポート
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -50,6 +51,13 @@ export class ServerGame {
     this.playerSystem = new PlayerSystem(this);
     this.loopManager = new GameLoop();
     this.itemSystem = new ItemSystem(this);
+
+    // 【新規】アクションディスパッチャーの初期化
+    this.actionDispatcher = new PlayerActionDispatcher(
+      this.playerSystem,
+      this.tradingSystem,
+      this
+    );
   }
 
   async warmup() {
@@ -59,7 +67,6 @@ export class ServerGame {
   initWorld() {
     MapLoader.loadMapData(this.worldState, CACHED_MAP_DATA || {});
     this.tradingSystem.init();
-
     for (let i = 0; i < 3; i++) {
       this.enemySystem.spawnEnemy();
     }
@@ -68,7 +75,6 @@ export class ServerGame {
   startLoop() {
     if (this.worldState.isRunning) return;
     this.worldState.isRunning = true;
-
     this.loopManager.start(
       "update",
       this.update.bind(this),
@@ -104,7 +110,6 @@ export class ServerGame {
         this.handlePlayerDeath(p, null);
       }
     });
-
     this.playerSystem.update();
     this.enemySystem.update();
     this.itemSystem.update();
@@ -137,6 +142,7 @@ export class ServerGame {
       .sort((a, b) => b.score - a.score)
       .slice(0, 5)
       .map((p) => ({ id: p.id, name: p.name, score: p.score }));
+
     const msg = JSON.stringify({
       type: "leaderboard_update",
       payload: { leaderboardData: leaderboard },
@@ -188,7 +194,6 @@ export class ServerGame {
         payload: this.tradingSystem.getChartState(),
       })
     );
-
     return {
       type: "join_success",
       roomId: this.roomId,
@@ -221,30 +226,9 @@ export class ServerGame {
     if (!player) return;
 
     player.lastInputTime = Date.now();
-    player.inputs = input.states || {};
-    if (input.seq) {
-      player.lastProcessedInputSeq = input.seq;
-    }
-
-    if (input.wasPressed) {
-      if (input.wasPressed.shoot) {
-        this.playerSystem.handleShoot(player, input.mouseWorldPos);
-      }
-
-      if (input.wasPressed.trade_long)
-        this.tradingSystem.handleEntry(player, "long");
-      if (input.wasPressed.trade_short)
-        this.tradingSystem.handleEntry(player, "short");
-      if (input.wasPressed.trade_settle)
-        this.tradingSystem.handleSettle(player, this);
-
-      const betActions = ["bet_up", "bet_down", "bet_all", "bet_min"];
-      betActions.forEach((action) => {
-        if (input.wasPressed[action]) {
-          this.tradingSystem.handleBetInput(player, action);
-        }
-      });
-    }
+    
+    // 【変更】アクションの実行をディスパッチャーへ委譲
+    this.actionDispatcher.dispatch(player, input);
   }
 
   handlePlayerDeath(player, attackerPlayer) {
@@ -258,7 +242,6 @@ export class ServerGame {
     }
     this.persistenceSystem.saveScore(player.id, player.name, player.score);
     player.ep = 0;
-
     setTimeout(() => {
       if (this.worldState.players.has(player.id)) {
         this.removePlayer(player.id);

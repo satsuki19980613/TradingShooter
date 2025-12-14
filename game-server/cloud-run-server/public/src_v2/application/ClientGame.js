@@ -11,6 +11,9 @@ import { ScreenScaler } from "../infrastructure/ui/ScreenScaler.js";
 import { ClientConfig } from "../core/config/ClientConfig.js";
 import { JitterRecorder } from "../domain/debug/JitterRecorder.js";
 import { DebugGraphRenderer } from "../domain/debug/DebugGraphRenderer.js";
+import { GameNetworkEventHandler } from "./services/GameNetworkEventHandler.js";
+import { ScreenLayoutService } from "./services/ScreenLayoutService.js"; // 【新規】
+import { GameRenderService } from "./services/GameRenderService.js";     // 【新規】
 
 export class ClientGame {
   constructor(uiManipulator) {
@@ -19,13 +22,49 @@ export class ClientGame {
     this.network = new NetworkClient();
     this.uiManipulator = uiManipulator || new DomManipulator();
     this.screenScaler = new ScreenScaler();
-
+    
+    // レンダラー群の初期化
     this.chartRenderer = new ChartRenderer();
     this.radarRenderer = new RadarRenderer();
     this.magazineRenderer = new MagazineRenderer();
 
+    // キャンバス参照の取得
+    this.chartCanvas = document.getElementById("chart-canvas");
+    this.radarCanvas = document.getElementById("radar-canvas");
+    this.magazineCanvas = document.getElementById("magazine-canvas");
+
     this.mobileControls = new MobileControlManager(this.inputManager);
     this.uiManipulator.setMobileControlManager(this.mobileControls);
+    
+    this.networkEventHandler = new GameNetworkEventHandler(this);
+
+    // 【新規】レイアウトサービスの初期化
+    this.layoutService = new ScreenLayoutService(
+      this.screenScaler, 
+      this.renderer, 
+      {
+        chartCanvas: this.chartCanvas,
+        radarCanvas: this.radarCanvas,
+        magazineCanvas: this.magazineCanvas
+      }
+    );
+
+    // 【新規】レンダーサービスの初期化
+    this.renderService = new GameRenderService(
+      this.renderer,
+      {
+        chartRenderer: this.chartRenderer,
+        radarRenderer: this.radarRenderer,
+        magazineRenderer: this.magazineRenderer
+      },
+      this.inputManager,
+      this.uiManipulator,
+      {
+        chartCanvas: this.chartCanvas,
+        radarCanvas: this.radarCanvas,
+        magazineCanvas: this.magazineCanvas
+      }
+    );
 
     this.syncManager = null;
     this.userId = null;
@@ -41,126 +80,23 @@ export class ClientGame {
     this.lastFrameTime = 0;
     this.serverStats = null;
 
-    this.chartCanvas = document.getElementById("chart-canvas");
-    this.radarCanvas = document.getElementById("radar-canvas");
-    this.magazineCanvas = document.getElementById("magazine-canvas");
-
-    this.gameScale = 1.0;
-    this.cachedUiScale = 1.0;
     this.jitterRecorder = null;
     this.debugGraphRenderer = null;
   }
 
   async init() {
     this.screenScaler.init();
-    this.resize();
-    window.addEventListener("resize", () => this.resize());
+    
+    // 【変更】リサイズ処理をサービスに委譲
+    this.layoutService.resize();
+    window.addEventListener("resize", () => this.layoutService.resize());
+    
     await this.renderer.init();
     this.inputManager.init(document.getElementById("game-field"));
 
     this.renderer.setupBackground(3000, 3000);
-
-    this.network.on("game_state_snapshot", (payload) =>
-      this.syncManager.applySnapshot(payload)
-    );
-    this.network.on("game_state_delta", (payload) =>
-      this.syncManager.applyDelta(payload)
-    );
-    this.network.on("static_state", (payload) => {
-      this.syncManager.setStaticState(payload);
-      if (payload.worldConfig)
-        this.renderer.setupBackground(
-          payload.worldConfig.width,
-          payload.worldConfig.height
-        );
-    });
-    this.network.on("chart_state", (payload) =>
-      this.updateTradeStateFull(payload)
-    );
-    this.network.on("chart_update", (payload) =>
-      this.updateTradeStateDelta(payload)
-    );
-    this.network.on("leaderboard_update", (payload) => {
-      if (payload.leaderboardData)
-        this.uiManipulator.updateLeaderboard(
-          payload.leaderboardData,
-          this.userId
-        );
-      if (payload.serverStats) this.serverStats = payload.serverStats;
-    });
-    this.network.on("disconnect", () => {
-      this.stopLoop();
-      this.uiManipulator.showGameOverScreen(0);
-      this.uiManipulator.setLoadingText("Disconnected");
-    });
-  }
-
-  resize() {
-    if (this.screenScaler) {
-      this.screenScaler.updateScale();
-    }
-
-    const container = document.getElementById("cockpit-container");
-    if (!container) return;
-
-    let width, height;
-
-    if (window.visualViewport) {
-      width = window.visualViewport.width;
-      height = window.visualViewport.height;
-    } else {
-      width = window.innerWidth;
-      height = window.innerHeight;
-    }
-
-    if (height > width) {
-      const temp = width;
-      width = height;
-      height = temp;
-    }
-
-    container.style.width = `${width}px`;
-    container.style.height = `${height}px`;
-
-    let uiScale = 1;
-    try {
-      const val = getComputedStyle(document.body).getPropertyValue(
-        "--ui-scale"
-      );
-      if (val) uiScale = parseFloat(val);
-    } catch (e) {}
-    if (!uiScale || isNaN(uiScale)) uiScale = 1;
-    this.cachedUiScale = uiScale;
-
-    const targetWorldWidth =
-      ClientConfig.GRID_SIZE * ClientConfig.VIEWPORT_GRID_WIDTH;
-    this.gameScale = width / targetWorldWidth;
-
-    if (this.renderer) {
-      this.renderer.resize(width, height);
-    }
-
-    const resizeSubCanvas = (canvas) => {
-      if (canvas && canvas.parentElement) {
-        const w = canvas.parentElement.clientWidth;
-        const h = canvas.parentElement.clientHeight;
-        const dpr = window.devicePixelRatio || 1;
-        if (w > 0 && h > 0) {
-          canvas.width = Math.floor(w * dpr * uiScale);
-          canvas.height = Math.floor(h * dpr * uiScale);
-
-          canvas.style.width = `${w}px`;
-          canvas.style.height = `${h}px`;
-
-          const ctx = canvas.getContext("2d");
-          if (ctx) ctx.setTransform(1, 0, 0, 1, 0, 0);
-        }
-      }
-    };
-
-    resizeSubCanvas(this.chartCanvas);
-    resizeSubCanvas(this.radarCanvas);
-    resizeSubCanvas(this.magazineCanvas);
+    
+    this.networkEventHandler.setup();
   }
 
   async connect(userId, userName, isDebug = false) {
@@ -168,11 +104,9 @@ export class ClientGame {
     this.inputManager.resetActionStates();
 
     this.userId = userId;
-
     if (isDebug) {
       this.jitterRecorder = new JitterRecorder();
       this.debugGraphRenderer = new DebugGraphRenderer();
-
       setTimeout(() => {
         const canvas = this.uiManipulator.getDebugCanvas();
         if (canvas) this.debugGraphRenderer.setCanvas(canvas);
@@ -191,7 +125,6 @@ export class ClientGame {
       isDebug,
       this.jitterRecorder
     );
-
     if (joinData && joinData.worldConfig) {
       this.renderer.setupBackground(
         joinData.worldConfig.width,
@@ -210,7 +143,8 @@ export class ClientGame {
     );
     this.mobileControls.applyScreenMode("game");
 
-    this.resize();
+    // リサイズを適用してスケールを最新にする
+    this.layoutService.resize();
   }
 
   stopLoop() {
@@ -230,10 +164,14 @@ export class ClientGame {
         const ef = this.syncManager.effectQueue.shift();
         this.renderer.playOneShotEffect(ef.key, ef.x, ef.y, ef.rotation);
       }
+      
       const myPlayer = this.syncManager.visualState.players.get(this.userId);
 
-      this.updateCamera(myPlayer);
+      // 【変更】カメラ更新をレンダーサービスに委譲
+      this.renderService.updateCamera(myPlayer, this.layoutService.gameScale);
+      
       this.renderer.render(this.syncManager.visualState);
+      
       if (
         this.uiManipulator.isDebugMode &&
         this.debugGraphRenderer &&
@@ -241,105 +179,28 @@ export class ClientGame {
       ) {
         this.debugGraphRenderer.draw(this.jitterRecorder);
       }
-      if (myPlayer) {
-        this.uiManipulator.updateHUD(myPlayer, this.tradeState);
 
-        if (this.chartCanvas) {
-          const ctx = this.chartCanvas.getContext("2d");
-          ctx.clearRect(0, 0, this.chartCanvas.width, this.chartCanvas.height);
-          this.chartRenderer.draw(
-            ctx,
-            this.chartCanvas.width,
-            this.chartCanvas.height,
-            this.tradeState,
-            myPlayer,
-            this.cachedUiScale
-          );
-        }
-        if (this.radarCanvas) {
-          const ctx = this.radarCanvas.getContext("2d");
-          ctx.clearRect(0, 0, this.radarCanvas.width, this.radarCanvas.height);
-          this.radarRenderer.draw(
-            ctx,
-            this.radarCanvas.width,
-            this.radarCanvas.height,
-            3000,
-            3000,
-            myPlayer,
-            Array.from(this.syncManager.visualState.enemies.values()),
-            Array.from(this.syncManager.visualState.obstacles.values()),
-            Array.from(this.syncManager.visualState.players.values()),
-            this.cachedUiScale
-          );
-        }
-        if (this.magazineCanvas) {
-          const ctx = this.magazineCanvas.getContext("2d");
-          ctx.clearRect(
-            0,
-            0,
-            this.magazineCanvas.width,
-            this.magazineCanvas.height
-          );
-          this.magazineRenderer.draw(
-            ctx,
-            myPlayer,
-            this.magazineCanvas.width,
-            this.magazineCanvas.height,
-            this.cachedUiScale
-          );
-        }
+      // 【変更】サブビュー描画をレンダーサービスに委譲
+      if (myPlayer) {
+        this.renderService.renderSubViews(
+          myPlayer, 
+          this.tradeState, 
+          this.syncManager.visualState, 
+          this.layoutService.cachedUiScale
+        );
       }
 
       if (this.uiManipulator.isDebugMode && this.network) {
         const stats = this.network.getStats();
-        const simStats = { avg_bps: 0 };
-        this.uiManipulator.updateDebugHUD(stats, simStats, this.serverStats);
+        this.uiManipulator.updateDebugHUD(stats, null, this.serverStats);
       }
     }
 
     this.renderLoopId = requestAnimationFrame((t) => this.loop(t));
   }
 
-  updateCamera(myPlayer) {
-    if (!myPlayer) return;
-
-    const screenCenterX = window.innerWidth / 2;
-    const screenCenterY = window.innerHeight / 2;
-
-    const mouseState = this.inputManager.mousePos;
-    this.inputManager.mouseWorldPos.x =
-      (mouseState.x - screenCenterX) / this.gameScale + myPlayer.x;
-    this.inputManager.mouseWorldPos.y =
-      (mouseState.y - screenCenterY) / this.gameScale + myPlayer.y;
-
-    this.renderer.updateCamera(myPlayer.x, myPlayer.y, this.gameScale);
-  }
-
   sendInput() {
     const state = this.inputManager.getInputState();
     this.network.sendInput(0, state.states, state.pressed, state.mouseWorldPos);
-  }
-
-  updateTradeStateFull(payload) {
-    this.tradeState = payload;
-  }
-
-  updateTradeStateDelta(payload) {
-    this.tradeState.currentPrice = payload.currentPrice;
-    this.tradeState.minPrice = payload.minPrice;
-    this.tradeState.maxPrice = payload.maxPrice;
-    if (payload.newChartPoint) {
-      this.tradeState.chartData.push(payload.newChartPoint);
-      if (this.tradeState.chartData.length > 300)
-        this.tradeState.chartData.shift();
-    }
-    if (payload.newMaPoint) {
-      ["short", "medium", "long"].forEach((t) => {
-        if (!this.tradeState.maData[t]) this.tradeState.maData[t] = [];
-        this.tradeState.maData[t].push(payload.newMaPoint[t]);
-        if (this.tradeState.maData[t].length > 300)
-          this.tradeState.maData[t].shift();
-      });
-    }
   }
 }
