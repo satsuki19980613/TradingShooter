@@ -7,10 +7,7 @@ export class FullscreenManager {
 
   init() {
     if (this.btn) {
-      // 【修正】touchstartを削除し、clickのみにする
-      // Android Chrome等では click イベント内でないと全画面化が許可されない場合があるため
       this.btn.addEventListener("click", (e) => {
-        // ボタンがフォーム送信などをしないように念のため
         e.preventDefault();
         this.toggle();
       });
@@ -31,15 +28,16 @@ export class FullscreenManager {
 
     if (this._isFullscreen()) return;
 
-    const requestFullScreen =
+    const requestFn =
       docEl.requestFullscreen ||
+      docEl.webkitRequestFullscreen ||
       docEl.webkitRequestFullScreen ||
       docEl.mozRequestFullScreen ||
       docEl.msRequestFullscreen;
 
-    if (requestFullScreen) {
-      // ユーザー操作（クリック）の直後でないと、このPromiseは拒否されることがある
-      const promise = requestFullScreen.call(docEl);
+    if (requestFn) {
+      const promise = requestFn.call(docEl, { navigationUI: "hide" });
+
       if (promise && typeof promise.catch === "function") {
         promise.catch((e) => {
           console.warn("Fullscreen request denied:", e);
@@ -52,12 +50,12 @@ export class FullscreenManager {
     const doc = window.document;
     if (!this._isFullscreen()) return;
 
-    const exit = 
+    const exit =
       doc.exitFullscreen ||
       doc.webkitExitFullscreen ||
       doc.mozCancelFullScreen ||
       doc.msExitFullscreen;
-      
+
     if (exit) {
       exit.call(doc).catch((err) => console.log(err));
     }
@@ -73,7 +71,6 @@ export class FullscreenManager {
 
   updateIcon() {
     const isFull = this._isFullscreen();
-
     if (this.iconEnter && this.iconExit) {
       if (isFull) {
         this.iconEnter.classList.add("hidden");
@@ -83,11 +80,13 @@ export class FullscreenManager {
         this.iconExit.classList.add("hidden");
       }
     }
-    
-    // レイアウト再計算
-    setTimeout(() => {
-       window.dispatchEvent(new Event('resize'));
-    }, 100);
+
+    const triggers = [100, 300, 600];
+    triggers.forEach((delay) => {
+      setTimeout(() => {
+        window.dispatchEvent(new Event("resize"));
+      }, delay);
+    });
   }
 
   _isFullscreen() {

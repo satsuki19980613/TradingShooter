@@ -311,13 +311,17 @@ canvas {
 }
 
 .hud-group.top-right {
-  top: 1px;
-  right: 20px;
+  /* 【修正】バーに重ならないように余白を確保 */
+  top: max(20px, env(safe-area-inset-top));
+  right: max(20px, env(safe-area-inset-right));
+  
   transform-origin: top right;
   align-items: flex-end;
   transform: scale(var(--ui-scale, 1));
+  
+  /* ボタンが押しにくい場合があるため、最前面に来るよう念のため指定 */
+  z-index: 1000; 
 }
-
 .hud-group.top-right .hud-row {
   display: flex;
   flex-direction: column;

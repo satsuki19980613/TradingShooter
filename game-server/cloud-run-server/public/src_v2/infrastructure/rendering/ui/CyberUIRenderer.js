@@ -114,7 +114,17 @@ export class CyberUIRenderer {
       "touchstart",
       (e) => {
         if (e.cancelable) e.preventDefault();
+      },
+      { passive: false }
+    );
+
+    // 【修正】入力確定は指を離した瞬間(touchend)に行う
+    this.canvas.addEventListener(
+      "touchend",
+      (e) => {
+        if (e.cancelable) e.preventDefault();
         const touch = e.changedTouches[0];
+        // 指を離したタイミングであれば、Androidでもフルスクリーン権限が通りやすくなります
         handleInput(touch.clientX, touch.clientY);
       },
       { passive: false }

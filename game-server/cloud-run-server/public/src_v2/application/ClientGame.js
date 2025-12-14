@@ -96,11 +96,31 @@ export class ClientGame {
   }
 
   resize() {
+    if (this.screenScaler) {
+      this.screenScaler.updateScale();
+    }
+
     const container = document.getElementById("cockpit-container");
     if (!container) return;
 
-    const width = container.clientWidth;
-    const height = container.clientHeight;
+    let width, height;
+
+    if (window.visualViewport) {
+      width = window.visualViewport.width;
+      height = window.visualViewport.height;
+    } else {
+      width = window.innerWidth;
+      height = window.innerHeight;
+    }
+
+    if (height > width) {
+      const temp = width;
+      width = height;
+      height = temp;
+    }
+
+    container.style.width = `${width}px`;
+    container.style.height = `${height}px`;
 
     let uiScale = 1;
     try {
@@ -110,7 +130,6 @@ export class ClientGame {
       if (val) uiScale = parseFloat(val);
     } catch (e) {}
     if (!uiScale || isNaN(uiScale)) uiScale = 1;
-
     this.cachedUiScale = uiScale;
 
     const targetWorldWidth =
@@ -126,7 +145,6 @@ export class ClientGame {
         const w = canvas.parentElement.clientWidth;
         const h = canvas.parentElement.clientHeight;
         const dpr = window.devicePixelRatio || 1;
-
         if (w > 0 && h > 0) {
           canvas.width = Math.floor(w * dpr * uiScale);
           canvas.height = Math.floor(h * dpr * uiScale);
@@ -166,7 +184,12 @@ export class ClientGame {
     this.userId = tempId;
     this.syncManager = new StateSyncManager(this.userId);
 
-    const joinData = await this.network.connect(this.userId, userName, isDebug, this.jitterRecorder);
+    const joinData = await this.network.connect(
+      this.userId,
+      userName,
+      isDebug,
+      this.jitterRecorder
+    );
     if (joinData && joinData.worldConfig) {
       this.renderer.setupBackground(
         joinData.worldConfig.width,
@@ -202,15 +225,19 @@ export class ClientGame {
     if (this.syncManager) {
       this.syncManager.updateInterpolation(deltaFrames);
       while (this.syncManager.effectQueue.length > 0) {
-          const ef = this.syncManager.effectQueue.shift();
-          this.renderer.playOneShotEffect(ef.key, ef.x, ef.y, ef.rotation);
+        const ef = this.syncManager.effectQueue.shift();
+        this.renderer.playOneShotEffect(ef.key, ef.x, ef.y, ef.rotation);
       }
       const myPlayer = this.syncManager.visualState.players.get(this.userId);
 
       this.updateCamera(myPlayer);
       this.renderer.render(this.syncManager.visualState);
-      if (this.uiManipulator.isDebugMode && this.debugGraphRenderer && this.jitterRecorder) {
-          this.debugGraphRenderer.draw(this.jitterRecorder);
+      if (
+        this.uiManipulator.isDebugMode &&
+        this.debugGraphRenderer &&
+        this.jitterRecorder
+      ) {
+        this.debugGraphRenderer.draw(this.jitterRecorder);
       }
       if (myPlayer) {
         this.uiManipulator.updateHUD(myPlayer, this.tradeState);
