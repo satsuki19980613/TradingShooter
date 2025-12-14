@@ -12,8 +12,8 @@ import { ClientConfig } from "../core/config/ClientConfig.js";
 import { JitterRecorder } from "../domain/debug/JitterRecorder.js";
 import { DebugGraphRenderer } from "../domain/debug/DebugGraphRenderer.js";
 import { GameNetworkEventHandler } from "./services/GameNetworkEventHandler.js";
-import { ScreenLayoutService } from "./services/ScreenLayoutService.js"; // 【新規】
-import { GameRenderService } from "./services/GameRenderService.js";     // 【新規】
+import { ScreenLayoutService } from "./services/ScreenLayoutService.js";
+import { GameRenderService } from "./services/GameRenderService.js";
 
 export class ClientGame {
   constructor(uiManipulator) {
@@ -22,47 +22,43 @@ export class ClientGame {
     this.network = new NetworkClient();
     this.uiManipulator = uiManipulator || new DomManipulator();
     this.screenScaler = new ScreenScaler();
-    
-    // レンダラー群の初期化
+
     this.chartRenderer = new ChartRenderer();
     this.radarRenderer = new RadarRenderer();
     this.magazineRenderer = new MagazineRenderer();
 
-    // キャンバス参照の取得
     this.chartCanvas = document.getElementById("chart-canvas");
     this.radarCanvas = document.getElementById("radar-canvas");
     this.magazineCanvas = document.getElementById("magazine-canvas");
-
+    this.cachedGameScale = 1.0;
     this.mobileControls = new MobileControlManager(this.inputManager);
     this.uiManipulator.setMobileControlManager(this.mobileControls);
-    
+
     this.networkEventHandler = new GameNetworkEventHandler(this);
 
-    // 【新規】レイアウトサービスの初期化
     this.layoutService = new ScreenLayoutService(
-      this.screenScaler, 
-      this.renderer, 
+      this.screenScaler,
+      this.renderer,
       {
         chartCanvas: this.chartCanvas,
         radarCanvas: this.radarCanvas,
-        magazineCanvas: this.magazineCanvas
+        magazineCanvas: this.magazineCanvas,
       }
     );
 
-    // 【新規】レンダーサービスの初期化
     this.renderService = new GameRenderService(
       this.renderer,
       {
         chartRenderer: this.chartRenderer,
         radarRenderer: this.radarRenderer,
-        magazineRenderer: this.magazineRenderer
+        magazineRenderer: this.magazineRenderer,
       },
       this.inputManager,
       this.uiManipulator,
       {
         chartCanvas: this.chartCanvas,
         radarCanvas: this.radarCanvas,
-        magazineCanvas: this.magazineCanvas
+        magazineCanvas: this.magazineCanvas,
       }
     );
 
@@ -79,23 +75,30 @@ export class ClientGame {
     this.inputIntervalId = null;
     this.lastFrameTime = 0;
     this.serverStats = null;
-
+    this.lastRenderTime = 0;
+    this.RENDER_INTERVAL = 100;
     this.jitterRecorder = null;
     this.debugGraphRenderer = null;
   }
 
   async init() {
     this.screenScaler.init();
-    
-    // 【変更】リサイズ処理をサービスに委譲
-    this.layoutService.resize();
-    window.addEventListener("resize", () => this.layoutService.resize());
-    
+
+    const updateScaleCache = () => {
+      this.layoutService.resize();
+      this.cachedGameScale = this.layoutService.gameScale || 1.0;
+      this.cachedUiScale = this.layoutService.cachedUiScale || 1.0;
+    };
+
+    updateScaleCache();
+
+    window.addEventListener("resize", () => updateScaleCache());
+
     await this.renderer.init();
     this.inputManager.init(document.getElementById("game-field"));
 
     this.renderer.setupBackground(3000, 3000);
-    
+
     this.networkEventHandler.setup();
   }
 
@@ -143,7 +146,6 @@ export class ClientGame {
     );
     this.mobileControls.applyScreenMode("game");
 
-    // リサイズを適用してスケールを最新にする
     this.layoutService.resize();
   }
 
@@ -164,14 +166,13 @@ export class ClientGame {
         const ef = this.syncManager.effectQueue.shift();
         this.renderer.playOneShotEffect(ef.key, ef.x, ef.y, ef.rotation);
       }
-      
+
       const myPlayer = this.syncManager.visualState.players.get(this.userId);
 
-      // 【変更】カメラ更新をレンダーサービスに委譲
-      this.renderService.updateCamera(myPlayer, this.layoutService.gameScale);
-      
+      this.renderService.updateCamera(myPlayer, this.cachedGameScale);
+
       this.renderer.render(this.syncManager.visualState);
-      
+
       if (
         this.uiManipulator.isDebugMode &&
         this.debugGraphRenderer &&
@@ -180,14 +181,16 @@ export class ClientGame {
         this.debugGraphRenderer.draw(this.jitterRecorder);
       }
 
-      // 【変更】サブビュー描画をレンダーサービスに委譲
-      if (myPlayer) {
-        this.renderService.renderSubViews(
-          myPlayer, 
-          this.tradeState, 
-          this.syncManager.visualState, 
-          this.layoutService.cachedUiScale
-        );
+      if (now - this.lastRenderTime > this.RENDER_INTERVAL) {
+        if (myPlayer) {
+          this.renderService.renderSubViews(
+            myPlayer,
+            this.tradeState,
+            this.syncManager.visualState,
+            this.layoutService.cachedUiScale
+          );
+        }
+        this.lastRenderTime = now;
       }
 
       if (this.uiManipulator.isDebugMode && this.network) {
