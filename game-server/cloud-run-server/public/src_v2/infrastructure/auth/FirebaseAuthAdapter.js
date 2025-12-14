@@ -1,4 +1,7 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { 
+  getFunctions, 
+  httpsCallable 
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js";
 import { 
   getAuth, 
   signInAnonymously, 
@@ -20,13 +23,13 @@ import {
 
 import { FirebaseConfig } from "../../core/config/FirebaseConfig.js";
 import { UserEntity } from "../../domain/auth/UserEntity.js";
-
 export class FirebaseAuthAdapter {
   constructor() {
     console.log("[AuthAdapter] Initializing with config:", FirebaseConfig);
     this.app = initializeApp(FirebaseConfig);
     this.auth = getAuth(this.app);
-    this.db = getFirestore(this.app); // ★追加: Firestoreの初期化
+    this.db = getFirestore(this.app); 
+    this.functions = getFunctions(this.app);
     this.currentUserEntity = UserEntity.createGuest();
   }
 
@@ -39,44 +42,41 @@ export class FirebaseAuthAdapter {
    * [Step 5] 引継ぎコードの発行リクエスト
    */
   async issueTransferCode() {
-    const token = await this.getIdToken();
-    // サーバーAPIを叩く
-    const response = await fetch("/api/transfer/issue", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token })
-    });
-
-    if (!response.ok) throw new Error("Failed to issue code");
     
-    const data = await response.json();
-    return data.code;
+    const issueFn = httpsCallable(this.functions, 'issueTransferCode');
+    
+    try {
+      
+      const result = await issueFn();
+      
+      return result.data.code;
+    } catch (error) {
+      console.error("Issue code failed:", error);
+      throw error;
+    }
   }
 
   /**
    * [Step 5] コードを使って復旧（カスタムトークンでログイン）
    */
   async recoverAccount(code) {
-    // 1. サーバーにコードを送ってカスタムトークンをもらう
-    const response = await fetch("/api/transfer/recover", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code })
-    });
-
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.error || "Recovery failed");
-    }
-
-    const data = await response.json();
-    const customToken = data.customToken;
-
-    // 2. カスタムトークンを使ってFirebaseにサインイン
-    // これにより、クライアントのUser状態がコードに紐付いたアカウントに切り替わる
-    await signInWithCustomToken(this.auth, customToken);
+    // 【変更後】
+    const recoverFn = httpsCallable(this.functions, 'recoverAccount');
     
-    return true;
+    try {
+      // コードを引数として渡す
+      const result = await recoverFn({ code: code });
+      
+      const customToken = result.data.customToken;
+      
+      // カスタムトークンを使ってサインイン
+      await signInWithCustomToken(this.auth, customToken);
+      
+      return true;
+    } catch (error) {
+      console.error("Recovery failed:", error);
+      throw error;
+    }
   }
 
   /**
@@ -86,16 +86,16 @@ export class FirebaseAuthAdapter {
   observeAuthState(onUserChanged) {
     onAuthStateChanged(this.auth, (firebaseUser) => {
       if (firebaseUser) {
-        // ログイン済み (ゲスト or 登録済み)
+        
         const name = firebaseUser.displayName || "Guest";
-        // displayNameが "Guest" ならゲスト扱い、それ以外ならメンバー扱いというルール
+        
         const isGuest = name === "Guest";
         
         this.currentUserEntity = isGuest 
           ? new UserEntity(firebaseUser.uid, "Guest", true)
           : UserEntity.createMember(firebaseUser.uid, name);
       } else {
-        // 未ログイン
+        
         this.currentUserEntity = null;
       }
       onUserChanged(this.currentUserEntity);
@@ -108,7 +108,7 @@ export class FirebaseAuthAdapter {
   async loginAsGuest() {
     try {
       const result = await signInAnonymously(this.auth);
-      // 初回は名前がないので "Guest" を設定しておく
+      
       if (!result.user.displayName) {
         await updateProfile(result.user, { displayName: "Guest" });
       }
@@ -128,7 +128,7 @@ export class FirebaseAuthAdapter {
     
     try {
       await updateProfile(user, { displayName: name });
-      // ステート更新のためにリロードするか、手動で通知を発火させる運用になる
+      
       return true;
     } catch (error) {
       console.error("[Auth] Name registration failed:", error);
@@ -149,17 +149,17 @@ export class FirebaseAuthAdapter {
   async deleteAccount() {
     const user = this.auth.currentUser;
     if (user) {
-      // 1. Firestoreデータの削除
+      
       try {
         const userDocRef = doc(this.db, "ranking", user.uid);
         await deleteDoc(userDocRef);
         console.log("[Auth] Firestore data deleted.");
       } catch (dbError) {
         console.warn("[Auth] Failed to delete Firestore data (might not exist or permission denied):", dbError);
-        // データ削除に失敗しても、アカウント削除処理は続行させる
+        
       }
 
-      // 2. Authenticationユーザーの削除
+      
       await deleteUser(user);
       console.log("[Auth] User deleted.");
     }

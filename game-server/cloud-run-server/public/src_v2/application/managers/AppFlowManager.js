@@ -88,13 +88,16 @@ export class AppFlowManager {
 
           await this.accountManager.recover(code);
 
-          alert("Account recovered successfully! Reloading...");
-          location.reload();
+          this.ui.setLoadingText("Success! Reloading...");
+          setTimeout(() => {
+            location.reload();
+          }, 1500);
         } catch (e) {
           console.error(e);
+
           this.ui.showErrorScreen("Recovery Failed", e);
 
-          this.ui.showScreen("home");
+          setTimeout(() => this.ui.showScreen("home"), 3000);
         }
       };
     }
@@ -206,9 +209,8 @@ export class AppFlowManager {
   setupUI() {
     const startBtn = document.getElementById("btn-start-game");
     if (startBtn) {
-      // clickイベントで tryFullscreen を呼ぶようにする
       startBtn.addEventListener("click", () => {
-        this.ui.tryFullscreen(); // ★ここが重要
+        this.ui.tryFullscreen();
         this.handleStartGame();
       });
     }
@@ -220,7 +222,7 @@ export class AppFlowManager {
     const retryBtn = document.getElementById("btn-gameover-retry");
     if (retryBtn) {
       retryBtn.addEventListener("click", () => {
-        this.ui.tryFullscreen(); // ★リトライ時も全画面化
+        this.ui.tryFullscreen();
         this.handleStartGame("Guest");
       });
     }

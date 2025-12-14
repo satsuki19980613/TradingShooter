@@ -8,8 +8,18 @@ export class AccountManager {
   init(onUserUpdatedCallback) {
     this.onUserUpdated = onUserUpdatedCallback;
 
-    this.auth.observeAuthState((userEntity) => {
-      console.log("[AccountManager] User State Changed:", userEntity);
+    this.auth.observeAuthState(async (userEntity) => {
+      if (userEntity && !userEntity.isGuest) {
+        try {
+          await this.auth.auth.currentUser.getIdToken(true);
+        } catch (e) {
+          console.log("Session expired or revoked.");
+          await this.auth.logout();
+          location.reload();
+          return;
+        }
+      }
+
       this.currentUser = userEntity;
       if (this.onUserUpdated) {
         this.onUserUpdated(userEntity);
@@ -50,18 +60,18 @@ export class AccountManager {
     try {
       await this.auth.deleteAccount();
       alert("アカウントとデータを削除しました。");
-      location.reload(); 
+      location.reload();
     } catch (error) {
       console.error("Delete failed:", error);
-      
-      // "auth/requires-recent-login" エラーの場合
-      if (error.code === 'auth/requires-recent-login') {
-        alert("セキュリティ保護のため、再ログインが必要です。ページをリロードしますので、もう一度削除操作を行ってください。");
-        // 一度ログアウトさせてリロード
+
+      if (error.code === "auth/requires-recent-login") {
+        alert(
+          "セキュリティ保護のため、再ログインが必要です。ページをリロードしますので、もう一度削除操作を行ってください。"
+        );
+
         await this.auth.logout();
         location.reload();
       } else {
-        // その他のエラーでも、不整合を防ぐためリロードを推奨
         alert("削除中にエラーが発生しました: " + error.message);
         location.reload();
       }

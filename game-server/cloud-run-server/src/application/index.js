@@ -6,7 +6,6 @@ import { createServer } from "http";
 import { WebSocketServer } from "ws";
 import path from "path";
 import { fileURLToPath } from "url";
-import { getAuth } from "firebase-admin/auth";
 import { ServerGame } from "./ServerGame.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -136,62 +135,9 @@ wss.on("connection", (ws, req) => {
     ws.close(1011, "Server Error");
   }
 });
-app.post("/api/transfer/issue", async (req, res) => {
-  const idToken = req.body.token;
-  if (!idToken) return res.status(400).send("Token required");
 
-  try {
-    const decodedToken = await getAuth().verifyIdToken(idToken);
-    const uid = decodedToken.uid;
 
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
 
-    const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
-
-    await firestore.collection("transfer_codes").doc(code).set({
-      uid: uid,
-      createdAt: Date.now(),
-      expiresAt: expiresAt,
-    });
-
-    res.json({ code: code });
-    console.log(`[Transfer] Code issued for ${uid}: ${code}`);
-  } catch (error) {
-    console.error("[Transfer] Issue failed:", error);
-    res.status(401).send("Unauthorized");
-  }
-});
-
-app.post("/api/transfer/recover", async (req, res) => {
-  const code = req.body.code;
-  if (!code) return res.status(400).send("Code required");
-
-  try {
-    const docRef = firestore
-      .collection("transfer_codes")
-      .doc(code.toUpperCase());
-    const doc = await docRef.get();
-
-    if (!doc.exists) {
-      return res.status(404).json({ error: "Invalid code" });
-    }
-
-    const data = doc.data();
-    if (data.expiresAt < Date.now()) {
-      return res.status(400).json({ error: "Code expired" });
-    }
-
-    const customToken = await getAuth().createCustomToken(data.uid);
-
-    await docRef.delete();
-
-    res.json({ customToken: customToken });
-    console.log(`[Transfer] Recovery successful for ${data.uid}`);
-  } catch (error) {
-    console.error("[Transfer] Recover failed:", error);
-    res.status(500).send("Internal Server Error");
-  }
-});
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
