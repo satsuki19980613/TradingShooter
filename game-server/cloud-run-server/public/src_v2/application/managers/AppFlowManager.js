@@ -259,9 +259,16 @@ export class AppFlowManager {
   }
 
   async handleStartGame(playerName) {
-    if (this.isAudioLoading) {
-      this.pendingGameStartName = playerName;
+    const currentUser = this.accountManager.currentUser;
 
+    const uid = currentUser
+      ? currentUser.uid
+      : "guest_" + Math.random().toString(36).substr(2, 9);
+
+    const name = playerName || (currentUser ? currentUser.name : "Guest");
+
+    if (this.isAudioLoading) {
+      this.pendingGameStartName = name;
       this.ui.showScreen("loading");
       this.ui.setLoadingText("音楽データを準備中...");
       return;
@@ -271,7 +278,8 @@ export class AppFlowManager {
     this.ui.setLoadingText("Connecting...");
 
     try {
-      await this.game.connect(playerName || "Guest", this.isDebug);
+      await this.game.connect(uid, name, this.isDebug);
+
       this.ui.showScreen("game");
       this.game.startLoop();
     } catch (e) {

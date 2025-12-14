@@ -163,11 +163,12 @@ export class ClientGame {
     resizeSubCanvas(this.magazineCanvas);
   }
 
-  async connect(userName, isDebug = false) {
+  async connect(userId, userName, isDebug = false) {
     this.stopLoop();
     this.inputManager.resetActionStates();
 
-    const tempId = "user_" + Math.random().toString(36).substr(2, 9);
+    this.userId = userId;
+
     if (isDebug) {
       this.jitterRecorder = new JitterRecorder();
       this.debugGraphRenderer = new DebugGraphRenderer();
@@ -181,7 +182,7 @@ export class ClientGame {
         });
       }, 100);
     }
-    this.userId = tempId;
+
     this.syncManager = new StateSyncManager(this.userId);
 
     const joinData = await this.network.connect(
@@ -190,6 +191,7 @@ export class ClientGame {
       isDebug,
       this.jitterRecorder
     );
+
     if (joinData && joinData.worldConfig) {
       this.renderer.setupBackground(
         joinData.worldConfig.width,

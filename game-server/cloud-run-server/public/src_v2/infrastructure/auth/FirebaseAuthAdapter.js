@@ -1,4 +1,7 @@
 import { 
+  initializeApp 
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { 
   getFunctions, 
   httpsCallable 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js";
@@ -29,7 +32,7 @@ export class FirebaseAuthAdapter {
     this.app = initializeApp(FirebaseConfig);
     this.auth = getAuth(this.app);
     this.db = getFirestore(this.app); 
-    this.functions = getFunctions(this.app);
+    this.functions = getFunctions(this.app, "asia-northeast1");
     this.currentUserEntity = UserEntity.createGuest();
   }
 
