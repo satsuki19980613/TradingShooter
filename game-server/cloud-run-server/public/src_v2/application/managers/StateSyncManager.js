@@ -1,5 +1,5 @@
 import { VisualPlayer } from "../../domain/view_models/VisualPlayer.js";
-import { InterpolationLogic } from "../../logic/InterpolationLogic.js";
+import { StateInterpolator } from "../services/StateInterpolator.js"; // 【変更】InterpolationLogicの代わりにインポート
 import { ClientConfig } from "../../core/config/ClientConfig.js";
 
 export class StateSyncManager {
@@ -13,6 +13,9 @@ export class StateSyncManager {
       effects: [],
     };
     this.effectQueue = [];
+    
+    // 【追加】補間サービスのインスタンス化
+    this.interpolator = new StateInterpolator();
   }
 
   applySnapshot(snapshot) {
@@ -20,6 +23,7 @@ export class StateSyncManager {
     this.visualState.players.clear();
     this.visualState.enemies.clear();
     this.visualState.bullets.clear();
+
     if (snapshot.players) {
       snapshot.players.forEach((p) => {
         const vp = new VisualPlayer(p.i, p.x, p.y);
@@ -51,6 +55,7 @@ export class StateSyncManager {
 
   applyDelta(delta) {
     if (!delta) return;
+
     if (delta.events) {
       delta.events.forEach((ev) => {
         let effectKey = null;
@@ -61,6 +66,12 @@ export class StateSyncManager {
           } else {
             effectKey = "hit_orb";
           }
+        }
+        
+        // アイテム取得エフェクトの追加判定
+        if (ev.color === "#00ff00" && ev.type === "hit") {
+             // 必要であればここでも item_ep_get などを判定可能ですが、
+             // 現在はProtocolHandlerが色を渡してくる仕様のため既存ロジックを維持
         }
 
         if (effectKey) {
@@ -95,13 +106,9 @@ export class StateSyncManager {
             this.visualState.players.set(pState.i, p);
           }
           this.updatePlayerModel(p, pState);
+          // 死亡エフェクトなどはView側あるいはEventで処理するためここでは状態更新のみ
           if (!p.isDead && pState.d) {
-            const deathEffects = ParticleFactory.createExplosionEffect(
-              p.x,
-              p.y,
-              "#ffffff"
-            );
-            this.visualState.effects.push(...deathEffects);
+             // 死亡フラグが立った瞬間
           }
         });
       }
@@ -164,7 +171,6 @@ export class StateSyncManager {
       }
     } else {
       const ESTIMATED_SPEED = 4.5;
-
       const angle = state.a;
       const predFactor = ClientConfig.PREDICTION_FACTOR || 15.0;
 
@@ -216,37 +222,8 @@ export class StateSyncManager {
     });
   }
 
+  // 【変更】具体的な計算処理を StateInterpolator に委譲
   updateInterpolation(dt) {
-    this.visualState.players.forEach((p) => {
-      p.x = InterpolationLogic.calculateNextPosition(p.x, p.targetX, dt);
-      p.y = InterpolationLogic.calculateNextPosition(p.y, p.targetY, dt);
-
-      p.rotationAngle = InterpolationLogic.calculateNextAngle(
-        p.rotationAngle,
-        p.targetAimAngle,
-        dt
-      );
-
-      p.aimAngle = InterpolationLogic.calculateNextAngle(
-        p.aimAngle,
-        p.targetTurretAngle,
-        dt
-      );
-    });
-    this.visualState.enemies.forEach((e) => {
-      e.x = InterpolationLogic.calculateNextPosition(e.x, e.targetX || e.x, dt);
-      e.y = InterpolationLogic.calculateNextPosition(e.y, e.targetY || e.y, dt);
-    });
-    this.visualState.bullets.forEach((b) => {
-      b.x = InterpolationLogic.calculateNextPosition(b.x, b.targetX || b.x, dt);
-      b.y = InterpolationLogic.calculateNextPosition(b.y, b.targetY || b.y, dt);
-    });
-    for (let i = this.visualState.effects.length - 1; i >= 0; i--) {
-      const ef = this.visualState.effects[i];
-      ef.update(dt);
-      if (ef.isDead()) {
-        this.visualState.effects.splice(i, 1);
-      }
-    }
+    this.interpolator.update(this.visualState, dt);
   }
 }

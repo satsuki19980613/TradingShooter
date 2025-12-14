@@ -1,4 +1,5 @@
-import { PacketReader } from "./PacketReader.js";
+import { PacketReader } from "./PacketReader.js"; // ※PacketReaderはハンドラに移動しましたが、sendInputで使用する場合は残します
+import { BinaryProtocolHandler } from "./handlers/BinaryProtocolHandler.js"; // 【新規】
 
 export class NetworkClient {
   constructor() {
@@ -18,7 +19,9 @@ export class NetworkClient {
       avgPing: 0,
     };
     this.tempStats = { pps_total: 0, bps_total: 0 };
-    this.lastPacketTime = 0;
+    
+    // 【新規】プロトコルハンドラーのインスタンス化
+    this.protocolHandler = new BinaryProtocolHandler();
 
     this.statsInterval = setInterval(() => {
       if (this.stats) {
@@ -56,18 +59,17 @@ export class NetworkClient {
       this.ws.onmessage = (event) => {
         if (this.isDebug) {
           const now = performance.now();
-
           if (this.lastPacketTime > 0) {
             const interval = now - this.lastPacketTime;
             const diff = Math.abs(interval - 33.33);
             this.stats.jitter = (this.stats.jitter || 0) * 0.9 + diff * 0.1;
             if (this.jitterRecorder) {
-                    this.jitterRecorder.addSample(diff);
-                }
+              this.jitterRecorder.addSample(diff);
+            }
           }
-
           this.lastPacketTime = now;
         }
+        
         this.tempStats.pps_total++;
         this.tempStats.bps_total += event.data.byteLength || event.data.length;
 
@@ -89,10 +91,8 @@ export class NetworkClient {
       };
 
       this.ws.onerror = (e) => reject(e);
-
       this.ws.onclose = () => {
         this.isConnected = false;
-
         if (this.isIntentionalClose) {
           console.log("[Network] Intentional disconnect (Retire).");
           return;
@@ -104,93 +104,15 @@ export class NetworkClient {
     });
   }
 
+  // 【変更】ハンドラーに移譲
   handleBinaryMessage(buffer) {
-    const reader = new PacketReader(buffer);
-    const msgType = reader.u8();
-
-    if (msgType === 1) {
-      const delta = {
-        removed: { players: [], enemies: [], bullets: [] },
-        updated: { players: [], enemies: [], bullets: [] },
-        events: [],
-      };
-      const remP = reader.u8();
-      for (let i = 0; i < remP; i++)
-        delta.removed.players.push(reader.string());
-      const remE = reader.u8();
-      for (let i = 0; i < remE; i++)
-        delta.removed.enemies.push(reader.string());
-      const remB = reader.u16();
-      for (let i = 0; i < remB; i++)
-        delta.removed.bullets.push(reader.string());
-
-      const numP = reader.u8();
-      for (let i = 0; i < numP; i++) {
-        const p = {
-          i: reader.string(),
-          x: reader.f32(),
-          y: reader.f32(),
-          h: reader.u8(),
-          a: reader.f32(),
-          ta: reader.f32(),
-          n: reader.string(),
-          lastAck: reader.u32(),
-          d: reader.u8(),
-          e: reader.u16(),
-          ba: reader.u16(),
-        };
-        const hasCharge = reader.u8();
-        if (hasCharge) {
-          p.cp = {
-            ep: reader.f32(),
-            a: reader.f32(),
-            t: reader.u8() === 1 ? "short" : "long",
-          };
-        }
-        const stockCount = reader.u8();
-        p.sb = [];
-        for (let j = 0; j < stockCount; j++) p.sb.push(reader.u16());
-        delta.updated.players.push(p);
-      }
-
-      const numE = reader.u8();
-      for (let i = 0; i < numE; i++) {
-        delta.updated.enemies.push({
-          i: reader.string(),
-          x: reader.f32(),
-          y: reader.f32(),
-          h: reader.u8(),
-          ta: reader.f32(),
-        });
-      }
-
-      const numB = reader.u16();
-      for (let i = 0; i < numB; i++) {
-        const b = {
-          i: reader.string(),
-          x: reader.f32(),
-          y: reader.f32(),
-          a: reader.f32(),
-        };
-        const tId = reader.u8();
-        // 古い文字列変換を削除し、ID(数値)をそのまま渡す
-        b.t = tId; 
-        delta.updated.bullets.push(b);
-      }
-
-      const numEv = reader.u8();
-      for (let i = 0; i < numEv; i++) {
-        const tId = reader.u8();
-        delta.events.push({
-          type: tId === 2 ? "explosion" : "hit",
-          x: reader.f32(),
-          y: reader.f32(),
-          color: reader.string(),
-        });
-      }
-
-      const handler = this.messageHandlers.get("game_state_delta");
-      if (handler) handler(delta);
+    // BinaryProtocolHandler に解析を委譲
+    const delta = this.protocolHandler.parse(buffer);
+    
+    // 解析結果があればイベント発火
+    if (delta) {
+        const handler = this.messageHandlers.get("game_state_delta");
+        if (handler) handler(delta);
     }
   }
 
@@ -210,7 +132,6 @@ export class NetworkClient {
     if (states.move_down) mask |= 2;
     if (states.move_left) mask |= 4;
     if (states.move_right) mask |= 8;
-
     if (pressed.shoot) mask |= 16;
     if (pressed.trade_long) mask |= 32;
     if (pressed.bet_up) mask |= 64;
