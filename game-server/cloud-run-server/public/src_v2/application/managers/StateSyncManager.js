@@ -1,5 +1,5 @@
 import { VisualPlayer } from "../../domain/view_models/VisualPlayer.js";
-import { StateInterpolator } from "../services/StateInterpolator.js"; // 【変更】InterpolationLogicの代わりにインポート
+import { StateInterpolator } from "../services/StateInterpolator.js";
 import { ClientConfig } from "../../core/config/ClientConfig.js";
 
 export class StateSyncManager {
@@ -13,8 +13,7 @@ export class StateSyncManager {
       effects: [],
     };
     this.effectQueue = [];
-    
-    // 【追加】補間サービスのインスタンス化
+
     this.interpolator = new StateInterpolator();
   }
 
@@ -67,11 +66,8 @@ export class StateSyncManager {
             effectKey = "hit_orb";
           }
         }
-        
-        // アイテム取得エフェクトの追加判定
+
         if (ev.color === "#00ff00" && ev.type === "hit") {
-             // 必要であればここでも item_ep_get などを判定可能ですが、
-             // 現在はProtocolHandlerが色を渡してくる仕様のため既存ロジックを維持
         }
 
         if (effectKey) {
@@ -106,9 +102,8 @@ export class StateSyncManager {
             this.visualState.players.set(pState.i, p);
           }
           this.updatePlayerModel(p, pState);
-          // 死亡エフェクトなどはView側あるいはEventで処理するためここでは状態更新のみ
+
           if (!p.isDead && pState.d) {
-             // 死亡フラグが立った瞬間
           }
         });
       }
@@ -161,27 +156,16 @@ export class StateSyncManager {
   }
 
   updatePlayerModel(vp, state) {
-    if (vp.isMe) {
-      const dist = Math.sqrt(
-        Math.pow(state.x - vp.x, 2) + Math.pow(state.y - vp.y, 2)
-      );
-      if (dist > 50.0) {
-        vp.targetX = state.x;
-        vp.targetY = state.y;
-      }
-    } else {
-      const ESTIMATED_SPEED = 4.5;
-      const angle = state.a;
-      const predFactor = ClientConfig.PREDICTION_FACTOR || 15.0;
+    const ESTIMATED_SPEED = 4.5;
+    const angle = state.a;
 
-      const predictedX =
-        state.x + Math.cos(angle) * ESTIMATED_SPEED * predFactor;
-      const predictedY =
-        state.y + Math.sin(angle) * ESTIMATED_SPEED * predFactor;
+    const predFactor = ClientConfig.PREDICTION_FACTOR || 12.0;
 
-      vp.targetX = predictedX;
-      vp.targetY = predictedY;
-    }
+    const predictedX = state.x + Math.cos(angle) * ESTIMATED_SPEED * predFactor;
+    const predictedY = state.y + Math.sin(angle) * ESTIMATED_SPEED * predFactor;
+
+    vp.targetX = predictedX;
+    vp.targetY = predictedY;
 
     vp.hp = state.h;
     vp.ep = state.e;
@@ -192,6 +176,7 @@ export class StateSyncManager {
     vp.isDead = !!state.d;
     vp.chargeBetAmount = state.ba;
     vp.stockedBullets = state.sb || [];
+
     if (state.cp) {
       vp.chargePosition = {
         entryPrice: state.cp.ep,
@@ -202,7 +187,6 @@ export class StateSyncManager {
       vp.chargePosition = null;
     }
   }
-
   setStaticState(staticData) {
     if (!staticData || !staticData.obstacles) return;
     this.visualState.obstacles.clear();
@@ -222,7 +206,6 @@ export class StateSyncManager {
     });
   }
 
-  // 【変更】具体的な計算処理を StateInterpolator に委譲
   updateInterpolation(dt) {
     this.interpolator.update(this.visualState, dt);
   }

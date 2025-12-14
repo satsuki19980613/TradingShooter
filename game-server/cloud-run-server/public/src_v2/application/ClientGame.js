@@ -173,25 +173,20 @@ export class ClientGame {
 
       this.renderer.render(this.syncManager.visualState);
 
-      if (
-        this.uiManipulator.isDebugMode &&
-        this.debugGraphRenderer &&
-        this.jitterRecorder
-      ) {
+      if (this.uiManipulator.isDebugMode && this.debugGraphRenderer && this.jitterRecorder) {
         this.debugGraphRenderer.draw(this.jitterRecorder);
       }
 
-      if (now - this.lastRenderTime > this.RENDER_INTERVAL) {
-        if (myPlayer) {
-          this.renderService.renderSubViews(
-            myPlayer,
-            this.tradeState,
-            this.syncManager.visualState,
-            this.layoutService.cachedUiScale
-          );
-        }
-        this.lastRenderTime = now;
+      // 修正：時間制限(if文)を削除し、毎フレーム描画して滑らかにする
+      if (myPlayer) {
+        this.renderService.renderSubViews(
+          myPlayer,
+          this.tradeState,
+          this.syncManager.visualState,
+          this.layoutService.cachedUiScale
+        );
       }
+      this.lastRenderTime = now; // (念のため更新しておく)
 
       if (this.uiManipulator.isDebugMode && this.network) {
         const stats = this.network.getStats();
