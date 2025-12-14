@@ -94,7 +94,7 @@ observeAuthState(onUserChanged) {
       // --- 診断ログ (ここまで) ---
 
       if (firebaseUser) {
-        // 名前がない場合の再ロード試行
+        // 名前がない場合の再ロード試行チェックポイント
         if (!firebaseUser.displayName) {
             console.log("[AuthDebug] DisplayName is missing. Reloading profile...");
             try {
