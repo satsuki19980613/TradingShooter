@@ -8,10 +8,13 @@ export class AppFlowManager {
     this.game = gameApp;
     this.accountManager = accountManager;
 
+    // 【変更】DOM操作を担当するサブマネージャーを取得
+    // ※DomManipulator側で getMenuManager() を実装する必要があります
+    this.menuUi = this.ui.getMenuManager(); 
+
     this.isDebug = this.ui.isDebugMode || false;
     this.assetLoader = new AssetLoader();
     this.audioManager = new AudioManager();
-
     this.isAudioLoaded = false;
     this.isAudioLoading = false;
     this.pendingGameStartName = null;
@@ -23,38 +26,25 @@ export class AppFlowManager {
     this.ui.setMenuActionCallback((actionId) => {
       this.handleMenuAction(actionId);
     });
+    
+    // イベント設定はUIマネージャーへ委譲
     this.setupModalEvents();
     this.setupUI();
   }
+
   setupModalEvents() {
-    const btnReg = document.getElementById("btn-do-register");
-    const btnCloseReg = document.getElementById("btn-close-register");
-    const regInput = document.getElementById("reg-name-input");
-
-    if (btnReg) {
-      btnReg.onclick = () => {
-        const name = regInput ? regInput.value : "";
+    // 登録モーダルのイベント設定を委譲
+    this.menuUi.setupRegisterEvents(
+      (name) => { // onRegister
         if (name) this.executeRegistration(name);
-      };
-    }
-    if (btnCloseReg) {
-      btnCloseReg.onclick = () => this.ui.closeAllModals();
-    }
+      },
+      () => this.ui.closeAllModals() // onClose
+    );
 
-    const btnCloseTrans = document.getElementById("btn-close-transfer");
-    const btnIssue = document.getElementById("btn-issue-code");
-    const btnRecover = document.getElementById("btn-do-recover");
-    const codeDisplay = document.getElementById("transfer-code-display");
-    const recoverInput = document.getElementById("recover-code-input");
-
-    if (btnCloseTrans) {
-      btnCloseTrans.onclick = () => this.ui.closeAllModals();
-    }
-
-    if (btnIssue) {
-      btnIssue.onclick = async () => {
+    // 引継ぎモーダルのイベント設定を委譲
+    this.menuUi.setupTransferEvents({
+      onIssue: async () => {
         const currentUser = this.accountManager.currentUser;
-
         if (!currentUser || currentUser.isGuest) {
           console.warn(
             "[Security] Guest/Unauthorized user cannot issue transfer code."
@@ -63,31 +53,25 @@ export class AppFlowManager {
         }
 
         try {
-          btnIssue.disabled = true;
-          const originalText = btnIssue.textContent;
-          btnIssue.textContent = "ISSUING...";
+          // ボタンの表示更新を依頼
+          this.menuUi.updateIssueButtonState("issuing");
 
           const code = await this.accountManager.issueCode();
 
-          if (codeDisplay) codeDisplay.textContent = code;
-          btnIssue.textContent = "CODE ISSUED";
+          // 結果表示を依頼
+          this.menuUi.displayTransferCode(code);
+          this.menuUi.updateIssueButtonState("issued");
 
           setTimeout(() => {
-            btnIssue.disabled = false;
-            btnIssue.textContent = originalText;
+            this.menuUi.updateIssueButtonState("reset");
           }, 3000);
         } catch (e) {
           console.error(e);
-          if (codeDisplay) codeDisplay.textContent = "ERROR";
-          btnIssue.textContent = "RETRY";
-          btnIssue.disabled = false;
+          this.menuUi.displayTransferCode("ERROR");
+          this.menuUi.updateIssueButtonState("error");
         }
-      };
-    }
-
-    if (btnRecover) {
-      btnRecover.onclick = async () => {
-        const code = recoverInput ? recoverInput.value.trim() : "";
+      },
+      onRecover: async (code) => {
         if (!code) return;
 
         try {
@@ -103,18 +87,16 @@ export class AppFlowManager {
           }, 1500);
         } catch (e) {
           console.error(e);
-
           this.ui.showErrorScreen("Recovery Failed", e);
-
           setTimeout(() => this.ui.showScreen("home"), 3000);
         }
-      };
-    }
+      },
+      onClose: () => this.ui.closeAllModals()
+    });
   }
 
   handleUserUpdate(userEntity) {
     console.log("[AppFlow] User State Updated:", userEntity);
-
     if (!userEntity) {
       this.ui.setBodyMode("initial");
       this.ui.switchCanvasScene("initial");
@@ -197,6 +179,7 @@ export class AppFlowManager {
         break;
     }
   }
+
   executeRegistration(name) {
     if (!name) return;
 
@@ -204,7 +187,6 @@ export class AppFlowManager {
     this.ui.showScreen("loading");
 
     this.ui.closeAllModals();
-
     this.accountManager
       .registerPlayerName(name)
       .then(() => {
@@ -215,35 +197,22 @@ export class AppFlowManager {
         this.ui.showErrorScreen("Registration Failed", e);
       });
   }
+
   setupUI() {
-    const startBtn = document.getElementById("btn-start-game");
-    if (startBtn) {
-      startBtn.addEventListener("click", () => {
-        this.ui.tryFullscreen();
-        this.handleStartGame();
-      });
-    }
-
-    const audioBtn = document.getElementById("btn-audio-toggle");
-    if (audioBtn)
-      audioBtn.addEventListener("click", () => this.handleAudioToggle());
-
-    const retryBtn = document.getElementById("btn-gameover-retry");
-    if (retryBtn) {
-      retryBtn.addEventListener("click", () => {
-        this.ui.tryFullscreen();
-        this.handleStartGame("Guest");
-      });
-    }
-    const retireBtn = document.getElementById("btn-retire");
-    if (retireBtn) {
-      retireBtn.addEventListener("click", () => this.handleRetire());
-    }
-
-    const homeBtn = document.getElementById("btn-gameover-home");
-    if (homeBtn) {
-      homeBtn.addEventListener("click", () => this.handleBackToHome());
-    }
+    // 汎用UIイベントの設定も委譲
+    this.menuUi.setupGeneralUiEvents({
+        onStart: () => {
+            this.ui.tryFullscreen();
+            this.handleStartGame();
+        },
+        onAudioToggle: () => this.handleAudioToggle(),
+        onRetry: () => {
+            this.ui.tryFullscreen();
+            this.handleStartGame("Guest");
+        },
+        onRetire: () => this.handleRetire(),
+        onHome: () => this.handleBackToHome()
+    });
 
     this.ui.mobileControlManager.init();
   }
@@ -256,20 +225,18 @@ export class AppFlowManager {
       }
 
       this.ui.showScreen("home");
-      const bgVideo = document.getElementById("bg-video");
-      if (bgVideo) bgVideo.style.display = "block";
+      // 背景動画の制御もUIマネージャー経由へ
+      this.menuUi.setBgVideoVisible(true);
     }
   }
 
   handleBackToHome() {
     this.ui.showScreen("home");
-    const bgVideo = document.getElementById("bg-video");
-    if (bgVideo) bgVideo.style.display = "block";
+    this.menuUi.setBgVideoVisible(true);
   }
 
   async handleStartGame(playerName) {
     const currentUser = this.accountManager.currentUser;
-
     const uid = currentUser
       ? currentUser.uid
       : "guest_" + Math.random().toString(36).substr(2, 9);
@@ -296,6 +263,7 @@ export class AppFlowManager {
       this.ui.showErrorScreen("接続失敗", e);
     }
   }
+
   async handleAudioToggle() {
     if (this.isAudioLoading) return;
     if (!this.isAudioLoaded) {
