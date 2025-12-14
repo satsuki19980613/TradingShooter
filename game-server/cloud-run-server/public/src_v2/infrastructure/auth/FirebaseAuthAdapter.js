@@ -82,29 +82,45 @@ export class FirebaseAuthAdapter {
     }
   }
 
-  /**
-   * 認証状態の監視を開始
-   * @param {Function} onUserChanged - (UserEntity) => void
-   */
-  observeAuthState(onUserChanged) {
-    onAuthStateChanged(this.auth, (firebaseUser) => {
+observeAuthState(onUserChanged) {
+    onAuthStateChanged(this.auth, async (firebaseUser) => {
+      // --- 診断ログ (ここから) ---
+      console.log("[AuthDebug] Auth State Changed:", firebaseUser ? "User Found" : "No User");
       if (firebaseUser) {
-        
+        console.log("[AuthDebug] UID:", firebaseUser.uid);
+        console.log("[AuthDebug] DisplayName (Raw):", firebaseUser.displayName);
+        console.log("[AuthDebug] isAnonymous:", firebaseUser.isAnonymous);
+      }
+      // --- 診断ログ (ここまで) ---
+
+      if (firebaseUser) {
+        // 名前がない場合の再ロード試行
+        if (!firebaseUser.displayName) {
+            console.log("[AuthDebug] DisplayName is missing. Reloading profile...");
+            try {
+                await firebaseUser.reload();
+                console.log("[AuthDebug] Reloaded DisplayName:", firebaseUser.displayName);
+            } catch (e) {
+                console.warn("[Auth] Profile reload failed:", e);
+            }
+        }
+
         const name = firebaseUser.displayName || "Guest";
+        // 名前が "Guest" でなければメンバーとみなす
+        const isGuest = name === "Guest"; 
         
-        const isGuest = name === "Guest";
-        
+        console.log(`[AuthDebug] Final Decision -> Name: ${name}, isGuest: ${isGuest}`);
+
         this.currentUserEntity = isGuest 
           ? new UserEntity(firebaseUser.uid, "Guest", true)
           : UserEntity.createMember(firebaseUser.uid, name);
+          
       } else {
-        
         this.currentUserEntity = null;
       }
       onUserChanged(this.currentUserEntity);
     });
   }
-
   /**
    * ゲストとしてログイン (匿名認証)
    */

@@ -53,6 +53,15 @@ export class AppFlowManager {
 
     if (btnIssue) {
       btnIssue.onclick = async () => {
+        const currentUser = this.accountManager.currentUser;
+
+        if (!currentUser || currentUser.isGuest) {
+          console.warn(
+            "[Security] Guest/Unauthorized user cannot issue transfer code."
+          );
+          return;
+        }
+
         try {
           btnIssue.disabled = true;
           const originalText = btnIssue.textContent;

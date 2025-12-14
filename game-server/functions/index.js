@@ -12,8 +12,7 @@ setGlobalOptions({ region: "asia-northeast1" });
 // 1. 引継ぎコードの発行 (Issue Transfer Code) - V2
 // ---------------------------------------------------------
 // onCall の引数が (data, context) から (request) 1つに変わります
-exports.issueTransferCode = onCall(async (request) => {
-  // context.auth は request.auth になります
+exports.issueTransferCode = onCall({ cors: true }, async (request) => {
   if (!request.auth) {
     throw new HttpsError(
       "unauthenticated",
@@ -46,7 +45,7 @@ exports.issueTransferCode = onCall(async (request) => {
 // ---------------------------------------------------------
 // 2. 引継ぎの実行 (Recover Account) - V2
 // ---------------------------------------------------------
-exports.recoverAccount = onCall(async (request) => {
+exports.recoverAccount = onCall({ cors: true }, async (request) => {
   // data は request.data になります
   const code = request.data.code;
 

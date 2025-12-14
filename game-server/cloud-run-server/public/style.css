@@ -693,7 +693,8 @@ h1, h2, h3, h4 {
 }
 
 /* Guest/Member visibility toggles */
-body.mode-guest .member-only {
+body.mode-guest .member-only,
+body.mode-initial .member-only {
   display: none !important;
 }
 body.mode-member .guest-only {

@@ -75,6 +75,7 @@ export class AccountManager {
 
   async recover(code) {
     if (!code || code.length < 4) throw new Error("Invalid code format");
+    this.stopSessionWatch();
     await this.auth.recoverAccount(code);
   }
   async deleteUser() {
